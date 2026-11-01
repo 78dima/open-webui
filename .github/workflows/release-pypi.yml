@@ -8,6 +8,7 @@ on:
 
 jobs:
   release:
+    if: github.repository == 'open-webui/open-webui' # ai-dvokat: upstream only
     runs-on: ubuntu-latest
     environment:
       name: pypi

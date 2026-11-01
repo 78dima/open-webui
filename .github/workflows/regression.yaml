@@ -19,7 +19,8 @@ jobs:
   # suite can be exercised outside a release. Expressions have no regex, hence the literal prefixes.
   regression:
     name: Suite
-    if: >-
+    if: >- # ai-dvokat: upstream only
+      github.repository == 'open-webui/open-webui' &&
       (github.event.pull_request.base.ref == 'dev' ||
       github.event.pull_request.head.ref == 'dev') &&
       (github.event.action != 'edited' || github.event.changes.title != null) &&
@@ -35,7 +36,7 @@ jobs:
   result:
     name: Result
     needs: [regression]
-    if: always()
+    if: github.repository == 'open-webui/open-webui' && (always()) # ai-dvokat: upstream only
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}

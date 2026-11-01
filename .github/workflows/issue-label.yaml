@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   label-bug-reports:
+    if: github.repository == 'open-webui/open-webui' # ai-dvokat: upstream only
     runs-on: ubuntu-latest
     steps:
       - name: Add "bug" label to unlabeled bug reports
@@ -69,6 +70,7 @@ jobs:
             });
 
   label-feature-requests:
+    if: github.repository == 'open-webui/open-webui' # ai-dvokat: upstream only
     runs-on: ubuntu-latest
     steps:
       - name: Add "enhancement" label to unlabeled feature requests
