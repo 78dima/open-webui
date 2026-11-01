@@ -41,6 +41,7 @@ from starsessions import (
 )
 from starsessions.stores.redis import RedisStore
 
+from open_webui.config import CUSTOM_UI  # ai-dvokat: public UI configuration
 from open_webui.config import (
     BYPASS_ADMIN_ACCESS_CONTROL,
     CACHE_DIR,
@@ -2369,6 +2370,7 @@ async def get_app_config(request: Request):
     )
 
     return {
+        'custom_ui': CUSTOM_UI,  # ai-dvokat: feature flags from environment
         **({'onboarding': True} if onboarding else {}),
         'status': True,
         'name': app.state.WEBUI_NAME,
