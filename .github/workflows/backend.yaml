@@ -19,6 +19,7 @@ concurrency:
 jobs:
   # ── Ruff format check across supported Python versions ───────────────────
   format-check:
+    if: github.repository == 'open-webui/open-webui' # ai-dvokat: upstream only
     name: Ruff Format (${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 10

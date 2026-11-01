@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "pretest": "cd ../.. && svelte-kit sync"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
