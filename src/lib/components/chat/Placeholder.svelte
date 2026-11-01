@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CustomHello from '$lib/components/custom/Hello.svelte'; // ai-dvokat: gated example
 	import type { TerminalContext } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 	import { marked } from 'marked';
@@ -124,6 +125,7 @@
 </script>
 
 <div class="m-auto w-full max-w-[58rem] px-1 md:@2xl:px-20 translate-y-6 py-24 text-center">
+	<CustomHello /> <!-- ai-dvokat: gated example -->
 	{#if $temporaryChatEnabled}
 		<Tooltip
 			content={$i18n.t("This chat won't appear in history and your messages will not be saved.")}

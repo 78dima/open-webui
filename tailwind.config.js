@@ -1,3 +1,4 @@
+import { customTheme } from './src/lib/custom/tailwind.js'; // ai-dvokat: isolated tokens
 import typography from '@tailwindcss/typography';
 import containerQueries from '@tailwindcss/container-queries';
 
@@ -7,6 +8,7 @@ export default {
 	content: ['./src/**/*.{html,js,svelte,ts}'],
 	theme: {
 		extend: {
+			...customTheme, // ai-dvokat: additive tokens
 			typography: {
 				DEFAULT: {
 					css: {

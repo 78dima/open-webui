@@ -1,0 +1,9 @@
+:root {
+	--custom-ink: currentColor;
+	--custom-font: var(--font-sans, sans-serif);
+}
+
+.custom-hello {
+	color: var(--custom-ink);
+	font-family: var(--custom-font);
+}
