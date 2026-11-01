@@ -369,6 +369,7 @@ type Document = {
 };
 
 type Config = {
+	custom_ui?: import('$lib/custom/config').CustomUI; // ai-dvokat: public flags
 	audio?: {
 		realtime?: { enabled: boolean; model: string; voice: string };
 		stt: { engine: string };
