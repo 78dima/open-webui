@@ -1,6 +1,6 @@
 # ai-dvokat UI — день 1
 
-Статус: реализация и приёмка в работе (02.11.2026). Предыдущие ограничения доступа сняты.
+**День 1 выполнен, приёмка пройдена 02.11.2026. Образ опубликован в GHCR, стенд работает на локальной сборке из форка. На этом работа остановлена; первый пакет UI ожидает отдельного списка владельца.**
 
 ## Репозиторий и правила
 
@@ -16,6 +16,7 @@
 | `src/lib/components/chat/Placeholder.svelte` | Импорт и вставка `CustomHello` (по строке) |
 | `src/app.css` | Импорт `src/custom.css` (1 строка) |
 | `tailwind.config.js` | Импорт и spread собственных токенов в `theme.extend` (по строке) |
+| `.dockerignore` | Исключения для зависимостей и результатов изолированных browser-тестов |
 | `README.md` | Уведомление о неаффилированности публичного форка |
 | `.github/workflows/*` upstream | Условие `github.repository == 'open-webui/open-webui'` на каждом job, исключающее запуск в форке |
 
@@ -38,6 +39,70 @@ Node 24.22.1; upstream package.json декларирует Node до 22 вклю
 - Backend: `python3 -m unittest discover -s tests/custom -p 'test_*.py'`.
 - Playwright: `npm ci --prefix tests/custom`; `cd tests/custom && npx playwright install chromium && npm test`.
 - Изолированный browser harness использует настоящий компонент и заменяет только стор конфигурации; живой smoke приложения выполняется отдельно.
-- CI запускает эти тесты, затем сборку неизменённым Dockerfile и публикацию GHCR. Push ветки даёт тег `0.12.5-ai1-<sha12>`, тег `0.12.5-ai1` — одноимённый образ. `latest` не публикуется.
+- CI на закреплённом runner Ubuntu 24.04 запускает эти тесты, затем сборку неизменённым Dockerfile и публикацию GHCR. Push ветки даёт тег `0.12.5-ai1-<sha12>`, тег `0.12.5-ai1` — одноимённый образ. `latest` не публикуется.
 
-Фактические результаты сборки, smoke и переключения флага будут внесены после выполнения; пока они не считаются пройденными.
+## Результаты приёмки
+
+| Проверка | Фактический результат |
+| --- | --- |
+| Сборка из исходников | `docker build -t ghcr.io/78dima/open-webui-legal:0.12.5-ai1 .` завершён с кодом 0; Dockerfile без изменений |
+| Стенд на нашем образе | `legal-assistant-openwebui-1`, образ `ghcr.io/78dima/open-webui-legal:0.12.5-ai1`, health `healthy` |
+| Вход | Вход через форму браузера на 8080 успешен на нашем образе; отдельно проверен dev frontend на 5173 |
+| «Юрист РФ» и К+ | Чат завершён без ошибки; в сохранённом ответе реальные вызовы `legal-tools_kplus_search` и `legal-tools_kplus_read`, один источник |
+| Загрузка файла | `day1-synthetic.txt` загружен через browser file input, HTTP 200; файл прикреплён к сообщению |
+| Workflow | Модель `legal_workflows.draft_document` завершилась со статусом «готово», вернула DOCX |
+| Скачивание DOCX | Через карточку файла в сообщении, затем ссылку в модальном окне получен browser download: 38 167 байт; ZIP целый, `word/document.xml` присутствует |
+| Флаг включён | Реальное окружение контейнера `CUSTOM_UI={"hello":true}` → `/api/config` возвращает true → browser DOM содержит один видимый пример |
+| Флаг выключен | `CUSTOM_UI={"hello":false}` → API возвращает false → в DOM нет примера |
+| Итоговый запуск | Без временных compose overrides, `custom_ui: {}`; пример выключен |
+| Локальная разработка | `http://127.0.0.1:5173` работает; `/api/config` через Vite проксируется в backend 8080 и возвращает новую конфигурацию |
+| Python-тесты | 3 теста пройдены, включая некорректные JSON/типы и отсутствие значений конфигурации в предупреждении |
+| Playwright | Пройден тест opt-in, строгого boolean и реактивного выключения; системный Chromium и закреплённый Chromium Playwright |
+| CI тестов | Пройдены в GitHub Actions на Ubuntu 24.04; первоначальная несовместимость `ubuntu-latest` с Playwright исправлена |
+| История | `git log v0.12.5..ai-dvokat` содержит только `custom:` коммиты; ветки `main`/`dev` не изменялись |
+| Границы продукта | В `~/ai-dvokat` изменена только строка 210 compose. Остальной tracked diff точно совпадает со снимком до начала работы; коммитов там не делалось |
+| Перезапуск | Сравнение ID всех контейнеров до/после: изменился только `legal-assistant-openwebui-1` |
+
+Upstream-тег: `f7ac7ee10962ddec0017f5c29b6740d9b9c5faca`.
+Релизный Git-тег `0.12.5-ai1`: `a6b7c6313` (код и CI).
+Локальный image ID: `sha256:db81d9527f0b221e59c83b88694d278960353818645f89382b6b00072c4aed33`, размер 6 463 875 994 байта. Это локальная сборка; digest независимой сборки GitHub Actions может отличаться. Локальный upstream Dockerfile использует стандартный `BUILD_HASH=dev-build`; CI записывает SHA коммита через штатный build arg.
+
+Для проверки использованы синтетические данные. Тестовые чаты сохранены на стенде:
+- К+ и файл: `8a10080b-84be-4e56-b888-236d48258fff`.
+- Workflow и DOCX: `f41cee2d-b5cd-4551-a747-e53cb86b3eac`.
+
+## Как повторить переключение флага
+
+Временный override вне `~/ai-dvokat` (например, `/tmp/custom-ui.yaml`):
+
+```yaml
+services:
+  openwebui:
+    environment:
+      CUSTOM_UI: '{"hello":true}'
+```
+
+```sh
+docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
+  -f ~/ai-dvokat/deploy/compose.yaml -f /tmp/custom-ui.yaml \
+  up -d --no-deps --pull never openwebui
+```
+
+Поменять `true` на `false`, повторить команду и обновить страницу. Вернуть стандартный запуск без override:
+
+```sh
+docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
+  -f ~/ai-dvokat/deploy/compose.yaml up -d --no-deps --pull never openwebui
+```
+
+Файлы `~/ai-dvokat/deploy/openwebui.env` и `~/ai-dvokat/.env` не менялись. Bootstrap и регрессия из `owui/` не запускались: существующие модели, инструменты и данные сохранились. Первый пакет интерфейса не начинался.
+
+## Публикация и ресурсы
+
+[CI ветки](https://github.com/78dima/open-webui/actions/runs/41354650669), [CI релизного тега](https://github.com/78dima/open-webui/actions/runs/41355011054).
+CI ветки завершён успешно: опубликован `ghcr.io/78dima/open-webui-legal:0.12.5-ai1-a6b7c63136d5`, digest `sha256:c7ddb6a8d51677c472abee3116b5543899da230cf7842c505121d429eba01241`.
+Релиз `ghcr.io/78dima/open-webui-legal:0.12.5-ai1` опубликован, manifest проверен через `docker buildx imagetools inspect`: `sha256:a6e259a23bddf3736a7d451daa17fc6c695880b4e702ebeca534e338c1413865`. На стенде оставлена прошедшая приёмку локальная сборка с указанным выше локальным image ID.
+
+После публикации выполнен `docker builder prune -f`: освобождено 21,99 ГБ build cache. Рабочие образы и контейнеры не удалялись.
+
+До начала работ свободно 40 ГБ, перед первой сборкой более 30 ГБ, после сборки около 28 ГБ, после очистки кэша около 35 ГБ. Локально один тег нашего образа. Upstream workflows сохранены, защищены условиями на каждом job и дополнительно отключены через GitHub API. Default branch форка — `ai-dvokat`.
