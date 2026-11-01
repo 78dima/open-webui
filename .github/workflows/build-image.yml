@@ -12,7 +12,7 @@ concurrency:
 jobs:
   custom-tests:
     if: github.repository == '78dima/open-webui'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -28,7 +28,7 @@ jobs:
   publish:
     if: github.repository == '78dima/open-webui'
     needs: custom-tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
