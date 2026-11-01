@@ -38,6 +38,8 @@ from open_webui.env import (
 )
 from open_webui.models.config import Config
 from open_webui.utils.json_codec import JSONCodec
+from open_webui.custom.ui import load_custom_ui  # ai-dvokat: public feature flags
+CUSTOM_UI = load_custom_ui(os.environ.get("CUSTOM_UI", "{}"))  # ai-dvokat: restart to apply
 
 
 async def seed_registered_defaults():
