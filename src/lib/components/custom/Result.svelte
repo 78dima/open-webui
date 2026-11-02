@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReceiptPanel from './ReceiptPanel.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { config } from '$lib/stores';
 	import ru from '$lib/custom/locales/ru-RU.json';
@@ -25,6 +26,7 @@
 	let downloadError = '';
 	let downloading = false;
 	let activeKey = '';
+	let activeReceipt: string | null = null;
 	let generation = 0;
 	let request: AbortController | undefined;
 	let download: AbortController | undefined;
@@ -47,6 +49,7 @@
 	function sync(key: string) {
 		if (key === activeKey) return;
 		activeKey = key;
+		activeReceipt = null;
 		generation++;
 		request?.abort();
 		download?.abort();
@@ -155,6 +158,11 @@
 			{#each cardSources as source}<article class="border-b py-2">
 					<h3>{source.label}</h3>
 					{#if source.receipt_id}<p>{ru.result.receipt}: {source.receipt_id}</p>{/if}
+					{#if source.receipt_id && $config?.custom_ui?.receipt_panel === true}<button
+							type="button"
+							on:click={() => (activeReceipt = source.receipt_id ?? null)}
+							>{ru.pending.openReceipt}</button
+						>{/if}
 					{#if source.edition}<p>{ru.result.edition}: {source.edition}</p>{/if}
 					{#if source.fragment}<details>
 							<summary>{ru.result.fragment}</summary>
@@ -183,5 +191,6 @@
 			{#if job?.unknown_usage}<p>{ru.result.unknown}</p>{/if}
 		{/if}
 		<div hidden={tab !== 0}><slot /></div>
+		<ReceiptPanel bind:receiptId={activeReceipt} />
 	</section>
 {:else}<slot />{/if}

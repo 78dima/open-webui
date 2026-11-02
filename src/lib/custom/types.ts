@@ -31,3 +31,42 @@ export type Job = {
 	created_at?: string;
 	finished_at?: string;
 };
+
+/** Draft U2–U4 contracts requested on 2026-11-02. No REST transport exists yet.
+ * Dates are ISO strings at the API boundary; nullable fields follow stored receipts/jobs.
+ * Confirm the actual response schema before replacing the explicit unavailable states.
+ */
+export type ReceiptResponse = {
+	id: string;
+	endpoint: string;
+	base: string;
+	nd: number;
+	dst: number | null;
+	edition_nd: number | null;
+	edition_date: string | null;
+	para_from: number | null;
+	para_to: number | null;
+	/** The original receipt fragment, at most 32 KiB encoded as UTF-8. */
+	canonical_text: string;
+	citation_label: string | null;
+	kplus_url: string;
+	fetched_at: string;
+	base_updated_on: string | null;
+	/** U2 has not specified an enumeration or verification semantics. */
+	verify_status?: string | null;
+};
+export type CaseArtifactSummary = { id: string; kind: string; filename: string; size: number };
+export type CaseJobSummary = {
+	id: string;
+	kind: string;
+	status: string;
+	created_at: string;
+	finished_at: string | null;
+	spent_usd: number | null;
+	artifacts: CaseArtifactSummary[];
+};
+export type CaseJobsQuery = { folder_id: string; limit: 50; cursor?: string };
+/** U3 requests a list; no pagination response envelope has been agreed yet. */
+export type CaseJobsResponse = CaseJobSummary[];
+export type JobArtifactListItem = CaseArtifactSummary & { sha256: string; owui_file_id?: string };
+export type JobArtifactsResponse = JobArtifactListItem[];
