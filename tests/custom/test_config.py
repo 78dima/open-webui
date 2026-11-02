@@ -18,5 +18,12 @@ class CustomUIConfigTest(unittest.TestCase):
     def test_default(self):
         self.assertEqual(module.load_custom_ui('{}'), {})
 
+class CustomBrandNameTest(unittest.TestCase):
+    def test_strict_flag_and_upstream_fallback(self):
+        for raw in ('{}', '{"brand":true}', '{"brand":{"suffix":"false","name":"Ai - dvokat"}}'):
+            self.assertEqual(module.custom_webui_name('Original (Open WebUI)', raw), 'Original (Open WebUI)')
+        self.assertEqual(module.custom_webui_name('Original (Open WebUI)', '{"brand":{"suffix":false,"name":"Ai - dvokat"}}'), 'Ai - dvokat')
+        self.assertEqual(module.custom_webui_name('Original (Open WebUI)', '{"brand":{"suffix":false}}'), 'Original')
+
 if __name__ == '__main__':
     unittest.main()

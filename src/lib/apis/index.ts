@@ -1,4 +1,5 @@
 import { get } from 'svelte/store';
+import { brandConfig } from '$lib/custom/brand'; // ai-dvokat: public UI configuration
 import { config } from '$lib/stores';
 import { WEBUI_BASE_URL } from '$lib/constants';
 import { convertOpenApiToToolPayload, resolveSchema } from '$lib/utils';
@@ -1533,7 +1534,7 @@ export const getBackendConfig = async () => {
 		throw error;
 	}
 
-	return res;
+	return brandConfig(res); // ai-dvokat: disable upstream promotion in branded UI
 };
 
 export const getChangelog = async () => {

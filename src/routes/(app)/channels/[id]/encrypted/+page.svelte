@@ -1,4 +1,6 @@
 <script lang="ts">
+ import { WEBUI_NAME } from '$lib/stores'; // ai-dvokat: configured channel title
+
 	import { getContext, onMount, tick } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -110,7 +112,7 @@
 	}
 </script>
 
-<svelte:head><title>{$i18n.t('Encrypted chat')} · Open WebUI</title></svelte:head>
+<svelte:head><title>{$i18n.t('Encrypted chat')} · {$WEBUI_NAME}</title></svelte:head>
 <div
 	class="h-screen max-h-[100dvh] w-full min-w-0 flex flex-col {$showSidebar
 		? 'md:max-w-[calc(100%-var(--sidebar-width))]'

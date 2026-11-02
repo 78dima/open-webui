@@ -9,8 +9,10 @@
     "translations": {
       "Connect external apps to Open WebUI.": "Подключите внешние приложения к {name}.",
       "Open WebUI version": "Версия {name}",
-      "Open WebUI can use tools provided by any OpenAPI server.": "{name} может использовать инструменты любого сервера OpenAPI."
-    }
+      "Open WebUI can use tools provided by any OpenAPI server.": "{name} может использовать инструменты любого сервера OpenAPI.",
+      "Made by Open WebUI Community": "Создано сообществом"
+    },
+    "licenses": "Лицензии и уведомления об авторских правах"
   },
   "start": {
     "title": "Что сделать",

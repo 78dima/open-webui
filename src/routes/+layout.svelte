@@ -1481,7 +1481,7 @@
 		rel="search"
 		type="application/opensearchdescription+xml"
 		title={$WEBUI_NAME}
-		href="/opensearch.xml"
+		href={$config?.custom_ui?.brand?.name ? '/custom/opensearch.xml' : '/opensearch.xml'}
 		crossorigin="use-credentials"
 	/>
 </svelte:head>

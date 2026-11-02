@@ -1,4 +1,5 @@
 import i18next from 'i18next';
+import { brandLocale } from '$lib/custom/brand'; // ai-dvokat: localized product identity
 import resourcesToBackend from 'i18next-resources-to-backend';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import type { i18n as i18nType } from 'i18next';
@@ -15,12 +16,12 @@ export const loadBundledResource = async (language: string): Promise<Record<stri
 	(await import(`./locales/${language}/translation.json`)).default;
 
 const loadResource = async (language: string) =>
-	assembleSettingsTranslations(
+	brandLocale(assembleSettingsTranslations(
 		await loadBundledResource(language),
 		await loadBundledResource('en-US'),
 		overrides[language],
 		overrides['en-US']
-	);
+	)); // ai-dvokat: preserve upstream dictionaries
 
 export const updateI18n = async (value: I18nOverrides = {}) => {
 	overrides = value;

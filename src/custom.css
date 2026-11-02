@@ -11,3 +11,9 @@
 /* ai-dvokat: opt-in community links; no upstream deletion or theme changes. */
 html[data-custom-community-hidden] a[href^="https://openwebui.com"],
 html[data-custom-community-hidden] a[href^="https://docs.openwebui.com"] { display: none !important; }
+
+/* ai-dvokat: disable upstream promotional destinations, including admin/help links. */
+html[data-custom-community-hidden] a[href*="github.com/open-webui"],
+html[data-custom-community-hidden] a[href*="discord.gg/5rJgQTnV4s"],
+html[data-custom-community-hidden] a[href*="twitter.com/OpenWebUI"] { display: none !important; }
+html.dark[data-custom-brand] img[src="/custom/logo.png"] { filter: brightness(0) invert(1); }
