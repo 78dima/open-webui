@@ -1,3 +1,4 @@
+import { hideSetting } from '$lib/custom/visibility'; // ai-dvokat: match hidden settings in search
 import { CONTROL_LABELS, isControlVisible, type ControlId } from './ui-visibility';
 import type { SettingsAccessContext } from './settings-search';
 
@@ -37,6 +38,7 @@ export function canSearchSetting(
 	tabId: string,
 	context: SettingsAccessContext
 ): boolean {
+	if (hideSetting(key, context.config?.custom_ui, context.user?.role)) return false; // ai-dvokat: user presentation
 	const stem = key.replace(/\.(label|description|title)$/, '');
 	if (
 		/^settings\.personal\.(dataControls\.archiveAll(Chats)?|archivedChats\.unarchiveAll)$/.test(

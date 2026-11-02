@@ -15,3 +15,8 @@ if (location.search === '?start') mount(StartHarness, { target: document.querySe
 import ResultHarness from './ResultHarness.svelte';
 (window as any).setMessage = (value: unknown) => resultMessage.set(value);
 if (location.search === '?result') mount(ResultHarness, { target: document.querySelector('#app')! });
+
+import VisibilityHarness from './VisibilityHarness.svelte';
+import { user } from './stores';
+(window as any).setUser = (value: unknown) => user.set(value);
+if (location.search === '?visibility') mount(VisibilityHarness, { target: document.querySelector('#app')! });
