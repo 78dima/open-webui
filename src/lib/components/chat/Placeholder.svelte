@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { brandAsset } from '$lib/custom/brand'; // ai-dvokat: opt-in fallback icon
 	import CustomHello from '$lib/components/custom/Hello.svelte'; // ai-dvokat: gated example
 	import type { TerminalContext } from '$lib/types';
 	import { toast } from 'svelte-sonner';
@@ -183,7 +184,7 @@
 												// LICENSE covers this Open WebUI fallback logo.
 												// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 												// https://docs.openwebui.com/license.
-												e.currentTarget.src = '/favicon.png';
+												e.currentTarget.src = brandAsset($config?.custom_ui, '/favicon.png'); // ai-dvokat: configured fallback
 											}}
 										/>
 									</button>

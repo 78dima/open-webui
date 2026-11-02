@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { fileURLToPath } from 'node:url';
 export default defineConfig({
+  publicDir: '../../static',
   plugins: [svelte({ configFile: false })],
   resolve: { alias: [
     { find: '$lib/stores', replacement: fileURLToPath(new URL('./stores.ts', import.meta.url)) },
