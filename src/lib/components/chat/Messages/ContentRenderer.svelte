@@ -1,4 +1,5 @@
 <script>
+	import CustomResult from '$lib/components/custom/Result.svelte'; // ai-dvokat: opt-in workflow result
 	import {
 		commentSurface,
 		contentHash,
@@ -285,6 +286,7 @@
 </script>
 
 <div bind:this={contentContainerElement}>
+ <CustomResult {content} {model} {sources} {done}> <!-- ai-dvokat: preserve upstream renderer as fallback -->
 	{#if output?.length}
 		<StructuredOutputRenderer
 			commentToolbarId={floatingButtons ? `floating-buttons-${id}` : undefined}
@@ -384,6 +386,7 @@
 			</div>
 		{/if}
 	{/if}
+ </CustomResult> <!-- ai-dvokat: end result wrapper -->
 </div>
 
 {#if floatingButtons}
