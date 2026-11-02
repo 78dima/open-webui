@@ -1,3 +1,15 @@
 {
-  "hello": "Пример компонента ai-dvokat"
+  "hello": "Пример компонента ai-dvokat",
+  "brand": {
+    "about": "О продукте",
+    "description": "Юридический консультант",
+    "origin": "Основано на Open WebUI v0.12.5 (BSD-3 с условиями), форк не связан с авторами",
+    "copyright": "Copyright © Open WebUI Inc. Автор — Tim J. Baek. Условия лицензии и уведомления об авторских правах сохранены.",
+    "emoji": "Графика эмодзи — Twemoji, лицензия",
+    "translations": {
+      "Connect external apps to Open WebUI.": "Подключите внешние приложения к {name}.",
+      "Open WebUI version": "Версия {name}",
+      "Open WebUI can use tools provided by any OpenAPI server.": "{name} может использовать инструменты любого сервера OpenAPI."
+    }
+  }
 }

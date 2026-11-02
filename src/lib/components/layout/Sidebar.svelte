@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { brandAsset } from '$lib/custom/brand'; // ai-dvokat: opt-in logo
+
 	import { toast } from 'svelte-sonner';
 	import { v4 as uuidv4 } from 'uuid';
 	import Sortable from 'sortablejs';
@@ -1104,7 +1106,7 @@
 							Do not alter, remove, obscure, or replace it except as LICENSE permits:
 							https://docs.openwebui.com/license. -->
 								<img
-									src="{WEBUI_BASE_URL}/static/favicon.png"
+									src={brandAsset($config?.custom_ui, `${WEBUI_BASE_URL}/static/favicon.png`)}
 									class="sidebar-new-chat-icon size-5 rounded-full group-hover:hidden"
 									alt=""
 								/>
@@ -1292,7 +1294,7 @@
 					https://docs.openwebui.com/license. -->
 						<img
 							crossorigin="anonymous"
-							src="{WEBUI_BASE_URL}/static/favicon.png"
+							src={brandAsset($config?.custom_ui, `${WEBUI_BASE_URL}/static/favicon.png`)}
 							class="sidebar-new-chat-icon size-5 rounded-full"
 							alt=""
 						/>

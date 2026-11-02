@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { brandAsset } from '$lib/custom/brand'; // ai-dvokat: opt-in logo
+
 	import DOMPurify from 'dompurify';
 	import MfaChallengeForm from '$lib/components/auth/MfaChallenge.svelte';
 	import { mfaRequest, type MfaChallenge } from '$lib/apis/auths/mfa';
@@ -303,7 +305,7 @@
 									<img
 										id="logo"
 										crossorigin="anonymous"
-										src="{WEBUI_BASE_URL}/static/favicon.png"
+										src={brandAsset($config?.custom_ui, `${WEBUI_BASE_URL}/static/favicon.png`)}
 										class="size-24 rounded-full"
 										alt="{$WEBUI_NAME} logo"
 									/>
@@ -686,7 +688,7 @@
 						<img
 							id="logo"
 							crossorigin="anonymous"
-							src="{WEBUI_BASE_URL}/static/favicon.png"
+							src={brandAsset($config?.custom_ui, `${WEBUI_BASE_URL}/static/favicon.png`)}
 							class=" w-6 rounded-full"
 							alt=""
 						/>

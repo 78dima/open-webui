@@ -1,4 +1,6 @@
 <script>
+	import CustomBrand from '$lib/components/custom/Brand.svelte'; // ai-dvokat: opt-in document identity
+	import { brandName, brandAsset, brandTranslations } from '$lib/custom/brand'; // ai-dvokat: brand helpers
 	import { io } from 'socket.io-client';
 	import { spring } from 'svelte/motion';
 	import { createPyodideWorker } from '$lib/pyodide/createPyodideWorker';
@@ -642,7 +644,7 @@
 
 			if ($isLastActiveTab) {
 				if ($settings?.notificationEnabled ?? false) {
-					new Notification(`${data.title} / Open WebUI`, {
+					new Notification(`${data.title} / ${brandName($config?.custom_ui)}`, { // ai-dvokat: configured notification name
 						body: timeStr,
 						// LICENSE covers this Open WebUI notification identifier.
 						// Do not alter, remove, obscure, or replace it except as LICENSE permits:
@@ -803,7 +805,7 @@
 
 					if ($isLastActiveTab) {
 						if ($settings?.notificationEnabled ?? false) {
-							new Notification(`${displayTitle} / Open WebUI`, {
+							new Notification(`${displayTitle} / ${brandName($config?.custom_ui)}`, { // ai-dvokat: configured notification name
 								body: contentPreview,
 								// LICENSE covers this Open WebUI notification identifier.
 								// Do not alter, remove, obscure, or replace it except as LICENSE permits:
@@ -943,7 +945,7 @@
 						// LICENSE covers this Open WebUI notification identifier.
 						// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 						// https://docs.openwebui.com/license.
-						new Notification(`${title} / Open WebUI`, {
+						new Notification(`${title} / ${brandName($config?.custom_ui)}`, { // ai-dvokat: configured notification name
 							body: content,
 							icon: `${WEBUI_API_BASE_URL}/users/${data?.user?.id}/profile/image`
 						});
@@ -1338,7 +1340,7 @@
 		// Initialize i18n even if we didn't get a backend config,
 		// so `/error` can show something that's not `undefined`.
 
-		await initI18n(backendConfig?.default_locale, backendConfig?.i18n ?? {});
+		await initI18n(backendConfig?.default_locale, brandTranslations(backendConfig?.custom_ui, backendConfig?.i18n ?? {})); // ai-dvokat: own locale overlay
 		if (!localStorage.locale) {
 			const languages = await getLanguages();
 			const browserLanguages = navigator.languages
@@ -1357,7 +1359,7 @@
 			// visual, textual, symbolic identifiers, metadata, and surrounding UI.
 			// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 			// https://docs.openwebui.com/license.
-			await WEBUI_NAME.set(backendConfig.name);
+			await WEBUI_NAME.set(brandName(backendConfig.custom_ui, backendConfig.name)); // ai-dvokat: opt-in name
 
 			if ($config) {
 				await setupSocket($config.features?.enable_websocket ?? true);
@@ -1478,13 +1480,14 @@
 	});
 </script>
 
+<CustomBrand /> <!-- ai-dvokat: opt-in metadata -->
 <svelte:head>
 	<!-- LICENSE covers this Open WebUI branding surface, including name, logo,
 	visual, textual, symbolic identifiers, metadata, and surrounding UI.
 	Do not alter, remove, obscure, or replace it except as LICENSE permits:
 	https://docs.openwebui.com/license. -->
 	<title>{$WEBUI_NAME}</title>
-	<link crossorigin="anonymous" rel="icon" href="{WEBUI_BASE_URL}/static/favicon.png" />
+	<link crossorigin="anonymous" rel="icon" href={brandAsset($config?.custom_ui, `${WEBUI_BASE_URL}/static/favicon.png`)} />
 
 	<meta name="apple-mobile-web-app-title" content={$WEBUI_NAME} />
 	<meta name="description" content={$WEBUI_NAME} />

@@ -17,6 +17,7 @@
 	import Modal from '../common/Modal.svelte';
 	import Account from './Settings/Account.svelte';
 	import About from './Settings/About.svelte';
+	import CustomAbout from '$lib/components/custom/About.svelte'; // ai-dvokat: opt-in About
 	import General from './Settings/General.svelte';
 	import Interface from './Settings/Interface.svelte';
 	import Notifications from './Settings/Notifications.svelte';
@@ -910,7 +911,7 @@
 					}}
 				/>
 			{:else if selectedTab === 'about'}
-				<About />
+				{#if $config?.custom_ui?.brand?.about === true}<CustomAbout />{:else}<About />{/if} <!-- ai-dvokat: retain upstream when disabled -->
 			{:else if selectedTab === 'admin:general'}
 				<AdminGeneral saveHandler={adminConfigSaveHandler} />
 			{:else if selectedTab === 'admin:authentication'}

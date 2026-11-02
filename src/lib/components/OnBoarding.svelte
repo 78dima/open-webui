@@ -1,6 +1,8 @@
 <script>
+	import { brandAsset } from '$lib/custom/brand'; // ai-dvokat: opt-in logo
+
 	import { getContext } from 'svelte';
-	import { WEBUI_NAME } from '$lib/stores';
+	import { WEBUI_NAME, config } from '$lib/stores';
 	const i18n = getContext('i18n');
 
 	export let show = true;
@@ -47,7 +49,7 @@
 			<img
 				id="logo"
 				crossorigin="anonymous"
-				src="/static/favicon.png"
+				src={brandAsset($config?.custom_ui, '/static/favicon.png')}
 				class="size-6 rounded-full"
 				alt="{$WEBUI_NAME} logo"
 			/>
@@ -76,7 +78,7 @@
 					Do not alter, remove, obscure, or replace it except as LICENSE permits:
 					https://docs.openwebui.com/license. -->
 					<div class="mb-4 text-[0.6875rem] font-medium tracking-[0.18em] uppercase opacity-35">
-						Open WebUI
+						{$WEBUI_NAME} <!-- ai-dvokat: configured name -->
 					</div>
 
 					<h1 class="m-0 max-w-3xl text-2xl leading-[1.15] font-light tracking-tight lg:text-4xl">

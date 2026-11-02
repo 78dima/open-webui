@@ -1,0 +1,3 @@
+Built-in image_gen; transparent background; generated 2026-11-02.
+Use case: logo-brand. Asset type: square application icon for a legal consulting assistant named Ai - dvokat. Create one original, clean, minimal professional emblem combining balanced scales of justice and a subtle dialogue bubble into one coherent bold geometric mark. No text or letters. Flat monochrome dark navy ink, generous transparent negative space, crisp silhouette, legible at favicon size. Centered single emblem, no mockup, no shadow, no texture, no gradients, no watermark. Transparent background.
+Source: logo.png. Public copy: /custom/logo.png. No existing upstream image replaced.
