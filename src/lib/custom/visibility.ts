@@ -45,6 +45,9 @@ export function hideSetting(key: string, raw: unknown, role?: string): boolean {
 	return (
 		(hideFor(raw, role, 'temporary_chat') &&
 			/\.(temporaryChatByDefault|newTemporaryChat)\./.test(key)) ||
-		(hideFor(raw, role, 'settings_audio') && key.startsWith('settings.personal.audio.'))
+		(hideFor(raw, role, 'settings_audio') &&
+			(key.startsWith('settings.personal.audio.') ||
+				(key.startsWith('settings.personal.interface.') &&
+					/\.(sections\.voice|allowVoiceInterruptionInCall|displayEmojiInCall)\./.test(key))))
 	);
 }

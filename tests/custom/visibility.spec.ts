@@ -22,6 +22,18 @@ test('visibility is user-only, strict and per-feature; Arena independent of the 
 		hideSetting('settings.personal.interface.temporaryChatByDefault.label', { hide }, 'admin')
 	).toBe(false);
 });
+test('audio visibility also covers voice preferences in the interface tab and search', () => {
+	for (const part of [
+		'sections.voice.title',
+		'allowVoiceInterruptionInCall.label',
+		'displayEmojiInCall.description'
+	]) {
+		const key = 'settings.personal.interface.' + part;
+		expect(hideSetting(key, { hide }, 'user')).toBe(true);
+		expect(hideSetting(key, { hide }, 'admin')).toBe(false);
+		expect(hideSetting(key, {}, 'user')).toBe(false);
+	}
+});
 test('user sees seven legal models and relevant workspace only; admin and disabled flags restore controls', async ({
 	page
 }) => {

@@ -2021,7 +2021,7 @@
 		</div>
 	{/if}
 
-	{#if canUseCalls({ user: $user, config: $config })}
+	{#if !hideFor($config?.custom_ui, $user?.role, 'settings_audio') && canUseCalls({ user: $user, config: $config })}
 		<div class={sectionHeadingClass}>
 			{$i18n.t('settings.personal.interface.sections.voice.title')}
 		</div>
