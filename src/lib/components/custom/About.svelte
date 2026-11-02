@@ -8,7 +8,6 @@
  <img src={BRAND_LOGO} alt="" width="64" height="64" class="bg-white rounded-lg" />
  <p>{brandName($config?.custom_ui, $config?.name)}</p>
  <p>{ru.brand.description}</p>
- <p class="text-xs">{ru.brand.origin}</p>
- <p class="text-xs">{ru.brand.copyright}</p>
+ <a class="text-xs underline" href="/custom/licenses.txt" target="_blank" rel="noopener noreferrer">{ru.brand.licenses}</a>
  <p class="text-xs">{ru.brand.emoji} <a href="https://creativecommons.org/licenses/by/4.0/">CC-BY 4.0</a></p>
 </section>

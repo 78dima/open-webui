@@ -21,6 +21,7 @@
    const ui = readCustomUI(cfg?.custom_ui);
    document.documentElement.toggleAttribute('data-custom-community-hidden', ui.brand?.community === false);
    WEBUI_NAME.set(brandName(cfg?.custom_ui, cfg?.name ?? upstreamName));
+   document.documentElement.toggleAttribute('data-custom-brand', !!ui.brand?.name);
    if (!ui.brand?.name) return;
    manifestURL = URL.createObjectURL(new Blob([JSON.stringify({
     name: ui.brand.name, short_name: ui.brand.name, start_url: new URL('/', location.origin).href, scope: new URL('/', location.origin).href, display: 'standalone',
@@ -31,6 +32,6 @@
     node.setAttribute('href', node.getAttribute('rel') === 'manifest' ? manifestURL : BRAND_LOGO);
    }
   });
-  return () => { unsubscribe(); restore(); document.documentElement.removeAttribute('data-custom-community-hidden'); };
+  return () => { unsubscribe(); restore(); document.documentElement.removeAttribute('data-custom-community-hidden'); document.documentElement.removeAttribute('data-custom-brand'); };
  });
 </script>

@@ -995,6 +995,8 @@ if LICENSE_PUBLIC_KEY:
 WEBUI_NAME = os.getenv('WEBUI_NAME', 'Open WebUI')
 if WEBUI_NAME != 'Open WebUI':
     WEBUI_NAME += ' (Open WebUI)'
+from open_webui.custom.ui import custom_webui_name  # ai-dvokat: existing CUSTOM_UI brand
+WEBUI_NAME = custom_webui_name(WEBUI_NAME, os.getenv('CUSTOM_UI', '{}'))  # ai-dvokat: PWA/API name
 
 # LICENSE covers this Open WebUI branding surface, including this favicon
 # and any visual, textual, or symbolic identifiers it preserves.

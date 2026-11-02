@@ -1,4 +1,6 @@
 <script lang="ts">
+ import { WEBUI_NAME } from '$lib/stores'; // ai-dvokat: configured channel title
+
 	import { toast } from 'svelte-sonner';
 
 	import { onDestroy, onMount, tick } from 'svelte';
@@ -406,10 +408,10 @@
 					} else {
 						return e.name;
 					}
-				}, '')} / Open WebUI</title
+				}, '')} / {$WEBUI_NAME}</title
 		>
 	{:else}
-		<title>#{channel?.name ?? 'Channel'} / Open WebUI</title>
+		<title>#{channel?.name ?? 'Channel'} / {$WEBUI_NAME}</title>
 	{/if}
 </svelte:head>
 
