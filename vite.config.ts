@@ -37,6 +37,7 @@ export default defineConfig({
 	},
 	server: {
 		proxy: {
+			'/legal-tools': { target: 'http://localhost:8000', changeOrigin: true, rewrite: (path) => path.replace(/^\/legal-tools/, '') }, // ai-dvokat: same-origin legal-tools API
 			'/api': {
 				target: backendTarget,
 				changeOrigin: true,

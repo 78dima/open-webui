@@ -1,4 +1,5 @@
 <script>
+	import CustomResult from '$lib/components/custom/Result.svelte'; // ai-dvokat: opt-in workflow result
 	import { onDestroy, onMount, tick, getContext } from 'svelte';
 	const i18n = getContext('i18n');
 
@@ -292,6 +293,7 @@
 <svelte:window on:scroll|capture={positionFloatingButtons} on:resize={positionFloatingButtons} />
 
 <div bind:this={contentContainerElement}>
+ <CustomResult {content} {model} {sources} {done}> <!-- ai-dvokat: preserve upstream renderer as fallback -->
 	{#if output?.length}
 		<StructuredOutputRenderer
 			{id}
@@ -364,6 +366,7 @@
 			<div class="whitespace-pre-wrap text-[0.9375rem]">{extracted.plainContent}</div>
 		{/if}
 	{/if}
+ </CustomResult> <!-- ai-dvokat: end result wrapper -->
 </div>
 
 {#if floatingButtons}
