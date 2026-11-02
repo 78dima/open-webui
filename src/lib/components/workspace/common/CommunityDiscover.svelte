@@ -10,7 +10,8 @@
 	export let description = '';
 </script>
 
-<div class="mt-6 px-2 pb-8">
+<!-- ai-dvokat: allow opt-out of the entire community promotion -->
+<div data-custom-community-promo class="mt-6 px-2 pb-8">
 	<div class="mb-0.5 text-[0.6875rem] font-normal text-gray-400 dark:text-gray-600">
 		<!-- LICENSE covers this Open WebUI Community wordmark.
 		Do not alter, remove, obscure, or replace it except as LICENSE permits:
