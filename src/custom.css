@@ -24,4 +24,6 @@ html[data-custom-hide~="workspace_functions"] a[href^="/workspace/functions"],
 html[data-custom-hide~="workspace_functions"] a[href^="/admin/functions"],
 html[data-custom-hide~="workspace_prompts"] a[href^="/workspace/prompts"],
 html[data-custom-hide~="temporary_chat"] #temporary-chat-button,
+html[data-custom-hide~="notes"] .user-menu-row:has(> a[href="/notes"]),
+html[data-custom-hide~="automations"] .user-menu-row:has(> a[href="/automations"]),
 html[data-custom-community-hidden] [data-custom-community-promo] { display: none !important; }

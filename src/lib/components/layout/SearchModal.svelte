@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onDestroy, tick } from 'svelte';
+	import { hideSearchResults } from '$lib/custom/visibility'; import { config, user } from '$lib/stores'; // ai-dvokat: gated user presentation
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { folders, settings, tags } from '$lib/stores';
@@ -127,6 +128,7 @@
 				controller.signal
 			);
 			if (version !== generation || !show) return;
+			hideSearchResults(response, $config?.custom_ui, $user?.role); // ai-dvokat: user-only hidden notes and channels
 			const existingIds = new Set(results.map((item) => item.id));
 			results =
 				nextPage === 1

@@ -29,3 +29,6 @@ if (location.search === '?renderer') mount(RendererHarness, { target: document.q
 
 import ResponseHarness from './ResponseHarness.svelte';
 if (location.search === '?response') mount(ResponseHarness, { target: document.querySelector('#app')! });
+
+import SearchHarness from './SearchHarness.svelte';
+if (location.search === '?search') mount(SearchHarness, { target: document.querySelector('#app')! });
