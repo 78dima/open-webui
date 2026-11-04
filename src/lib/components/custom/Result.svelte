@@ -5,6 +5,8 @@
 	import ru from '$lib/custom/locales/ru-RU.json';
 	import {
 		jobIdFromMessage,
+		stripJobMarker,
+		stripJobMarkerFromOutput,
 		legalToolsBase,
 		fetchJob,
 		normalizeSources,
@@ -14,6 +16,7 @@
 	} from '$lib/custom/jobs';
 	import type { Job, Artifact } from '$lib/custom/types';
 	export let content: string = '';
+	export let output: any[] | null = null;
 	export let model: { id?: string } | null = null;
 	export let sources: unknown = null;
 	export let done = true;
@@ -34,6 +37,9 @@
 	$: enabled =
 		$config?.custom_ui?.result_card === true && model?.id?.startsWith('legal_workflows.') === true;
 	$: id = jobIdFromMessage(content);
+	// R4: the renderer always receives text without the U1 marker, with any flags.
+	$: visibleContent = stripJobMarker(content);
+	$: visibleOutput = stripJobMarkerFromOutput(output);
 	$: base = legalToolsBase($config?.custom_ui);
 	$: cardSources = job?.sources.length ? job.sources : normalizeSources(sources);
 	$: sync(mounted && enabled && done ? `${base}:${id ?? 'saved'}` : '');
@@ -190,7 +196,7 @@
 			</dl>
 			{#if job?.unknown_usage}<p>{ru.result.unknown}</p>{/if}
 		{/if}
-		<div hidden={tab !== 0}><slot /></div>
+		<div hidden={tab !== 0}><slot content={visibleContent} output={visibleOutput} /></div>
 		<ReceiptPanel bind:receiptId={activeReceipt} />
 	</section>
-{:else}<slot />{/if}
+{:else}<slot content={visibleContent} output={visibleOutput} />{/if}

@@ -23,3 +23,9 @@ if (location.search === '?visibility') mount(VisibilityHarness, { target: docume
 
 import PendingHarness from './PendingHarness.svelte';
 if (location.search === '?pending') mount(PendingHarness, { target: document.querySelector('#app')! });
+
+import RendererHarness from './RendererHarness.svelte';
+if (location.search === '?renderer') mount(RendererHarness, { target: document.querySelector('#app')! });
+
+import ResponseHarness from './ResponseHarness.svelte';
+if (location.search === '?response') mount(ResponseHarness, { target: document.querySelector('#app')! });

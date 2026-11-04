@@ -4,10 +4,11 @@ import type { Job, Source, Finding, Edit, Artifact } from './types';
 const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 export const isJobId = (value: unknown): value is string =>
 	typeof value === 'string' && new RegExp(`^${uuid}$`, 'i').test(value);
+// U1: only the terminal marker emitted by Pipe, never UUIDs in arbitrary prose/code.
+const terminalMarker = new RegExp(`\\s*<!-- legal-tools:job=(${uuid}) -->\\s*$`, 'i');
 export function jobIdFromMessage(content: unknown): string | undefined {
 	if (typeof content !== 'string') return;
-	// U1: only the terminal marker emitted by Pipe, never UUIDs in arbitrary prose/code.
-	const marker = content.match(new RegExp(`<!-- legal-tools:job=(${uuid}) -->\\s*$`, 'i'));
+	const marker = content.match(terminalMarker);
 	if (marker) return marker[1].toLowerCase();
 	const legacy = content.match(
 		new RegExp(
@@ -16,6 +17,38 @@ export function jobIdFromMessage(content: unknown): string | undefined {
 		)
 	);
 	return legacy?.[1].toLowerCase();
+}
+/** R4: hide the terminal U1 marker from people; the stored message keeps it for B2 and Pipe.
+ * Removes exactly what jobIdFromMessage recognizes, with the blank lines before it. */
+export function stripJobMarker<T>(content: T): T {
+	return (typeof content === 'string' ? content.replace(terminalMarker, '') : content) as T;
+}
+type OutputPart = { text?: unknown };
+const partText = (part: OutputPart | null | undefined) =>
+	part?.text === undefined || part?.text === null ? '' : String(part.text);
+/** The same for structured output: the marker ends the last non-empty message item. */
+export function stripJobMarkerFromOutput<T>(output: T): T {
+	if (!Array.isArray(output)) return output;
+	for (let index = output.length - 1; index >= 0; index--) {
+		const item = output[index];
+		if (item?.type !== 'message' || !Array.isArray(item.content)) continue;
+		const text = item.content.map(partText).join('');
+		if (!text.trim()) continue;
+		let cut = text.length - stripJobMarker(text).length;
+		if (!cut) return output;
+		const content = [...item.content];
+		for (let i = content.length - 1; i >= 0 && cut > 0; i--) {
+			const value = partText(content[i]);
+			if (!value) continue;
+			const keep = Math.max(0, value.length - cut);
+			cut -= value.length - keep;
+			content[i] = { ...content[i], text: value.slice(0, keep) };
+		}
+		const copy = [...output];
+		copy[index] = { ...item, content };
+		return copy as T;
+	}
+	return output;
 }
 const record = (v: unknown): Record<string, unknown> =>
 	v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
