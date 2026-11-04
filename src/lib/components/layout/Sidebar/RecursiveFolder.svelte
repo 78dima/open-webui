@@ -919,9 +919,7 @@
 						role="presentation"
 						on:pointerdown={() => (openPreview = false)}
 					>
-						<!-- ai-dvokat: folder id for the case panel entry -->
 						<FolderMenu
-							{folderId}
 							onNewChat={openFolderHandler}
 							onEdit={() => {
 								showFolderModal = true;
