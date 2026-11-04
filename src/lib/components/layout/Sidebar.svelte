@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { brandAsset } from '$lib/custom/brand'; // ai-dvokat: opt-in logo
-	import { hideFor, hideMenuItem } from '$lib/custom/visibility'; // ai-dvokat: gated user presentation
 
 	import { toast } from 'svelte-sonner';
 	import { v4 as uuidv4 } from 'uuid';
@@ -278,7 +277,6 @@
 	$: pinnedItems = $settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS;
 
 	$: isMenuItemVisible = (id) => {
-		if (hideMenuItem(id, $config?.custom_ui, $user?.role)) return false; // ai-dvokat: user-only hidden sections
 		switch (id) {
 			case 'notes':
 				return (
@@ -1453,7 +1451,7 @@
 						</SidebarSection>
 					{/if}
 
-					{#if ($config?.features?.enable_notes ?? false) && ($user?.role === 'admin' || ($user?.permissions?.features?.notes ?? true)) && $pinnedNotes.length > 0 && !hideFor($config?.custom_ui, $user?.role, 'notes')} <!-- ai-dvokat: user-only hidden notes -->
+					{#if ($config?.features?.enable_notes ?? false) && ($user?.role === 'admin' || ($user?.permissions?.features?.notes ?? true)) && $pinnedNotes.length > 0}
 						<SidebarSection
 							id="sidebar-pinned-notes"
 							bind:open={showPinnedNotes}
@@ -1471,7 +1469,7 @@
 						</SidebarSection>
 					{/if}
 
-					{#if $config?.features?.enable_channels && ($user?.role === 'admin' || ($user?.permissions?.features?.channels ?? true)) && !hideFor($config?.custom_ui, $user?.role, 'channels')} <!-- ai-dvokat: user-only hidden channels -->
+					{#if $config?.features?.enable_channels && ($user?.role === 'admin' || ($user?.permissions?.features?.channels ?? true))}
 						<SidebarSection
 							id="sidebar-channels"
 							bind:open={showChannels}

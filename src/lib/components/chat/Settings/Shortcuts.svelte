@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { hideFor } from '$lib/custom/visibility'; import { config } from '$lib/stores'; // ai-dvokat: gated user presentation
 	import UserSettingRow from './UserSettingRow.svelte';
 	import { getContext, onMount } from 'svelte';
 	import type { Writable } from 'svelte/store';
@@ -50,7 +49,7 @@
 		const allShortcuts = Object.entries(shortcuts).filter(([id, shortcut]) => {
 			if (
 				id === Shortcut.NEW_TEMPORARY_CHAT &&
-				(!canUseTemporaryChats({ user: $user, config: null }) || hideFor($config?.custom_ui, $user?.role, 'temporary_chat'))
+				!canUseTemporaryChats({ user: $user, config: null })
 			) {
 				return false;
 			}

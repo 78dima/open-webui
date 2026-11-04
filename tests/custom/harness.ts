@@ -16,16 +16,11 @@ import ResultHarness from './ResultHarness.svelte';
 (window as any).setMessage = (value: unknown) => resultMessage.set(value);
 if (location.search === '?result') mount(ResultHarness, { target: document.querySelector('#app')! });
 
-import VisibilityHarness from './VisibilityHarness.svelte';
 import { user } from './stores';
 (window as any).setUser = (value: unknown) => user.set(value);
-if (location.search === '?visibility') mount(VisibilityHarness, { target: document.querySelector('#app')! });
 
 import RendererHarness from './RendererHarness.svelte';
 if (location.search === '?renderer') mount(RendererHarness, { target: document.querySelector('#app')! });
 
 import ResponseHarness from './ResponseHarness.svelte';
 if (location.search === '?response') mount(ResponseHarness, { target: document.querySelector('#app')! });
-
-import SearchHarness from './SearchHarness.svelte';
-if (location.search === '?search') mount(SearchHarness, { target: document.querySelector('#app')! });

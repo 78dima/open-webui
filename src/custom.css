@@ -17,13 +17,5 @@ html[data-custom-community-hidden] a[href*="github.com/open-webui"],
 html[data-custom-community-hidden] a[href*="discord.gg/5rJgQTnV4s"],
 html[data-custom-community-hidden] a[href*="twitter.com/OpenWebUI"] { display: none !important; }
 html.dark[data-custom-brand] img[src="/custom/logo.png"] { filter: brightness(0) invert(1); }
-
-/* ai-dvokat: presentation restrictions apply only to opted-in user sessions. */
-html[data-custom-hide~="workspace_tools"] a[href^="/workspace/tools"],
-html[data-custom-hide~="workspace_functions"] a[href^="/workspace/functions"],
-html[data-custom-hide~="workspace_functions"] a[href^="/admin/functions"],
-html[data-custom-hide~="workspace_prompts"] a[href^="/workspace/prompts"],
-html[data-custom-hide~="temporary_chat"] #temporary-chat-button,
-html[data-custom-hide~="notes"] .user-menu-row:has(> a[href="/notes"]),
-html[data-custom-hide~="automations"] .user-menu-row:has(> a[href="/automations"]),
+/* ai-dvokat: brand.community=false also removes the community promotion block (marked in CommunityDiscover.svelte). */
 html[data-custom-community-hidden] [data-custom-community-promo] { display: none !important; }

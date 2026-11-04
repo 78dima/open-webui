@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { hideFor } from '$lib/custom/visibility'; // ai-dvokat: gated user presentation
 	import type { TerminalContext } from '$lib/types';
 	import { resolveLocalizedFunction } from '$lib/utils/localizedContent';
 	import { functions as localizedFunctions } from '$lib/stores';
@@ -911,14 +910,12 @@
 
 	let showImageGenerationButton = false;
 	$: showImageGenerationButton =
-		!hideFor($config?.custom_ui, $_user?.role, 'settings_images') && // ai-dvokat: user-only control
 		selectedModelIds.length === imageGenerationCapableModels.length &&
 		$config?.features?.enable_image_generation &&
 		($_user.role === 'admin' || $_user?.permissions?.features?.image_generation);
 
 	let showCodeInterpreterButton = false;
 	$: showCodeInterpreterButton =
-		!hideFor($config?.custom_ui, $_user?.role, 'settings_code_interpreter') && // ai-dvokat: user-only control
 		!$selectedTerminalId &&
 		selectedModelIds.length === codeInterpreterCapableModels.length &&
 		$config?.features?.enable_code_interpreter &&
