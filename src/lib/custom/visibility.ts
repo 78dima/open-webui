@@ -9,7 +9,10 @@ export const HIDE_KEYS: HideKey[] = [
 	'settings_code_interpreter',
 	'temporary_chat',
 	'arena',
-	'models'
+	'models',
+	'notes',
+	'channels',
+	'automations'
 ];
 export const LEGAL_MODELS = [
 	'jurist-rf',
@@ -50,4 +53,30 @@ export function hideSetting(key: string, raw: unknown, role?: string): boolean {
 				(key.startsWith('settings.personal.interface.') &&
 					/\.(sections\.voice|allowVoiceInterruptionInCall|displayEmojiInCall)\./.test(key))))
 	);
+}
+/** Sidebar menu items (Sidebar.svelte isMenuItemVisible). */
+export function hideMenuItem(id: unknown, raw: unknown, role?: string): boolean {
+	return (id === 'notes' || id === 'automations') && hideFor(raw, role, id);
+}
+/** Upstream UI visibility controls (ui-visibility.ts isControlVisible). */
+export function hideControl(id: string, raw: unknown, role?: string): boolean {
+	return id === 'chat.attach_notes' && hideFor(raw, role, 'notes');
+}
+type SearchResponseShape = {
+	items?: { kind?: string }[];
+	kinds?: string[];
+	scopes?: { kind?: string }[];
+};
+/** Global search: notes and channel messages are found by the server, hidden here. */
+export function hideSearchResults<T extends SearchResponseShape>(response: T, raw: unknown, role?: string): T {
+	const kinds = [
+		...(hideFor(raw, role, 'notes') ? ['note'] : []),
+		...(hideFor(raw, role, 'channels') ? ['message'] : [])
+	];
+	if (!kinds.length || !response) return response;
+	response.items = (response.items ?? []).filter((item) => !kinds.includes(String(item?.kind)));
+	response.kinds = (response.kinds ?? []).filter((kind) => !kinds.includes(kind));
+	if (kinds.includes('message'))
+		response.scopes = (response.scopes ?? []).filter((scope) => scope?.kind !== 'channel');
+	return response;
 }

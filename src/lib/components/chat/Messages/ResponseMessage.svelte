@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { stripJobMarker } from '$lib/custom/jobs'; // ai-dvokat: hide U1 marker (R4)
+	import { hideFor } from '$lib/custom/visibility'; // ai-dvokat: gated user presentation
 	import EditPencilIcon from '$lib/components/layout/Sidebar/icons/EditPencil.svelte';
 	import CopyIcon from '$lib/components/layout/Sidebar/icons/Copy.svelte';
 	import TrashIcon from '$lib/components/layout/Sidebar/icons/Trash.svelte';
@@ -988,7 +989,7 @@
 							: 'text-gray-600/80 dark:text-gray-500/70'} mt-0.5 [&>*]:shrink-0"
 					>
 						{#if message.done || siblings.length > 1}
-							{#if message.done && onInsertToNote && visibleResponseContent}
+							{#if message.done && onInsertToNote && visibleResponseContent && !hideFor($config?.custom_ui, $user?.role, 'notes')} <!-- ai-dvokat: user-only hidden notes -->
 								<Tooltip content={$i18n.t('Insert into note')} placement="bottom">
 									<button
 										aria-label={$i18n.t('Insert into note')}

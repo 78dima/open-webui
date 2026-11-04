@@ -13,7 +13,8 @@ export type CustomUI = {
 	case?: boolean;
 	hide?: Partial<Record<
 		'workspace_tools' | 'workspace_functions' | 'workspace_prompts' |
-		'settings_audio' | 'settings_images' | 'settings_code_interpreter' | 'temporary_chat' | 'arena' | 'models', boolean
+		'settings_audio' | 'settings_images' | 'settings_code_interpreter' | 'temporary_chat' | 'arena' | 'models' |
+		'notes' | 'channels' | 'automations', boolean
 	>>;
 	legal_tools_base?: string;
 };
@@ -45,7 +46,8 @@ export function readCustomUI(value: unknown): CustomUI {
 	if (hide) {
 		result.hide = {};
 		for (const key of ['workspace_tools', 'workspace_functions', 'workspace_prompts',
-			'settings_audio', 'settings_images', 'settings_code_interpreter', 'temporary_chat', 'arena', 'models'] as const) {
+			'settings_audio', 'settings_images', 'settings_code_interpreter', 'temporary_chat', 'arena', 'models',
+			'notes', 'channels', 'automations'] as const) {
 			if (typeof hide[key] === 'boolean') result.hide[key] = hide[key];
 		}
 	}
