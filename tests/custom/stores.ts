@@ -1,3 +1,4 @@
+export * from '../../src/lib/stores/index';
 import { writable } from 'svelte/store';
 export const config = writable<any>(undefined);
 export const WEBUI_NAME = writable('Open WebUI');

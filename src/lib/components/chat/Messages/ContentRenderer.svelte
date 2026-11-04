@@ -286,7 +286,7 @@
 </script>
 
 <div bind:this={contentContainerElement}>
- <CustomResult {content} {model} {sources} {done}> <!-- ai-dvokat: preserve upstream renderer as fallback -->
+ <CustomResult {content} {output} {model} {sources} {done} let:content let:output> <!-- ai-dvokat: upstream renderer without the U1 marker (R4) -->
 	{#if output?.length}
 		<StructuredOutputRenderer
 			commentToolbarId={floatingButtons ? `floating-buttons-${id}` : undefined}
