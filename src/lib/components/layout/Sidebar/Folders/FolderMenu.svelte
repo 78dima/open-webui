@@ -14,7 +14,6 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Download from '../icons/Download.svelte';
 	import CheckIcon from '$lib/components/icons/Check.svelte';
-	import CustomCaseItem from '$lib/components/custom/CaseMenuItem.svelte'; export let folderId: string | null = null; // ai-dvokat: opt-in case panel entry
 
 	export let align: 'start' | 'end' = 'start';
 	export let onNewChat = () => {};
@@ -68,7 +67,6 @@
 				<FolderIcon className="size-3.5" />
 				<div class="flex items-center">{$i18n.t('Create Folder')}</div>
 			</button>
-			<CustomCaseItem {folderId} /> <!-- ai-dvokat: opt-in case panel entry -->
 
 			<hr class="border-gray-50/30 dark:border-gray-800/30 mx-1 my-0.5" />
 

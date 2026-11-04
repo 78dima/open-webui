@@ -21,9 +21,6 @@ import { user } from './stores';
 (window as any).setUser = (value: unknown) => user.set(value);
 if (location.search === '?visibility') mount(VisibilityHarness, { target: document.querySelector('#app')! });
 
-import PendingHarness from './PendingHarness.svelte';
-if (location.search === '?pending') mount(PendingHarness, { target: document.querySelector('#app')! });
-
 import RendererHarness from './RendererHarness.svelte';
 if (location.search === '?renderer') mount(RendererHarness, { target: document.querySelector('#app')! });
 

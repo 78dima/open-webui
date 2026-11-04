@@ -250,9 +250,7 @@
 
 		{#if !readOnly}
 			<div class="flex items-center translate-x-2.5">
-				<!-- ai-dvokat: folder id for the case panel entry -->
 				<FolderMenu
-					folderId={(folder as { id?: string } | null)?.id ?? null}
 					align="end"
 					onEdit={() => {
 						showFolderModal = true;
