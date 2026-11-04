@@ -4,12 +4,11 @@
 
 Спецификация: [DESIGN-SPEC.md](DESIGN-SPEC.md). Итоговая приёмка и digest образа — в конце этого журнала. Репетиция sync ограничена совпадением upstream/main и v0.12.5: реального переноса на изменённую базу не было, оценка 1–3 часа не подтверждена.
 
-Для сохранения бренда и B5 при последующих перезапусках использовать собственный `deploy/custom-ui.override.yaml`:
+Флаги задаёт строка `CUSTOM_UI` в `~/ai-dvokat/deploy/openwebui.env`; собственный override форка удалён 05.11 (см. «Флаги на стенде»). Перезапуск только openwebui:
 
 ```sh
 docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
   -f ~/ai-dvokat/deploy/compose.yaml \
-  -f ~/ai-dvokat-ui/deploy/custom-ui.override.yaml \
   up -d --no-deps --pull never openwebui
 ```
 
@@ -326,3 +325,15 @@ API-клиент использует только same-origin путь, сес�
 Точки подключения: `layout/Sidebar/Folders/FolderMenu.svelte` (импорт с пропом `folderId` и вставка пункта), `layout/Sidebar/RecursiveFolder.svelte` и `chat/Placeholder/FolderTitle.svelte` (передача `folderId`, по комментарию и строке). Receipt подключён внутри собственного `Result.svelte`, маршрут дела — собственный.
 
 Тесты: `tests/custom/panels.spec.ts` (6) заменил два теста заглушек (их утверждение «API нет, запросы не отправляются» теперь неверно по замыслу): адаптер v1 и отказ для чужой версии/задания; проверка ответов U2–U4; карточка на v1 → панель источника с реальными полями и отказ для чужого receipt; строгий флаг панели источника; панель дела — материалы, карта дела, задания с подгрузкой, файлы по U4, скачивание, точный список запросов, выключение флага; ошибки папки и заданий без выдуманных данных. Всего 46 Playwright, 4 Python.
+
+### Флаги на стенде (п. 4)
+
+Источник флагов — строка `CUSTOM_UI` в `~/ai-dvokat/deploy/openwebui.env` (так продукт готовил VPS 04.11). Собственный `deploy/custom-ui.override.yaml` форка удалён: он перекрывал бы `openwebui.env` прежним набором (бренд и девять hide) и молча выключал бы новые пакеты. Контейнер ai6 был запущен с этим override; после удаления команда с `-f …/custom-ui.override.yaml` падает с ошибкой «файл не найден», а не восстанавливает старые флаги. Пересоздание — только `docker compose --env-file ~/ai-dvokat/.env -p legal-assistant -f ~/ai-dvokat/deploy/compose.yaml up -d --no-deps --pull never openwebui`.
+
+Итоговое значение — `tests/custom/stand-flags.json` (строка меняется непосредственно перед пересозданием на ai7, чтобы случайный рестарт на ai6 не включил заглушки). Тесты `stand-flags.spec.ts` и `StandFlagsTest` проверяют, что фронтенд и бэкенд читают её без приведения типов: четыре пакета и двенадцать hide включены, у admin hide не действует, имя API — Ai - dvokat:
+
+```json
+{"brand":{"name":"Ai - dvokat","suffix":false,"about":true,"community":false},"start":true,"result_card":true,"receipt_panel":true,"case":true,"hide":{"workspace_tools":true,"workspace_functions":true,"workspace_prompts":true,"settings_audio":true,"settings_images":true,"settings_code_interpreter":true,"temporary_chat":true,"arena":true,"models":true,"notes":true,"channels":true,"automations":true}}
+```
+
+`hello` не задан (выключен), `legal_tools_base` не задан — по умолчанию `/legal-tools`. `ENABLE_VERSION_UPDATE_CHECK=false` уже стоит в той же env.
