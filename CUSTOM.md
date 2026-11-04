@@ -345,3 +345,24 @@ API-клиент использует только same-origin путь, сес�
 ### Откат B3 и B4
 
 Панель источника (B3) и панель дела (B4) откатаны: коммит-заглушки `9f793bfcb` целиком и часть `14189cc27`, относящаяся к B3/B4 (компоненты `ReceiptPanel`, `CasePanel`, `CaseMenuItem`, маршрут `/custom/case/…`, клиенты U2–U4, их типы и строки, пункт в меню папки — `FolderMenu`, `RecursiveFolder`, `FolderTitle` снова совпадают с upstream). Штатная замена — панель Sources (события `source` от продукта) и штатные папки. Из `14189cc27` оставлено нужное карточке B2: адаптер U5 `schema_version=1`, координаты находок, статус правки, `partial_reason`, их строки. Вкладка «Источники» карточки показывает подпись, `receipt_id`, сохранённый фрагмент и ссылку, как до B3. Тесты B2 на v1 — `tests/custom/result-v1.spec.ts` (2), тесты B3/B4 удалены вместе с кодом. Синтетическая тестовая папка «ADU-1 проверка панели дела» с заданием `draft_document` (0,13 USD) осталась на стенде у admin — штатная папка с заметкой и файлом.
+
+### Откат B5: штатные права вместо флагов `hide`
+
+`git revert` коммитов `e707deba4`, `bb6362a86`, `36be1d370`: удалены `visibility.ts`, `Visibility.svelte`, все точки подключения B5 (`+layout`, `SettingsModal`, `MessageInput`, `ModelSelector`, `AtCommands`, `InterfaceSettings`, `Shortcuts`, `settings-access`, `ui-visibility`, `Sidebar`, `SearchModal`, «Вставить в заметку» в `ResponseMessage`) и их тесты. Оставлено бренду (пакет A), хотя пришло в коммите B5: атрибут `data-custom-community-promo` в `CommunityDiscover.svelte` и его правило в `custom.css`, исключение `private/` в `.dockerignore`.
+
+| Флаг `hide` | Штатная замена | На стенде (`deploy/openwebui.env`) | Что видно у `user` |
+| --- | --- | --- | --- |
+| `workspace_tools` | `USER_PERMISSIONS_WORKSPACE_TOOLS_ACCESS=false` | уже было | вкладки «Инструменты» в Workspace нет, прямой адрес перенаправляет |
+| `workspace_functions` | роль: функции только в панели администратора | — | раздела нет |
+| `workspace_prompts` | `USER_PERMISSIONS_WORKSPACE_PROMPTS_ACCESS=false` | добавлено явно (значение по умолчанию тоже false) | вкладки «Промпты» нет |
+| `settings_audio` | `UI_VISIBILITY` `settings.speech_to_text_engine` и `settings.text_to_speech_engine` = false | добавлено | выбор движков распознавания и озвучки скрыт; вкладка «Аудио» с голосом и скоростью остаётся. Скрыть вкладку целиком штатно можно только через `USER_PERMISSIONS_CHAT_STT/TTS/CALL=false`, а это отключает диктовку, озвучивание и звонки — владелец выбрал мягкий вариант |
+| `settings_images` | `USER_PERMISSIONS_FEATURES_IMAGE_GENERATION=false` | уже было | кнопки генерации изображений нет |
+| `settings_code_interpreter` | `USER_PERMISSIONS_FEATURES_CODE_INTERPRETER=false` | уже было | кнопки интерпретатора нет |
+| `temporary_chat` | `USER_PERMISSIONS_CHAT_TEMPORARY=false` | добавлено | нет кнопки, настройки «временный чат по умолчанию» и горячей клавиши |
+| `arena` | `ENABLE_EVALUATION_ARENA_MODELS=false` | уже было | моделей Arena нет ни у кого |
+| `models` | права доступа к моделям (access grants), сервер | **требуется продукт** | сервер отдаёт `user` только модели с записью в БД и правом read. Сейчас у `jurist-rf`/`jurist-rf-deep` права пустые, у пяти `legal_workflows.*` записей нет: **настоящий `user` не видит ни одной модели**. Нужен доступ на чтение для `user` (`'*'`, read) к семи юридическим моделям в `owui/bootstrap.py`; базовые модели без записей остаются только у администратора. Советник передал это продукту как блокер пилота |
+| `notes` | не скрываются (владелец: через заметки ведётся «Карта дела») | `USER_PERMISSIONS_FEATURES_NOTES=true`, без изменений | заметки и «Вставить в заметку» доступны |
+| `channels` | `ENABLE_CHANNELS=false`, `USER_PERMISSIONS_FEATURES_CHANNELS=false` | уже было | каналов нет |
+| `automations` | `USER_PERMISSIONS_FEATURES_AUTOMATIONS=false` | добавлено явно (по умолчанию тоже false) | пунктов «Автоматизации» нет |
+
+Флагов без штатной замены не осталось. Знания и навыки у `user` закрыты правами продукта (`KNOWLEDGE_ACCESS` по умолчанию false, `SKILLS_ACCESS=false`); бриф B5 оставлял их на чтение — это решение продукта, форк их не меняет. `ENABLE_PERSISTENT_CONFIG=false`, поэтому права из env действуют после пересоздания контейнера.

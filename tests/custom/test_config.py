@@ -32,7 +32,7 @@ class StandFlagsTest(unittest.TestCase):
         flags = module.load_custom_ui(raw)
         for key in ('start', 'result_card', 'receipt_panel', 'case'):
             self.assertIs(flags[key], True)
-        self.assertEqual(len(flags['hide']), 12)
+        self.assertNotIn('hide', flags)
         self.assertEqual(module.custom_webui_name('Open WebUI (Open WebUI)', raw), 'Ai - dvokat')
 
 if __name__ == '__main__':

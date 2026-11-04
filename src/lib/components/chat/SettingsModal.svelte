@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { hideSettingsTab } from '$lib/custom/visibility'; // ai-dvokat: gated user presentation
 	import english from '$lib/i18n/locales/en-US/translation.json';
 	import {
 		buildSettingsSearchIndex,
@@ -394,7 +393,6 @@
 
 	const getAvailableSettings = (personalTabs: SettingsTab[], administratorTabs: SettingsTab[]) => {
 		const personalSettings = personalTabs.filter((tab) => {
-			if (hideSettingsTab(tab.id, $config?.custom_ui, $user?.role)) return false; // ai-dvokat: filter search and tabs together
 			if (tab.id === 'connections') {
 				return $config?.features?.enable_direct_connections;
 			}
