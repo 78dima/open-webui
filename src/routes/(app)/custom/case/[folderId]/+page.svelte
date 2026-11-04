@@ -5,5 +5,5 @@
 	import ru from '$lib/custom/locales/ru-RU.json';
 </script>
 
-<svelte:head><title>{ru.pending.caseTitle} / {$WEBUI_NAME}</title></svelte:head>
-<CasePanel folderId={$page.params.folderId} />
+<svelte:head><title>{ru.case.title} / {$WEBUI_NAME}</title></svelte:head>
+<CasePanel folderId={$page.params.folderId ?? ''} />
