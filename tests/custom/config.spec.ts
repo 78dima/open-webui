@@ -6,16 +6,17 @@ test('custom features require explicit booleans and ignore unknown properties', 
     expect(readCustomUI(value)).toEqual({});
   }
   expect(readCustomUI({
-    start: 'true', result_card: 1, brand: true, hide: ['arena'], unknown: true
+    hello: 'true', result_card: 1, brand: true, unknown: true
   })).toEqual({});
   expect(readCustomUI({
-    hello: true, start: false, result_card: true,
-    brand: { name: '  Юрист РФ  ', suffix: false, about: true, community: 'false' },
-    hide: { arena: true, temporary_chat: 'true', unknown: true }
+    hello: true, result_card: true,
+    brand: { name: '  Юрист РФ  ', suffix: false, about: true, community: 'false' }
   })).toEqual({
-    hello: true, start: false, result_card: true,
-    brand: { name: 'Юрист РФ', suffix: false, about: true }, hide: { arena: true }
+    hello: true, result_card: true,
+    brand: { name: 'Юрист РФ', suffix: false, about: true }
   });
+  // Removed 05.11: start, receipt_panel, case and hide are ignored like unknown keys.
+  expect(readCustomUI({ start: true, receipt_panel: true, case: true, hide: { arena: true } })).toEqual({});
 });
 
 test('legal-tools base cannot send the session token to another origin', () => {

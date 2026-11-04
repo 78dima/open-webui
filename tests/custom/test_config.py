@@ -30,9 +30,8 @@ class StandFlagsTest(unittest.TestCase):
         raw = (Path(__file__).parent / 'stand-flags.json').read_text(encoding='utf-8').strip()
         self.assertNotIn('\n', raw)
         flags = module.load_custom_ui(raw)
-        for key in ('start', 'result_card', 'receipt_panel', 'case'):
-            self.assertIs(flags[key], True)
-        self.assertNotIn('hide', flags)
+        self.assertEqual(sorted(flags), ['brand', 'result_card'])
+        self.assertIs(flags['result_card'], True)
         self.assertEqual(module.custom_webui_name('Open WebUI (Open WebUI)', raw), 'Ai - dvokat')
 
 if __name__ == '__main__':
