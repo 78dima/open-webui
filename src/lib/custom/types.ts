@@ -1,13 +1,22 @@
-/** Observed contract: legal-tools jobs/api.py + review/schemas.py, 2026-11-02.
- * Legacy API is unversioned. U5 has not assigned a schema_version yet.
+/** B2 view of GET /api/jobs/{id}. Two inputs: U5 `structured` with schema_version=1
+ * (jobs/result_schema.py, checked against the stand 05.11.2026, legal-tools f750f53)
+ * and the older unversioned `result`. Other versions need an explicit adapter.
  * Optional fields are never reconstructed from prose or presented as verified facts.
  */
+export type Location = { element_id: string; doc?: string; page?: number };
 export type Finding = {
 	claim: string;
 	severity?: 'high' | 'medium' | 'low';
 	element_ids: string[];
+	locations?: Location[];
 };
-export type Edit = { element_id: string; before?: string; after?: string; rationale?: string };
+export type Edit = {
+	element_id: string;
+	before?: string;
+	after?: string;
+	rationale?: string;
+	status?: string;
+};
 export type Source = {
 	label: string;
 	receipt_id?: string;
@@ -26,47 +35,50 @@ export type Job = {
 	sources: Source[];
 	artifacts: Artifact[];
 	gaps: string[];
+	partial_reason?: string;
 	spent_usd?: number;
 	unknown_usage: boolean;
 	created_at?: string;
 	finished_at?: string;
 };
 
-/** Draft U2–U4 contracts requested on 2026-11-02. No REST transport exists yet.
- * Dates are ISO strings at the API boundary; nullable fields follow stored receipts/jobs.
- * Confirm the actual response schema before replacing the explicit unavailable states.
+/** U2 GET /api/receipts/{id} (api_extra.py), checked against the stand 05.11.2026.
+ * Foreign and missing receipts both answer 403. edition_date is DD.MM.YYYY;
+ * verify_status is always null for now (no verification semantics yet).
  */
-export type ReceiptResponse = {
+export type Receipt = {
 	id: string;
-	endpoint: string;
-	base: string;
-	nd: number;
-	dst: number | null;
-	edition_nd: number | null;
-	edition_date: string | null;
-	para_from: number | null;
-	para_to: number | null;
-	/** The original receipt fragment, at most 32 KiB encoded as UTF-8. */
+	endpoint?: string;
+	base?: string;
+	nd?: number;
+	dst?: number;
+	edition_date?: string;
+	edition_status?: string;
+	para_from?: number;
+	para_to?: number;
+	/** The stored receipt fragment (at most 32 KiB). */
 	canonical_text: string;
-	citation_label: string | null;
-	kplus_url: string;
-	fetched_at: string;
-	base_updated_on: string | null;
-	/** U2 has not specified an enumeration or verification semantics. */
-	verify_status?: string | null;
+	citation?: string;
+	citation_label?: string;
+	doc_title?: string;
+	kplus_url?: string;
+	fetched_at?: string;
+	base_updated_on?: string;
+	verify_status?: string;
 };
-export type CaseArtifactSummary = { id: string; kind: string; filename: string; size: number };
-export type CaseJobSummary = {
+/** U3 GET /api/jobs?folder_id=&limit=&cursor= → {items, next_cursor}; own jobs only, newest first. */
+export type CaseArtifact = { id: string; kind?: string; name: string; size?: number };
+export type CaseJob = {
 	id: string;
 	kind: string;
 	status: string;
-	created_at: string;
-	finished_at: string | null;
-	spent_usd: number | null;
-	artifacts: CaseArtifactSummary[];
+	created_at?: string;
+	finished_at?: string;
+	spent_usd?: number;
+	artifacts: CaseArtifact[];
 };
-export type CaseJobsQuery = { folder_id: string; limit: 50; cursor?: string };
-/** U3 requests a list; no pagination response envelope has been agreed yet. */
-export type CaseJobsResponse = CaseJobSummary[];
-export type JobArtifactListItem = CaseArtifactSummary & { sha256: string; owui_file_id?: string };
-export type JobArtifactsResponse = JobArtifactListItem[];
+export type CaseJobsPage = { items: CaseJob[]; next_cursor?: string };
+/** U4 GET /api/jobs/{id}/artifacts → [{id, kind, filename, size, sha256, owui_file_id, mime}]. */
+export type JobArtifact = CaseArtifact & { sha256?: string; mime?: string; owui_file_id?: string };
+/** Open WebUI GET /api/v1/folders/{id}: items attached to the folder in its Knowledge. */
+export type FolderItem = { id: string; type: 'note' | 'file' | 'collection' | string; name: string };
