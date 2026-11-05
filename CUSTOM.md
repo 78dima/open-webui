@@ -434,7 +434,7 @@ UI_VISIBILITY={"settings.speech_to_text_engine":false,"settings.text_to_speech_e
 
 - `~/ai-dvokat/deploy/compose.yaml`: строка образа openwebui → `0.12.5-ai8`.
 - `~/ai-dvokat/deploy/openwebui.env`: `CUSTOM_UI` → brand + result_card; добавлены `USER_PERMISSIONS_WORKSPACE_PROMPTS_ACCESS=false`, `USER_PERMISSIONS_CHAT_TEMPORARY=false`, `USER_PERMISSIONS_FEATURES_AUTOMATIONS=false`, `UI_VISIBILITY` (две строки движков аудио) — по решению владельца через советника, правка разрешена владельцем в этой сессии. Комментарий над `CUSTOM_UI` («скрытые для роли user разделы») устарел, не правился. В `~/ai-dvokat` коммитов и пуша нет.
-- Пересоздан только `legal-assistant-openwebui-1` (`up -d --no-deps --pull never`, 23:46 UTC), окно дала сессия приёмки `ai-dvokat-31`. ID остальных 15 контейнеров до/после совпали; контрольные суммы файлов продукта изменились только у двух названных. legal-tools api/worker не перезапускались.
+- Пересоздан только `legal-assistant-openwebui-1` (`up -d --no-deps --pull never`, 23:46 UTC), окно дала сессия приёмки `ai-dvokat-31`. ID остальных 25 контейнеров (`docker ps -a`, включая остановленные) до/после совпали; контрольные суммы файлов продукта изменились только у двух названных. legal-tools api/worker не перезапускались.
 - Временно для проверки на стенде поднимался отдельный `caddy:2-alpine` (`adu1-caddy-test`, 127.0.0.1:8088, сеть `legal-assistant_default`) с копией блока `/legal-tools/*` из `deploy/caddy/Caddyfile`; удалён после проверки. Локально профиль `edge` выключен, поэтому на 8080 маршрута `/legal-tools` нет и карточка B2 там пишет ошибку загрузки, оставляя исходный ответ; в проде маршрут даёт Caddy (U6).
 
 ### Проверено живьём на ai8
