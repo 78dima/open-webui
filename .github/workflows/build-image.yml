@@ -1,7 +1,7 @@
 name: ai-dvokat image
 on:
   push:
-    branches: [ai-dvokat]
+    branches: [ai-dvokat, ai-dvokat-0.13]
     tags: ['*-ai*']
   workflow_dispatch:
 permissions:
@@ -49,7 +49,7 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
             echo "tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=0.12.5-ai1-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+            echo "tag=0.13.0-ai7-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
           fi
       - uses: docker/build-push-action@v6
         with:

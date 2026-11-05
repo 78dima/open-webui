@@ -28,3 +28,6 @@ backend/data/*
 
 # ai-dvokat: private acceptance screenshots never enter build contexts
 /private/
+
+# ai-dvokat: owner local panel audit is not part of the image
+/tests/custom/panel-audit/

@@ -1,5 +1,9 @@
 # ai-dvokat UI — текущее состояние
 
+**06.11.2026: ветка `ai-dvokat-0.13` перенесена с `v0.12.5` на `v0.13.0` (`c38885a1a`). Все 30 исходных коммитов сохранены отдельно; исходная `ai-dvokat` и пилотный стенд остаются на 0.12.5. Сборка/проверка RC и разрешение на публикацию фиксируются в разделе обновления ниже.**
+
+Дальше — историческая запись приёмки 0.12.5:
+
 **02.11.2026: пункты 1–5 handover выполнены. На стенде `0.12.5-ai6`, health healthy; бренд Ai - dvokat и B5 включены. Редизайн, палитра и шрифты ждут макетов. Start/result_card/receipt_panel/case выключены. CI: 23 Playwright + 4 Python успешно.**
 
 Спецификация: [DESIGN-SPEC.md](DESIGN-SPEC.md). Итоговая приёмка и digest образа — в конце этого журнала. Репетиция sync ограничена совпадением upstream/main и v0.12.5: реального переноса на изменённую базу не было, оценка 1–3 часа не подтверждена.
@@ -32,21 +36,33 @@ docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
 
 ## Репозиторий и правила
 
-Публичный fork https://github.com/78dima/open-webui разрешён владельцем 02.11.2026. Upstream: https://github.com/open-webui/open-webui. Ветка `ai-dvokat` начинается от `v0.12.5`; только коммиты `custom:`. Полная история загружена без shallow clone. Dockerfile не меняется. Первый пакет UI не входит в этот этап.
+Публичный fork https://github.com/78dima/open-webui разрешён владельцем 02.11.2026. Upstream: https://github.com/open-webui/open-webui. Исходная ветка `ai-dvokat` начинается от `v0.12.5`; ветка обновления `ai-dvokat-0.13` — от `v0.13.0`. Только коммиты `custom:`. При rebase сохранены 30 отдельных коммитов; у единственного исторического `docs:` изменён только префикс сообщения на `custom:`. Полная история загружена без shallow clone. Dockerfile не меняется. Первый пакет UI не входит в этот этап.
 
 ## Точки подключения
 
-| Файл upstream | Добавление |
+| Файл upstream | Добавление / перенос на 0.13 |
 | --- | --- |
-| `backend/open_webui/config.py` | Импорт из `custom/ui.py`, чтение `CUSTOM_UI` (2 строки) |
-| `backend/open_webui/main.py` | Импорт конфигурации; поле `custom_ui` в `/api/config` (по строке) |
-| `src/lib/stores/index.ts` | Типизированное поле `custom_ui` (1 строка) |
-| `src/lib/components/chat/Placeholder.svelte` | Импорт и вставка `CustomHello` (по строке) |
-| `src/app.css` | Импорт `src/custom.css` (1 строка) |
-| `tailwind.config.js` | Импорт и spread собственных токенов в `theme.extend` (по строке) |
-| `.dockerignore` | Исключения для зависимостей и результатов изолированных browser-тестов |
-| `README.md` | Уведомление о неаффилированности публичного форка |
-| `.github/workflows/*` upstream | Условие `github.repository == 'open-webui/open-webui'` на каждом job, исключающее запуск в форке |
+| `backend/open_webui/config.py` | Импорт custom/ui.py и чтение CUSTOM_UI |
+| `backend/open_webui/env.py` | Импорт custom_webui_name и бренд имени API/PWA |
+| `backend/open_webui/main.py` | Импорт CUSTOM_UI и поле custom_ui в /api/config |
+| `src/lib/stores/index.ts` | Тип поля custom_ui |
+| `src/routes/+layout.svelte` | Brand/Visibility, имя, locale overlay, favicon, PWA, уведомления; новый upstream CommentsHost сохранён |
+| `src/lib/components/chat/Placeholder.svelte` | Hello/Start/fallback icon и условие подсказок; сохранены новые chatFiles/params/onParamChange и breakpoint md:@2xl |
+| `src/lib/components/chat/Messages/ContentRenderer.svelte` | Обёртка CustomResult вокруг upstream renderer; сохранены commentSurface/commentToolbarId и исходный рендерер |
+| `src/lib/components/chat/MessageInput.svelte` | Атрибут CUSTOM_UI.hide для user composer; новый upstream UX Controls/Comments/Side chat сохранён |
+| `src/lib/components/chat/ModelSelector.svelte` | Фильтр legal allowlist/Arena; новый multipleEnabled сохранён |
+| `src/lib/components/chat/MessageInput/Commands/AtCommands.svelte` | Тот же фильтр для @-моделей |
+| `src/lib/components/chat/SettingsModal.svelte`, `Settings/Shortcuts.svelte`, `src/lib/components/common/InterfaceSettings.svelte`, `src/lib/utils/settings-access.ts` | Hide audio/voice/temporary и выбор собственного About |
+| `src/lib/components/OnBoarding.svelte`, `src/routes/auth/+page.svelte`, `src/lib/components/layout/Sidebar.svelte` | Бренд, логотип, имя; новые размеры OnBoarding сохранены |
+| `src/lib/components/channel/Channel.svelte`, `src/routes/(app)/channels/[id]/encrypted/+page.svelte` | Конфигурируемое имя приложения |
+| `src/lib/components/workspace/common/CommunityDiscover.svelte` | Атрибут отключения продвижения сообщества |
+| `src/lib/apis/index.ts`, `src/lib/constants.ts`, `src/lib/i18n/index.ts` | Флаговые метаданные/ассеты и overlay своих переводов без изменения словарей upstream |
+| `src/app.html`, `src/app.css`, `tailwind.config.js` | Бренд стартового HTML, импорт custom.css, theme.extend |
+| `vite.config.ts` | Same-origin /legal-tools proxy для dev |
+| `static/*`, `static/static/*` | Сохранены собственные favicon/logo/splash/PWA/OpenSearch; семь конфликтных ассетов взяты из исходного пакета бренда |
+| `.dockerignore`, `.gitignore` | Изоляция private и тестовых зависимостей/артефактов |
+| `README.md` | Уведомление о неаффилированности перед новым upstream заголовком |
+| `.github/workflows/*` | Защита upstream jobs от запуска в форке; собственная сборка RC/release по явному тегу |
 
 Все точки отмечены `ai-dvokat:` в синтаксисе комментариев соответствующего языка. Собственный код: `backend/open_webui/custom/`, `src/lib/custom/`, `src/lib/components/custom/`, `src/custom.css`, `tests/custom/`, `.github/workflows/build-image.yml`.
 
@@ -276,3 +292,30 @@ API-клиент использует только same-origin путь, сес�
 - Локально два тега ai5/ai6, свободно около 31 ГБ. После публикации builder prune освободил 0 B. Dev-сервер этой сессии остановлен; временное состояние авторизации и OCI-архив удалены. Ветка sync-test и изолированный каталог репетиции оставлены для проверки, в образ/Git каталог private не входит. Пользовательские изменения AGENTS.md/CLAUDE.md сохранены вне наших коммитов.
 
 Локальная приёмка: `private/handover/final-checks.json`, маскированные снимки и результаты проверок ролей. Эти файлы не публикуются. После пункта 5 работа остановлена; новая команда владельца нужна для редизайна после макетов, а продуктовые API остаются отдельной зависимостью.
+
+## Обновление ОБ: v0.13.0, 06.11.2026
+
+Бриф: `/home/arimi/ai-dvokat/docs/upgrade-brief-owui-0.13-2026-11-06.md`.
+Команда: `git fetch upstream --tags`, затем отдельная ветка `ai-dvokat-0.13` и `git rebase --onto v0.13.0 v0.12.5`.
+Серия из 30 коммитов перенесена без squash и пропусков, включая исторические откаты. Исходная ai-dvokat не меняется.
+
+Конфликты: README (новый upstream текст + notice); Placeholder (новый breakpoint + Hello); root layout (CommentsHost + Brand/Visibility, в том числе историческое удаление/возврат Visibility); ContentRenderer (новые comments anchors + обёртка B2); семь статических иконок/логотипов (свои ассеты сохранены). Новые upstream компоненты не удалялись.
+
+Кандидаты на будущий откат своего кода: B1 → штатные Prompts/баннеры/URL, hide → permissions/Hide/UI_VISIBILITY, B3 → Sources/source events, B4 → Folders/Notes, B2 → отдельный спайк embeds. В этом обновлении эти компоненты и флаги сохраняются по указанию владельца.
+
+Python: 4 passed. Playwright после rebase: 23 passed. Dockerfile совпадает с v0.13.0. Локальный кандидат: `ghcr.io/78dima/open-webui-legal:0.13.0-ai7-rc`; публикация и переключение стенда ждут отдельного слова владельца.
+Подробный дайджест и финальные результаты копии БД — в двух документах ОБ в основном репозитории.
+
+**Уточнение владельца в сессии ОБ:** R4 не восстанавливать: после общего отката ADU-1 сохраняется исходное поведение с видимым маркером. Поэтому исторический R4-коммит переносится вместе с отменившим его откатом; отсутствие скрытия — согласованное поведение, не потеря при rebase.
+
+### ОБ-3: итог локальной проверки
+
+RC собран неизменённым Dockerfile, образ `0.13.0-ai7-rc`, image ID `sha256:54006a74368d589e7f6c081507d80ca9a5a9401e83bdfb3a0808f8bb09f6af89`, 6 474 976 715 байт. Ветка содержит 30 исходных custom-коммитов и один собственный maintenance-коммит; свой код/компоненты/locale/CSS/тесты/static/custom побайтно совпадают с исходной ai-dvokat.
+
+Копия `openwebui_013_test`: миграции 0bd252b206fb → c41f8d9e2a10 → 6f8c2a91d4e7 → e42c8f710a36, healthy, API 0.13.0, 6 моделей в БД / 3 Functions / 2 Skills / 1 MCP / 0 Prompts, как до миграции. Порт 18480, без volume стенда. Redis DB 12 была занята; с разрешения владельца использована свободная DB 14.
+
+Playwright/Chromium вместо недоступного Claude in Chrome отдельно разрешён владельцем. В реальном приложении admin/user: бренд и ru-RU, hide только у user, Temporary chat скрыт у user; B2 с временным browser-only флагом показал шесть вкладок и штатный fallback. Флаги окружения не включались. Реальные тексты чатов на скриншотах не сохранялись.
+
+Одна консультация (два хода): MCP search/read status=ok, 1 receipt, 0,15354665 USD по окончательному LiteLLM_SpendLogs (4 вызова Sonnet — 0,15335; сжатие запроса Flash — 0,00019665). Первый поиск дал пустую основную выдачу; чтение отдельно проверено на известном источнике из каталога receipts. Pipe legal_opinion на 0.13 создал queued job, немедленно отменён, итог cancelled, 0 USD. Подменялся только TOOLS_URL функции в копии на временный прозрачный cancel-proxy; legal-tools и воркер не менялись.
+
+Временный контейнер, копия БД и собственные ключи Redis 14 удалены. ID/StartedAt трёх контейнеров пилота совпали с исходными, его база осталась на 0bd252b206fb. Пуш, Git-тег и публикация не выполнялись. **Готово к тегу** после слова владельца; перед переключением ПП-6 — обязательный backup и согласованные env ПП.
