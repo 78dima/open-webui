@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { hideFor } from '$lib/custom/visibility'; // ai-dvokat: gated user presentation
 	import {
 		canRegenerateResponses,
 		canUseCalls,
@@ -1006,7 +1007,7 @@
 		</div>
 	{/if}
 
-	{#if canUseTemporaryChats({ user: $user, config: $config })}
+	{#if !hideFor($config?.custom_ui, $user?.role, 'temporary_chat') && canUseTemporaryChats({ user: $user, config: $config })}
 		<div>
 			<div class={settingRowClass}>
 				<label
@@ -2020,7 +2021,7 @@
 		</div>
 	{/if}
 
-	{#if canUseCalls({ user: $user, config: $config })}
+	{#if !hideFor($config?.custom_ui, $user?.role, 'settings_audio') && canUseCalls({ user: $user, config: $config })}
 		<div class={sectionHeadingClass}>
 			{$i18n.t('settings.personal.interface.sections.voice.title')}
 		</div>

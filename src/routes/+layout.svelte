@@ -1,5 +1,6 @@
 <script>
 	import CommentsHost from '$lib/components/comments/CommentsHost.svelte';
+	import CustomVisibility from '$lib/components/custom/Visibility.svelte'; // ai-dvokat: gated user presentation
 	import CustomBrand from '$lib/components/custom/Brand.svelte'; // ai-dvokat: opt-in document identity
 	import { brandName, brandAsset, brandTranslations } from '$lib/custom/brand'; // ai-dvokat: brand helpers
 	import { io } from 'socket.io-client';
@@ -1466,6 +1467,7 @@
 	});
 </script>
 
+<CustomVisibility /> <!-- ai-dvokat: role and feature scoped visibility -->
 <CustomBrand /> <!-- ai-dvokat: opt-in metadata -->
 <svelte:head>
 	<!-- LICENSE covers this Open WebUI branding surface, including name, logo,

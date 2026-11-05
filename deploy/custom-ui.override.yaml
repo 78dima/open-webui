@@ -1,0 +1,6 @@
+# ai-dvokat: current stand identity; the product repository remains unchanged except image.
+services:
+  openwebui:
+    environment:
+      CUSTOM_UI: '{"brand":{"name":"Ai - dvokat","suffix":false,"about":true,"community":false},"hide":{"workspace_tools":true,"workspace_functions":true,"workspace_prompts":true,"settings_audio":true,"settings_images":true,"settings_code_interpreter":true,"temporary_chat":true,"arena":true,"models":true}}'
+      ENABLE_VERSION_UPDATE_CHECK: 'false'

@@ -1,5 +1,4 @@
-/** Public configuration only. Missing or malformed flags keep upstream behavior.
- * Owner 05.11: start, receipt_panel, case and hide are gone (standard Open WebUI tools instead). */
+/** Public configuration only. Missing or malformed flags keep upstream behavior. */
 export type CustomUI = {
 	hello?: boolean;
 	brand?: {
@@ -8,7 +7,14 @@ export type CustomUI = {
 		about?: boolean;
 		community?: boolean;
 	};
+	start?: boolean;
 	result_card?: boolean;
+	receipt_panel?: boolean;
+	case?: boolean;
+	hide?: Partial<Record<
+		'workspace_tools' | 'workspace_functions' | 'workspace_prompts' |
+		'settings_audio' | 'settings_images' | 'settings_code_interpreter' | 'temporary_chat' | 'arena' | 'models', boolean
+	>>;
 	legal_tools_base?: string;
 };
 
@@ -22,7 +28,7 @@ export function readCustomUI(value: unknown): CustomUI {
 	const raw = object(value);
 	const result: CustomUI = {};
 	if (!raw) return result;
-	for (const key of ['hello', 'result_card'] as const) {
+	for (const key of ['hello', 'start', 'result_card', 'receipt_panel', 'case'] as const) {
 		if (typeof raw[key] === 'boolean') result[key] = raw[key];
 	}
 	const brand = object(raw.brand);
@@ -33,6 +39,14 @@ export function readCustomUI(value: unknown): CustomUI {
 		}
 		for (const key of ['suffix', 'about', 'community'] as const) {
 			if (typeof brand[key] === 'boolean') result.brand[key] = brand[key];
+		}
+	}
+	const hide = object(raw.hide);
+	if (hide) {
+		result.hide = {};
+		for (const key of ['workspace_tools', 'workspace_functions', 'workspace_prompts',
+			'settings_audio', 'settings_images', 'settings_code_interpreter', 'temporary_chat', 'arena', 'models'] as const) {
+			if (typeof hide[key] === 'boolean') result.hide[key] = hide[key];
 		}
 	}
 	// Restrict authenticated requests to a same-origin path; no query, fragment or traversal.

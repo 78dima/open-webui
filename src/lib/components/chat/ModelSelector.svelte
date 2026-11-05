@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelVisible } from '$lib/custom/visibility'; import { config } from '$lib/stores'; // ai-dvokat: gated user presentation
 	import { models, pinnedModels, settings, user } from '$lib/stores';
 	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -70,7 +71,7 @@
 					bind:this={selector}
 					id="model"
 					placeholder={$i18n.t('Select a model')}
-					items={$models.map((model) => ({
+					items={$models.filter((model) => modelVisible(model, $config?.custom_ui, $user?.role)).map((model) => ({
 						value: model.id,
 						label: resolveLocalizedModelName(model, $i18n.language),
 						model: model
