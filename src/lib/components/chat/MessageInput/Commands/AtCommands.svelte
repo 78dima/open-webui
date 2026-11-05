@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelVisible } from '$lib/custom/visibility'; import { config } from '$lib/stores'; // ai-dvokat: user model list
 	import Fuse from 'fuse.js';
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
 
@@ -48,7 +49,7 @@
 	let knowledgeResults: any[] = [];
 
 	$: modelItems = (($models ?? []) as any[])
-		.filter((model) => !model?.info?.meta?.hidden)
+		.filter((model) => !model?.info?.meta?.hidden && modelVisible(model, $config?.custom_ui, $user?.role))
 		.map((model) => ({
 			...model,
 			modelName: resolveLocalizedModelName(model, $i18n.language),

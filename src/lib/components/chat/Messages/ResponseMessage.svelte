@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { stripJobMarker } from '$lib/custom/jobs'; // ai-dvokat: hide U1 marker (R4)
 	import EditPencilIcon from '$lib/components/layout/Sidebar/icons/EditPencil.svelte';
 	import CopyIcon from '$lib/components/layout/Sidebar/icons/Copy.svelte';
 	import TrashIcon from '$lib/components/layout/Sidebar/icons/Trash.svelte';
@@ -205,7 +204,8 @@
 		(model?.info?.meta?.capabilities?.status_updates ?? true) &&
 		statusEntries.length > 0 &&
 		!(statusEntries.at(-1)?.hidden ?? false);
-	$: visibleResponseContent = stripJobMarker(getOutputText(message.output) || removeAllDetails(message.content ?? '')); // ai-dvokat: copy, note and speech without the U1 marker (R4)
+	$: visibleResponseContent =
+		getOutputText(message.output) || removeAllDetails(message.content ?? '');
 	$: hasResponseContent = Boolean((message.content ?? '').trim() || message.output?.length);
 
 	let edit = false;

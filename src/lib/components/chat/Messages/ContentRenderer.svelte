@@ -293,7 +293,7 @@
 <svelte:window on:scroll|capture={positionFloatingButtons} on:resize={positionFloatingButtons} />
 
 <div bind:this={contentContainerElement}>
- <CustomResult {content} {output} {model} {sources} {done} let:content let:output> <!-- ai-dvokat: upstream renderer without the U1 marker (R4) -->
+ <CustomResult {content} {model} {sources} {done}> <!-- ai-dvokat: preserve upstream renderer as fallback -->
 	{#if output?.length}
 		<StructuredOutputRenderer
 			{id}

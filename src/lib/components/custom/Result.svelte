@@ -1,11 +1,10 @@
 <script lang="ts">
+	import ReceiptPanel from './ReceiptPanel.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { config } from '$lib/stores';
 	import ru from '$lib/custom/locales/ru-RU.json';
 	import {
 		jobIdFromMessage,
-		stripJobMarker,
-		stripJobMarkerFromOutput,
 		legalToolsBase,
 		fetchJob,
 		normalizeSources,
@@ -15,12 +14,10 @@
 	} from '$lib/custom/jobs';
 	import type { Job, Artifact } from '$lib/custom/types';
 	export let content: string = '';
-	export let output: any[] | null = null;
 	export let model: { id?: string } | null = null;
 	export let sources: unknown = null;
 	export let done = true;
 	const statuses: Record<string, string> = ru.result.statuses;
-	const editStatuses: Record<string, string> = ru.result.editStatuses;
 	let mounted = false;
 	let tab = 0;
 	let job: Job | undefined;
@@ -29,6 +26,7 @@
 	let downloadError = '';
 	let downloading = false;
 	let activeKey = '';
+	let activeReceipt: string | null = null;
 	let generation = 0;
 	let request: AbortController | undefined;
 	let download: AbortController | undefined;
@@ -36,9 +34,6 @@
 	$: enabled =
 		$config?.custom_ui?.result_card === true && model?.id?.startsWith('legal_workflows.') === true;
 	$: id = jobIdFromMessage(content);
-	// R4: the renderer always receives text without the U1 marker, with any flags.
-	$: visibleContent = stripJobMarker(content);
-	$: visibleOutput = stripJobMarkerFromOutput(output);
 	$: base = legalToolsBase($config?.custom_ui);
 	$: cardSources = job?.sources.length ? job.sources : normalizeSources(sources);
 	$: sync(mounted && enabled && done ? `${base}:${id ?? 'saved'}` : '');
@@ -54,6 +49,7 @@
 	function sync(key: string) {
 		if (key === activeKey) return;
 		activeKey = key;
+		activeReceipt = null;
 		generation++;
 		request?.abort();
 		download?.abort();
@@ -130,7 +126,6 @@
 				>{/each}
 		</nav>
 		{#if tab === 0}
-			{#if job?.partial_reason}<p role="note">{ru.result.partial}: {job.partial_reason}</p>{/if}
 			{#if job?.summary}<p class="whitespace-pre-wrap">{job.summary}</p>{/if}
 			{#if job?.gaps.length}<h3>{ru.result.gaps}</h3>
 				<ul>
@@ -141,15 +136,7 @@
 			{:else if !job.findings.length}<p>{ru.result.empty}</p>
 			{:else}{#each job.findings as finding}<article class="border-b py-2">
 						<p>{finding.claim}</p>
-						<p>
-							{#if finding.locations?.length}{finding.locations
-									.map((l) =>
-										[l.element_id, l.doc, l.page ? `${ru.result.page} ${l.page}` : '']
-											.filter(Boolean)
-											.join(', ')
-									)
-									.join('; ')}{:else}{finding.element_ids.join(', ')}{/if}
-						</p>
+						<p>{finding.element_ids.join(', ')}</p>
 						{#if finding.severity}<p>{ru.result.levels[finding.severity]}</p>{/if}
 					</article>{/each}{/if}
 		{:else if tab === 2}
@@ -164,8 +151,6 @@
 							<dd class="whitespace-pre-wrap">{edit.after ?? ru.result.unavailable}</dd>
 							<dt>{ru.result.rationale}</dt>
 							<dd>{edit.rationale ?? ru.result.unavailable}</dd>
-							{#if edit.status}<dt>{ru.result.editStatus}</dt>
-								<dd>{editStatuses[edit.status] ?? edit.status}</dd>{/if}
 						</dl>
 					</article>{/each}{/if}
 		{:else if tab === 3}
@@ -173,6 +158,11 @@
 			{#each cardSources as source}<article class="border-b py-2">
 					<h3>{source.label}</h3>
 					{#if source.receipt_id}<p>{ru.result.receipt}: {source.receipt_id}</p>{/if}
+					{#if source.receipt_id && $config?.custom_ui?.receipt_panel === true}<button
+							type="button"
+							on:click={() => (activeReceipt = source.receipt_id ?? null)}
+							>{ru.pending.openReceipt}</button
+						>{/if}
 					{#if source.edition}<p>{ru.result.edition}: {source.edition}</p>{/if}
 					{#if source.fragment}<details>
 							<summary>{ru.result.fragment}</summary>
@@ -200,6 +190,7 @@
 			</dl>
 			{#if job?.unknown_usage}<p>{ru.result.unknown}</p>{/if}
 		{/if}
-		<div hidden={tab !== 0}><slot content={visibleContent} output={visibleOutput} /></div>
+		<div hidden={tab !== 0}><slot /></div>
+		<ReceiptPanel bind:receiptId={activeReceipt} />
 	</section>
-{:else}<slot content={visibleContent} output={visibleOutput} />{/if}
+{:else}<slot />{/if}
