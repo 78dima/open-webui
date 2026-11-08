@@ -15,7 +15,8 @@
 	import FullHeightIframe from '$lib/components/common/FullHeightIframe.svelte';
 	import MCPApp, { type MCPAppEmbed } from '$lib/components/chat/Messages/MCPApp.svelte';
 
-	import { settings } from '$lib/stores';
+	import { settings, config, user } from '$lib/stores';
+	import { plainToolStatus, toolGroupText, toolStatusLabel } from '$lib/custom/toolStatus'; // ai-dvokat: plain status for legal users
 
 	const i18n = getContext<Writable<i18nType>>('i18n');
 
@@ -180,6 +181,9 @@
 	})();
 
 	$: prefixText = hasActiveDetails ? $i18n.t('Exploring') : $i18n.t('Explored');
+	// ai-dvokat: Russian summary without tool names
+	$: plain = plainToolStatus($config?.custom_ui, $user?.role);
+	$: plainGroup = plain && toolCallCount > 0 ? toolGroupText(tokens.filter((t) => t?.attributes?.type === 'tool_calls').map((t) => t?.attributes?.name), hasActiveDetails, hasError || hasRejected) : null;
 </script>
 
 <div {id} class="w-full min-w-0">
@@ -229,10 +233,10 @@
 				<!-- Summary text -->
 				<div class="flex-1 line-clamp-1">
 					<span class="text-gray-600 dark:text-gray-300 {hasActiveDetails ? 'shimmer' : ''}"
-						>{prefixText}</span
+						>{plainGroup?.prefix ?? prefixText}</span
 					>
-					{#if summaryText}
-						<span class="text-gray-400 dark:text-gray-500">{summaryText}</span>
+					{#if plainGroup?.detail ?? summaryText}
+						<span class="text-gray-400 dark:text-gray-500">{plainGroup?.detail ?? summaryText}</span>
 					{/if}
 				</div>
 
@@ -276,7 +280,7 @@
 				{@const pendingCallId = token?.attributes?.id ?? ''}
 				<div class="flex items-center gap-2 py-1 px-1">
 					<span class="text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-0 line-clamp-1">
-						{token?.attributes?.name ?? $i18n.t('tool')}
+						{plain ? toolStatusLabel(token?.attributes?.name, 'approval') : (token?.attributes?.name ?? $i18n.t('tool'))}
 					</span>
 					{#if token?.attributes?.name !== 'ask_user'}
 						<span class="flex gap-1 shrink-0">

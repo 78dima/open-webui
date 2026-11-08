@@ -23,3 +23,6 @@ if (location.search === '?visibility') mount(VisibilityHarness, { target: docume
 
 import PendingHarness from './PendingHarness.svelte';
 if (location.search === '?pending') mount(PendingHarness, { target: document.querySelector('#app')! });
+
+import ToolStatusHarness from './ToolStatusHarness.svelte';
+if (location.search === '?tool-status') mount(ToolStatusHarness, { target: document.querySelector('#app')! });

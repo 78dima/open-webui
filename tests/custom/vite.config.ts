@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
   publicDir: '../../static',
   plugins: [svelte({ configFile: false })],
+  // Build-time globals of the real app config, needed by $lib/constants in the tool status harness.
+  define: { APP_VERSION: '"test"', APP_BUILD_HASH: '"test"', APP_BUILD_CHANNEL: '"test"' },
   resolve: { alias: [
     { find: '$lib/stores', replacement: fileURLToPath(new URL('./stores.ts', import.meta.url)) },
     { find: '$lib', replacement: fileURLToPath(new URL('../../src/lib', import.meta.url)) }

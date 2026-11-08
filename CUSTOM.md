@@ -56,6 +56,7 @@ docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
 | `src/lib/components/OnBoarding.svelte`, `src/routes/auth/+page.svelte`, `src/lib/components/layout/Sidebar.svelte` | Бренд, логотип, имя; новые размеры OnBoarding сохранены |
 | `src/lib/components/channel/Channel.svelte`, `src/routes/(app)/channels/[id]/encrypted/+page.svelte` | Конфигурируемое имя приложения |
 | `src/lib/components/workspace/common/CommunityDiscover.svelte` | Атрибут отключения продвижения сообщества |
+| `src/lib/components/common/ToolCallDisplay.svelte`, `src/lib/components/chat/Messages/Markdown/ConsecutiveDetailsGroup.svelte` | `hide.tool_details`: русская строка статуса вместо имён/аргументов/результата инструментов у user (логика в `src/lib/custom/toolStatus.ts`) |
 | `src/lib/apis/index.ts`, `src/lib/constants.ts`, `src/lib/i18n/index.ts` | Флаговые метаданные/ассеты и overlay своих переводов без изменения словарей upstream |
 | `src/app.html`, `src/app.css`, `tailwind.config.js` | Бренд стартового HTML, импорт custom.css, theme.extend |
 | `vite.config.ts` | Same-origin /legal-tools proxy для dev |
@@ -319,3 +320,11 @@ Playwright/Chromium вместо недоступного Claude in Chrome от�
 Одна консультация (два хода): MCP search/read status=ok, 1 receipt, 0,15354665 USD по окончательному LiteLLM_SpendLogs (4 вызова Sonnet — 0,15335; сжатие запроса Flash — 0,00019665). Первый поиск дал пустую основную выдачу; чтение отдельно проверено на известном источнике из каталога receipts. Pipe legal_opinion на 0.13 создал queued job, немедленно отменён, итог cancelled, 0 USD. Подменялся только TOOLS_URL функции в копии на временный прозрачный cancel-proxy; legal-tools и воркер не менялись.
 
 Временный контейнер, копия БД и собственные ключи Redis 14 удалены. ID/StartedAt трёх контейнеров пилота совпали с исходными, его база осталась на 0bd252b206fb. Пуш, Git-тег и публикация не выполнялись. **Готово к тегу** после слова владельца; перед переключением ПП-6 — обязательный backup и согласованные env ПП.
+
+## Статус инструментов для юриста (`hide.tool_details`), 08.11.2026
+
+Решение владельца 08.11: у роли user блок вызова инструмента в ответе показывает одну русскую строку по смыслу (например «Поиск в КонсультантПлюс…» → «Найдено в КонсультантПлюс», «Чтение документа КонсультантПлюс…», «Оглавление документа…»), без имени сервера/инструмента, аргументов и результата; блок не раскрывается. Группа вызовов: «Выполняется: …» / «Выполнено: поиск в КонсультантПлюс (2), оглавление документа» / «Завершено с ошибкой: …». Неизвестный инструмент — «Обращение к инструменту». Ошибка и отказ — текстом («Не выполнено: …», «Отклонено: …») и прежними иконками. Embeds/MCP Apps, картинки из `files`, кнопки Allow/Deny остаются. Admin и выключенный флаг — штатный upstream-блок. Панель Sources не меняется.
+
+Сопоставление «инструмент → подпись» — `src/lib/custom/toolStatus.ts`, тексты — `ru.tool_status` в `src/lib/custom/locales/ru-RU.json` (en-US для custom-строк в форке не ведётся). Список — 17 инструментов legal-tools MCP (`tools/src/legal_tools/mcp/server.py`): имя сопоставляется точно или по суффиксу `_<tool>` (Open WebUI добавляет префикс сервера `legal-tools_`). Новый инструмент legal-tools без записи получает общую подпись; тест сверяет список.
+
+Включение: `CUSTOM_UI.hide.tool_details=true` (строгий boolean, только роль user, как остальные hide). Без пересборки выключается удалением флага и recreate openwebui. Тесты: `tests/custom/tool-status.spec.ts` — функции сопоставления и роли, плюс настоящие ToolCallDisplay/ConsecutiveDetailsGroup в harness (user не видит имён/аргументов/результата, admin и выключенный флаг видят upstream). Harness получил build-time define `APP_VERSION`/`APP_BUILD_*` для `$lib/constants`. Образ — `0.13.0-ai8` (git-тег `0.12.5-ai8` — откатанная ADU-1 на другой базе, тег `0.13.0-ai8` и такой образ не существовали).

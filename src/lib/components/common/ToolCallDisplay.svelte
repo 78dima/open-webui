@@ -19,7 +19,8 @@
 	import Image from './Image.svelte';
 	import FullHeightIframe from './FullHeightIframe.svelte';
 	import MCPApp from '$lib/components/chat/Messages/MCPApp.svelte';
-	import { settings } from '$lib/stores';
+	import { settings, config, user } from '$lib/stores';
+	import { plainToolStatus, toolState, toolStatusLabel } from '$lib/custom/toolStatus'; // ai-dvokat: plain status for legal users
 
 	export let id: string = '';
 	export let attributes: {
@@ -157,6 +158,9 @@
 	$: isActive = isPreparing || isExecuting;
 	$: isError = attributes?.status === 'failed' || (isDone && isToolResultError(result));
 
+	// ai-dvokat: one Russian status line instead of names, arguments and results
+	$: plainLabel = plainToolStatus($config?.custom_ui, $user?.role) ? toolStatusLabel(attributes?.name, toolState({ rejected: isRejected, error: isError, done: isDone, input: needsInput, approval: needsApproval })) : '';
+
 	$: parsedArgs = parseArguments(args);
 	$: parsedResult = parseJSONString(result);
 
@@ -180,7 +184,7 @@
 		<!-- Embed Mode: Show iframes without collapsible behavior -->
 		<div class="py-1 w-full cursor-pointer">
 			<div class="w-full text-xs text-gray-500">
-				{attributes.name}
+				{plainLabel || attributes.name}
 			</div>
 			{#each embeds as embed, idx}
 				<div class="my-2" id={`${componentId}-tool-call-embed-${idx}`}>
@@ -240,10 +244,11 @@
 				<!-- Label -->
 				<div class="flex-1 min-w-0 line-clamp-1">
 					<!-- Short label (below md) -->
-					<span class="@md:hidden text-black dark:text-white">{attributes.name}</span>
+					<span class="@md:hidden text-black dark:text-white">{plainLabel || attributes.name}</span>
 					<!-- Full label (md and above) -->
 					<span class="hidden @md:inline font-normal">
-						{#if isRejected}
+						{#if plainLabel}{plainLabel}<!-- ai-dvokat -->
+						{:else if isRejected}
 							{$i18n.t('Denied {{NAME}}', { NAME: attributes.name })}
 						{:else if isDone}
 							{$i18n.t('View Result from {{NAME}}', { NAME: attributes.name })}
@@ -278,7 +283,7 @@
 							{$i18n.t('Deny')}
 						</button>
 					</span>
-				{:else}
+				{:else if !plainLabel}<!-- ai-dvokat: no details to expand -->
 					<!-- Chevron -->
 					<div class="flex shrink-0 self-center translate-y-[1px]">
 						{#if open}
@@ -291,7 +296,7 @@
 			</div>
 		</div>
 
-		{#if open}
+		{#if open && !plainLabel}<!-- ai-dvokat: no arguments or results -->
 			<div transition:slide={{ duration: 300, easing: quintOut, axis: 'y' }}>
 				<div
 					class="border border-gray-50 dark:border-gray-850/30 rounded-2xl my-1.5 p-2.5 space-y-2"

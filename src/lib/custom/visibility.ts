@@ -9,7 +9,8 @@ export const HIDE_KEYS: HideKey[] = [
 	'settings_code_interpreter',
 	'temporary_chat',
 	'arena',
-	'models'
+	'models',
+	'tool_details'
 ];
 export const LEGAL_MODELS = [
 	'jurist-rf',
