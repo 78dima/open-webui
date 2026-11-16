@@ -150,9 +150,41 @@ class CallSitesTest(unittest.TestCase):
         body = body[:body.index("return builtin_tools.get(category, default)")]
         self.assertIn("builtin_tools_off(extra_params.get('__metadata__'))", body)
 
+    def test_config_announces_the_feature(self):
+        """bootstrap of ai-dvokat refuses the case step without this marker (an ai8 image)."""
+        self.assertEqual(case.FEATURES, ('case_folder_v1',))
+        src = self.read("main.py")
+        self.assertIn("from open_webui.custom.case import FEATURES as CASE_FEATURES", src)
+        body = src[src.index("async def get_app_config("):]
+        body = body[:body.index("'status': True,")]
+        self.assertIn("'custom_features': list(CASE_FEATURES),", body, "public part of /api/config (before login too)")
+
     def test_folder_id_header_template(self):
         src = self.read("utils/headers.py")
         self.assertTrue(re.search(r"'\{\{FOLDER_ID\}\}': metadata\.get\('folder_id', ''\) or ''", src))
+
+
+
+MANIFEST = ROOT / "deploy/case-layer/layer-manifest.txt"
+
+
+@unittest.skipUnless(MANIFEST.exists(), "no layer manifest here (image files: build.sh check 4)")
+class LayerManifestTest(unittest.TestCase):
+    """deploy/case-layer/layer-manifest.txt — the layer files with their sha256 at the base tag and at HEAD; the VPS builds the
+    layer from a git archive by it. A layer file changed without `build.sh --manifest` would make that build refuse."""
+
+    def test_manifest_matches_the_tree(self):
+        import hashlib
+        entries = [line.split(" ", 2) for line in MANIFEST.read_text(encoding="utf-8").splitlines()
+                   if re.match(r"^([0-9a-f]{64}|-) [0-9a-f]{64} ", line)]
+        self.assertTrue(entries)
+        paths = {e[2] for e in entries}
+        self.assertTrue({"backend/open_webui/custom/case.py", "backend/open_webui/utils/middleware.py",
+                         "backend/open_webui/utils/headers.py", "backend/open_webui/utils/tools.py",
+                         "backend/open_webui/main.py"} <= paths)
+        for _base, head, path in entries:
+            self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), head,
+                             f"{path} changed after the manifest: deploy/case-layer/build.sh --manifest")
 
 
 if __name__ == '__main__':

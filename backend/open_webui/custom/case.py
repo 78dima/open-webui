@@ -14,6 +14,11 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 BUILTIN_TOOLS_OFF = 'builtin_tools_off'
+# Public marker of this backend change in /api/config (`custom_features`): the ai-dvokat bootstrap installs the case step
+# only on an image that has it. Without it (0.13.0-ai8) the folder reaches filters on the first turn only and the switch
+# below is not read; image labels are not visible through the API, the version string is upstream's.
+FEATURE = 'case_folder_v1'
+FEATURES = (FEATURE,)
 
 
 async def verified_chat_folder_id(

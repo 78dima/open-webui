@@ -42,6 +42,7 @@ from starsessions import (
 from starsessions.stores.redis import RedisStore
 
 from open_webui.config import CUSTOM_UI  # ai-dvokat: public UI configuration
+from open_webui.custom.case import FEATURES as CASE_FEATURES  # ai-dvokat: image features for bootstrap
 from open_webui.config import (
     BYPASS_ADMIN_ACCESS_CONTROL,
     CACHE_DIR,
@@ -2371,6 +2372,7 @@ async def get_app_config(request: Request):
 
     return {
         'custom_ui': CUSTOM_UI,  # ai-dvokat: feature flags from environment
+        'custom_features': list(CASE_FEATURES),  # ai-dvokat: what this image's backend can do (custom/case.py)
         **({'onboarding': True} if onboarding else {}),
         'status': True,
         'name': app.state.WEBUI_NAME,

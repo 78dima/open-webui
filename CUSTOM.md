@@ -44,7 +44,7 @@ docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
 | --- | --- |
 | `backend/open_webui/config.py` | Импорт custom/ui.py и чтение CUSTOM_UI |
 | `backend/open_webui/env.py` | Импорт custom_webui_name и бренд имени API/PWA |
-| `backend/open_webui/main.py` | Импорт CUSTOM_UI и поле custom_ui в /api/config |
+| `backend/open_webui/main.py` | Импорт CUSTOM_UI и поле custom_ui в /api/config; дело и тома (0.13.0-ai9): поле `custom_features` (`custom/case.py` `FEATURES`) — признак правки для bootstrap ai-dvokat |
 | `backend/open_webui/utils/middleware.py` | Дело и тома (0.13.0-ai9): проверенная папка чата в `metadata['folder_id']` после блока папки (`custom/case.py`, `verified_chat_folder_id`) и та же — в `request.state.metadata` (`share_with_request_state`: Pipe получает метаданные, слитые поверх копии хода); `<attached_knowledge>` не вставляется, если фильтр выключил `knowledge` (`metadata['builtin_tools_off']`) |
 | `backend/open_webui/utils/tools.py` | Дело и тома: `is_builtin_tool_enabled` в `get_builtin_tools` учитывает `metadata['builtin_tools_off']` (выключатель категорий на ход) |
 | `backend/open_webui/utils/headers.py` | Дело и тома: подстановка `{{FOLDER_ID}}` (проверенная папка из metadata) для заголовков сервера инструментов |
@@ -356,6 +356,10 @@ Playwright/Chromium вместо недоступного Claude in Chrome от�
   `__metadata__['builtin_tools_off'] = ["knowledge", "notes"]` в чате папки с делом. `get_builtin_tools` эти категории
   не выдаёт, `<attached_knowledge>` не вставляется. Без ключа — как upstream. Свойство записи модели (`meta.builtinTools`)
   и общий объект `__model__` не меняются: правка `__model__` в фильтре подействовала бы на всех пользователей.
+- **Признак правки в `/api/config`:** `custom_features: ["case_folder_v1"]` (`custom/case.py` `FEATURES`, публичная часть
+  ответа). Метки образа через API не видны, версия — upstream: без признака ai9 от ai8 не отличить. `bootstrap.py --only
+  case` ai-dvokat (и полный запуск с `--case-group`) без признака отказывает до записей: на ai8 блок дела был бы только на
+  первом ходе, «Знания» и «Заметки» не выключались бы.
 
 Тест: `python3 -m unittest discover -s tests/custom -p 'test_*.py'` — `tests/custom/test_case.py` (старый чат в папке —
 папка со второго хода без лишнего запроса; коллега в общей папке; нет права чтения; чат вне папки; временный чат и
@@ -368,5 +372,9 @@ Playwright/Chromium вместо недоступного Claude in Chrome от�
 Скрипт берёт ровно файлы `backend/open_webui/**.py`, изменённые после тега `0.13.0-ai8`, и отказывает, если изменено
 что-то, что слоем не доставить (фронтенд, пакеты, Dockerfile); проверяет, что базовый образ по этим файлам равен тегу,
 что в новом образе они равны HEAD, а все прочие `.py` бэкенда — базовому образу, и прогоняет `tests/custom/test_case.py`
-на файлах образа. Фронтенд в `ai9` — как в `ai8`: русские строки статуса для `case_*` — в следующей полной сборке форка
+на файлах образа. Список и суммы файлов слоя (в теге `ai8` и в HEAD) лежат в `deploy/case-layer/layer-manifest.txt`
+(`build.sh --manifest`, коммитится вместе с файлами; сборка с историей сверяет его с git, тест форка — с файлами
+дерева). Поэтому тот же скрипт работает **без истории git** — на VPS из `git archive` тега: файлы дерева сверяются с
+манифестом, свой `ai8` VPS (собранный по §3 `docs/deploy.md`) — с суммами тега, затем те же проверки 3 и 4. Стенд и
+VPS получают один и тот же слой поверх своих `ai8`, полной пересборки на VPS нет. Фронтенд в `ai9` — как в `ai8`: русские строки статуса для `case_*` — в следующей полной сборке форка
 (не условие выпуска В1). Образ `-rc` локальный, не публикуется; тег git и публикация — по слову владельца.
