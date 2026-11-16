@@ -45,6 +45,9 @@ docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
 | `backend/open_webui/config.py` | Импорт custom/ui.py и чтение CUSTOM_UI |
 | `backend/open_webui/env.py` | Импорт custom_webui_name и бренд имени API/PWA |
 | `backend/open_webui/main.py` | Импорт CUSTOM_UI и поле custom_ui в /api/config |
+| `backend/open_webui/utils/middleware.py` | Дело и тома (0.13.0-ai9): проверенная папка чата в `metadata['folder_id']` после блока папки (`custom/case.py`, `verified_chat_folder_id`); `<attached_knowledge>` не вставляется, если фильтр выключил `knowledge` (`metadata['builtin_tools_off']`) |
+| `backend/open_webui/utils/tools.py` | Дело и тома: `is_builtin_tool_enabled` в `get_builtin_tools` учитывает `metadata['builtin_tools_off']` (выключатель категорий на ход) |
+| `backend/open_webui/utils/headers.py` | Дело и тома: подстановка `{{FOLDER_ID}}` (проверенная папка из metadata) для заголовков сервера инструментов |
 | `src/lib/stores/index.ts` | Тип поля custom_ui |
 | `src/routes/+layout.svelte` | Brand/Visibility, имя, locale overlay, favicon, PWA, уведомления; новый upstream CommentsHost сохранён |
 | `src/lib/components/chat/Placeholder.svelte` | Hello/Start/fallback icon и условие подсказок; сохранены новые chatFiles/params/onParamChange и breakpoint md:@2xl |
@@ -328,3 +331,39 @@ Playwright/Chromium вместо недоступного Claude in Chrome от�
 Сопоставление «инструмент → подпись» — `src/lib/custom/toolStatus.ts`, тексты — `ru.tool_status` в `src/lib/custom/locales/ru-RU.json` (en-US для custom-строк в форке не ведётся). Список — 17 инструментов legal-tools MCP (`tools/src/legal_tools/mcp/server.py`): имя сопоставляется точно или по суффиксу `_<tool>` (Open WebUI добавляет префикс сервера `legal-tools_`). Новый инструмент legal-tools без записи получает общую подпись; тест сверяет список.
 
 Включение: `CUSTOM_UI.hide.tool_details=true` (строгий boolean, только роль user, как остальные hide). Без пересборки выключается удалением флага и recreate openwebui. Тесты: `tests/custom/tool-status.spec.ts` — функции сопоставления и роли, плюс настоящие ToolCallDisplay/ConsecutiveDetailsGroup в harness (user не видит имён/аргументов/результата, admin и выключенный флаг видят upstream). Harness получил build-time define `APP_VERSION`/`APP_BUILD_*` для `$lib/constants`. Образ — `0.13.0-ai8` (git-тег `0.12.5-ai8` — откатанная ADU-1 на другой базе, тег `0.13.0-ai8` и такой образ не существовали).
+
+## Дело и тома: папка чата в metadata и выключатель встроенных инструментов (`0.13.0-ai9`), 16.11.2026
+
+Этап «дело и тома» проекта ai-dvokat (спецификация `~/ai-dvokat/docs/case-workspace-spec-2026-11-16.md`, §3.7, пакет
+В1-Д; ветка `case/folder-metadata` от `ai-dvokat-0.13`). Три точки в бэкенде, логика — в `backend/open_webui/custom/case.py`:
+
+- **Проверенная папка в `metadata['folder_id']`.** Upstream находит папку чата фильтром по автору
+  (`Chats.get_chat_folder_id(chat_id, user.id)`) только для системного промпта и «Знаний» папки и в `metadata` её не
+  кладёт: MCP-заголовки и Pipe видят то, что прислал браузер, а браузер шлёт папку один раз и сбрасывает — со второго хода
+  папки нет; коллега в общем чате папки (`share_mode=continue`) папки не получает вовсе. Теперь после блока папки
+  `metadata['folder_id']` = папка самого сохранённого чата (`chat.folder_id`, без фильтра по автору), иначе папка из
+  запроса (временный чат, помощники «Глубокого» — у их дочернего чата папки нет, папка родителя приходит в запросе; чат
+  вне папки с папкой от клиента — как запасной путь upstream), **только если у пользователя есть право чтения** (у
+  администратора — как upstream), иначе `None`. Системный промпт и «Знания» папки — как в upstream (папка автора):
+  коллега в общем чате папки получает то же, что раньше. Побочное: события `chat:list`/`chat:active` у коллеги теперь
+  несут папку чата (её обновление в боковой панели), раньше — `None`.
+- **`{{FOLDER_ID}}`** в подстановках заголовков (`utils/headers.py`): заголовок MCP `X-Ai-Folder-Id: {{FOLDER_ID}}`.
+  Заголовки считаются один раз на ход: перенос чата в другую папку действует со следующего хода.
+- **Выключатель категорий встроенных инструментов на ход:** фильтр (функция `case_context` ai-dvokat) в `inlet` ставит
+  `__metadata__['builtin_tools_off'] = ["knowledge", "notes"]` в чате папки с делом. `get_builtin_tools` эти категории
+  не выдаёт, `<attached_knowledge>` не вставляется. Без ключа — как upstream. Свойство записи модели (`meta.builtinTools`)
+  и общий объект `__model__` не меняются: правка `__model__` в фильтре подействовала бы на всех пользователей.
+
+Тест: `python3 -m unittest discover -s tests/custom -p 'test_*.py'` — `tests/custom/test_case.py` (старый чат в папке —
+папка со второго хода без лишнего запроса; коллега в общей папке; нет права чтения; чат вне папки; временный чат и
+помощник «Глубокого»; администратор; удалённая папка; выключатель; точки подключения на месте и до `inlet` и MCP). Живой
+путь на образе — сквозная проба `~/ai-dvokat/tools/tests/case_probe/run.sh` (заголовок со второго хода, Pipe, коллега,
+выключатель, тело запроса к модели в чате без дела как у ai8).
+
+**Образ `0.13.0-ai9` — слоем поверх `0.13.0-ai8`** (как слой закрепления пакетов, Dockerfile форка не меняется):
+`deploy/case-layer/build.sh 0.13.0-ai8 ghcr.io/78dima/open-webui-legal:0.13.0-ai8 ghcr.io/78dima/open-webui-legal:0.13.0-ai9-rc`.
+Скрипт берёт ровно файлы `backend/open_webui/**.py`, изменённые после тега `0.13.0-ai8`, и отказывает, если изменено
+что-то, что слоем не доставить (фронтенд, пакеты, Dockerfile); проверяет, что базовый образ по этим файлам равен тегу,
+что в новом образе они равны HEAD, а все прочие `.py` бэкенда — базовому образу, и прогоняет `tests/custom/test_case.py`
+на файлах образа. Фронтенд в `ai9` — как в `ai8`: русские строки статуса для `case_*` — в следующей полной сборке форка
+(не условие выпуска В1). Образ `-rc` локальный, не публикуется; тег git и публикация — по слову владельца.
