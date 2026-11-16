@@ -166,6 +166,7 @@ from open_webui.utils.tools import (
     get_updated_tool_function,
 )
 from starlette.responses import JSONResponse, Response, StreamingResponse
+from open_webui.custom.case import builtin_tools_off, verified_chat_folder_id  # ai-dvokat: case workspace
 
 logging.basicConfig(stream=sys.stdout, level=GLOBAL_LOG_LEVEL)
 log = logging.getLogger(__name__)
@@ -2291,6 +2292,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
     # Uses lightweight column query — only fetches folder_id, not the full chat JSON blob
     chat_id = metadata.get('chat_id', None)
     folder_id = None
+    folder = None  # ai-dvokat: read-checked folder, reused for metadata['folder_id'] below
     if user and is_saved_chat_id(chat_id):
         folder_id = await Chats.get_chat_folder_id(chat_id, user.id)
 
@@ -2316,6 +2318,17 @@ async def process_chat_payload(request, form_data, user, metadata, model):
                     # Native FC: skip RAG injection, builtin tools
                     # will read folder knowledge from metadata.
                     metadata['folder_knowledge'] = await get_owner_accessible_folder_files(folder)
+
+    # ai-dvokat: verified folder of the chat itself (also a colleague's turn in a shared folder chat) for tool-server
+    # headers ({{FOLDER_ID}}) and pipes; the folder system prompt and knowledge above stay as upstream (CUSTOM.md)
+    metadata['folder_id'] = await verified_chat_folder_id(
+        user,
+        chat,
+        metadata.get('folder_id', None),
+        folder,
+        Folders.get_folder_by_id,
+        lambda f: has_folder_access(user.id, f, 'read', db=None),
+    )
 
     # Model "Knowledge" handling
     user_message = get_last_user_message(form_data['messages'])
@@ -2846,7 +2859,8 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         # Only inject when the request originates from the UI (identified by session_id).
         # API callers don't expect hidden tools; they can explicitly request tools via tool_ids.
         if use_builtin_tools:
-            if model_builtin_tools.get('knowledge', True):
+            # ai-dvokat: a filter may switch knowledge off for this turn (case chat): no tools, no <attached_knowledge>
+            if model_builtin_tools.get('knowledge', True) and 'knowledge' not in builtin_tools_off(metadata):
                 from html import escape
 
                 knowledge_tags = []

@@ -26,6 +26,7 @@ from langchain_core.utils.function_calling import (
     convert_to_openai_function as convert_pydantic_model_to_openai_function_spec,
 )
 from open_webui.config import BYPASS_ADMIN_ACCESS_CONTROL
+from open_webui.custom.case import builtin_tools_off  # ai-dvokat: per-turn builtin switch (case workspace)
 from open_webui.env import (
     AIOHTTP_CLIENT_ALLOW_REDIRECTS,
     AIOHTTP_CLIENT_SESSION_SSL,
@@ -643,6 +644,9 @@ async def get_builtin_tools(
     # Defaults to True if not specified (backward compatible)
     def is_builtin_tool_enabled(category: str, default: bool = True) -> bool:
         builtin_tools = model.get('info', {}).get('meta', {}).get('builtinTools', {})
+        # ai-dvokat: categories a filter switched off for this turn (metadata['builtin_tools_off'], case chat)
+        if category in builtin_tools_off(extra_params.get('__metadata__')):
+            return False
         return builtin_tools.get(category, default)
 
     # Helper to check user-level feature permission (admins always pass)

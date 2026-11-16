@@ -146,6 +146,7 @@ def parse_custom_headers(
         '{{FILE_CONTENT_TYPE}}': metadata.get('file_content_type', '') or '',
         '{{TASK}}': metadata.get('task', '') or '',
         '{{MODEL_ID}}': metadata.get('model_id', '') or '',
+        '{{FOLDER_ID}}': metadata.get('folder_id', '') or '',  # ai-dvokat: verified chat folder (custom/case.py)
         '{{USER_ID}}': (user.id if user else '') or '',
         '{{USER_NAME}}': (user.name.strip() if user else '') or '',
         '{{USER_EMAIL}}': (user.email.strip() if user else '') or '',
