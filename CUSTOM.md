@@ -45,7 +45,7 @@ docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
 | `backend/open_webui/config.py` | Импорт custom/ui.py и чтение CUSTOM_UI |
 | `backend/open_webui/env.py` | Импорт custom_webui_name и бренд имени API/PWA |
 | `backend/open_webui/main.py` | Импорт CUSTOM_UI и поле custom_ui в /api/config |
-| `backend/open_webui/utils/middleware.py` | Дело и тома (0.13.0-ai9): проверенная папка чата в `metadata['folder_id']` после блока папки (`custom/case.py`, `verified_chat_folder_id`); `<attached_knowledge>` не вставляется, если фильтр выключил `knowledge` (`metadata['builtin_tools_off']`) |
+| `backend/open_webui/utils/middleware.py` | Дело и тома (0.13.0-ai9): проверенная папка чата в `metadata['folder_id']` после блока папки (`custom/case.py`, `verified_chat_folder_id`) и та же — в `request.state.metadata` (`share_with_request_state`: Pipe получает метаданные, слитые поверх копии хода); `<attached_knowledge>` не вставляется, если фильтр выключил `knowledge` (`metadata['builtin_tools_off']`) |
 | `backend/open_webui/utils/tools.py` | Дело и тома: `is_builtin_tool_enabled` в `get_builtin_tools` учитывает `metadata['builtin_tools_off']` (выключатель категорий на ход) |
 | `backend/open_webui/utils/headers.py` | Дело и тома: подстановка `{{FOLDER_ID}}` (проверенная папка из metadata) для заголовков сервера инструментов |
 | `src/lib/stores/index.ts` | Тип поля custom_ui |
@@ -344,7 +344,10 @@ Playwright/Chromium вместо недоступного Claude in Chrome от�
   `metadata['folder_id']` = папка самого сохранённого чата (`chat.folder_id`, без фильтра по автору), иначе папка из
   запроса (временный чат, помощники «Глубокого» — у их дочернего чата папки нет, папка родителя приходит в запросе; чат
   вне папки с папкой от клиента — как запасной путь upstream), **только если у пользователя есть право чтения** (у
-  администратора — как upstream), иначе `None`. Системный промпт и «Знания» папки — как в upstream (папка автора):
+  администратора — как upstream), иначе `None`. Та же папка пишется и в `request.state.metadata`: `main.py` даёт каждой
+  модели хода свою копию метаданных, а `utils/chat.py` перед вызовом Pipe сливает `request.state.metadata` поверх неё —
+  без этого Pipe получал бы папку клиента (со второго хода — `None`; найдено сквозной пробой). Системный промпт и
+  «Знания» папки — как в upstream (папка автора):
   коллега в общем чате папки получает то же, что раньше. Побочное: события `chat:list`/`chat:active` у коллеги теперь
   несут папку чата (её обновление в боковой панели), раньше — `None`.
 - **`{{FOLDER_ID}}`** в подстановках заголовков (`utils/headers.py`): заголовок MCP `X-Ai-Folder-Id: {{FOLDER_ID}}`.

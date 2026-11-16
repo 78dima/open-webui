@@ -46,6 +46,16 @@ async def verified_chat_folder_id(
     return None
 
 
+def share_with_request_state(request: Any, metadata: dict, key: str) -> None:
+    """Put metadata[key] into request.state.metadata too. main.py runs each model of a turn with its own copy of the
+    metadata, and utils/chat.py (chat_completion_handler) merges request.state.metadata OVER that copy before calling a
+    pipe function: without this a pipe would get the client's value back (no folder from the second turn on). The value
+    is per chat, the same for every model of the turn, so the shared state may carry it."""
+    state = getattr(getattr(request, 'state', None), 'metadata', None)
+    if isinstance(state, dict) and state is not metadata:
+        state[key] = metadata.get(key)
+
+
 def builtin_tools_off(metadata: Any) -> frozenset[str]:
     """Builtin tool categories switched off for this turn (`metadata['builtin_tools_off']`, set by a filter in inlet,
     e.g. knowledge and notes in a case chat). Anything but a list of strings means nothing is switched off."""

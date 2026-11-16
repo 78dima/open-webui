@@ -88,6 +88,28 @@ class VerifiedFolderTest(unittest.TestCase):
                                                                    w.can_read(OWNER))))
 
 
+class RequestStateTest(unittest.TestCase):
+    """main.py gives every model of a turn its own metadata copy; utils/chat.py merges request.state.metadata over it
+    before a pipe function runs. The verified folder must be in both, or the pipe gets the client's folder (None)."""
+
+    def test_verified_folder_reaches_request_state(self):
+        state_meta = {"folder_id": None, "chat_id": "c1"}
+        request = SimpleNamespace(state=SimpleNamespace(metadata=state_meta))
+        per_model = {**state_meta, "folder_id": "f-case"}
+        case.share_with_request_state(request, per_model, "folder_id")
+        self.assertEqual({**per_model, **state_meta}["folder_id"], "f-case", "the pipe-side merge keeps the verified folder")
+        per_model["folder_id"] = None   # no access now: the stale value does not survive either
+        case.share_with_request_state(request, per_model, "folder_id")
+        self.assertIsNone(state_meta["folder_id"])
+
+    def test_no_state_or_same_object(self):
+        case.share_with_request_state(SimpleNamespace(state=SimpleNamespace()), {"folder_id": "f"}, "folder_id")
+        case.share_with_request_state(None, {"folder_id": "f"}, "folder_id")
+        same = {"folder_id": "f"}
+        case.share_with_request_state(SimpleNamespace(state=SimpleNamespace(metadata=same)), same, "folder_id")
+        self.assertEqual(same, {"folder_id": "f"})
+
+
 class BuiltinOffTest(unittest.TestCase):
     def test_values(self):
         self.assertEqual(case.builtin_tools_off({"builtin_tools_off": ["knowledge", "notes"]}),
@@ -112,6 +134,8 @@ class CallSitesTest(unittest.TestCase):
         inlet = src.index("filter_type='inlet'", start)
         mcp = src.index("mcp_clients", inlet)
         self.assertTrue(knowledge < hook < inlet < mcp, "after the folder prompt, before inlet filters and MCP headers")
+        shared = src.index("share_with_request_state(request, metadata, 'folder_id')", hook)
+        self.assertLess(shared, inlet, "the request state gets the same folder before the pipe can be called")
         # the folder system prompt and knowledge keep upstream's author filter
         self.assertIn("folder_id = await Chats.get_chat_folder_id(chat_id, user.id)", src[start:hook])
         self.assertRegex(src[start:hook], r"folder = None  # ai-dvokat")

@@ -166,7 +166,11 @@ from open_webui.utils.tools import (
     get_updated_tool_function,
 )
 from starlette.responses import JSONResponse, Response, StreamingResponse
-from open_webui.custom.case import builtin_tools_off, verified_chat_folder_id  # ai-dvokat: case workspace
+from open_webui.custom.case import (  # ai-dvokat: case workspace
+    builtin_tools_off,
+    share_with_request_state,
+    verified_chat_folder_id,
+)
 
 logging.basicConfig(stream=sys.stdout, level=GLOBAL_LOG_LEVEL)
 log = logging.getLogger(__name__)
@@ -2329,6 +2333,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         Folders.get_folder_by_id,
         lambda f: has_folder_access(user.id, f, 'read', db=None),
     )
+    share_with_request_state(request, metadata, 'folder_id')  # ai-dvokat: pipes read the merged request metadata
 
     # Model "Knowledge" handling
     user_message = get_last_user_message(form_data['messages'])
