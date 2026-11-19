@@ -187,7 +187,11 @@ const CASE_SCENES = {
 	'status-readonly': { data: () => ({ ...fixture('case-overview-processing'), paused: null, uploads: [] }), boot: { can_write: false, is_owner: false } },
 	'no-case': { data: () => fixture('case-overview'), boot: { has_case: false, case_id: null } },
 	check: { data: () => fixture('case-overview'), section: 'check' },
-	upload: { data: () => fixture('case-overview-processing'), section: 'upload', files: true }
+	upload: { data: () => fixture('case-overview-processing'), section: 'upload', files: true },
+	// разделы сдачи 3: данные — примеры выдуманного дела; `routes` — ручки раздела (хвост адреса → пример или ответ)
+	volumes: { data: () => ({ ...fixture('case-overview-processing'), paused: null }), section: 'volumes', after: async (page) => {
+		await page.getByTestId('case-file-actions').first().click();
+	} }
 };
 
 async function openCase(browser, scene, width, height, dark) {
@@ -213,6 +217,11 @@ async function openCase(browser, scene, width, height, dark) {
 		return r.fulfill({ status: 201, json: { upload: { id: `up-${b.filename}`, filename: b.filename, size: b.size, received: 0, part_size: 16777216, parts: [], status: 'receiving', phase: 'receiving' } } });
 	});
 	await page.route(`**/legal-tools/api/cases/${FOLDER}/uploads/**`, () => {});
+	for (const [tail, answer] of Object.entries(s.routes ?? {})) {
+		await page.route(`**/legal-tools/api/cases/${FOLDER}/${tail}`, (r) =>
+			typeof answer === 'function' ? answer(r) : r.fulfill({ json: fixture(answer) })
+		);
+	}
 	await page.goto(`${base}/?casepage=${FOLDER}${s.section ? `&s=${s.section}` : ''}`);
 	await page.waitForFunction(() => typeof window.setConfig === 'function');
 	if (dark) await page.evaluate(() => document.documentElement.classList.add('dark'));
@@ -244,6 +253,7 @@ async function openCase(browser, scene, width, height, dark) {
 		await rows.nth(1).getByRole('combobox').selectOption({ index: 1 });
 		await page.getByTestId('case-upload-start').click(); // у третьего PDF вид не указан — подсказка у кнопки
 	}
+	if (s.after) await s.after(page, width);
 	await page.evaluate(() => document.fonts.ready);
 	await page.waitForTimeout(250);
 	const full = await page.evaluate(() => document.querySelector('.cg-view')?.scrollHeight ?? 0);
@@ -264,6 +274,11 @@ async function shotCase(browser, scene, width, height, dark, file) {
 	return overflow;
 }
 // макет (или его основа для обёрток -phone и -dark) → состояние страницы дела
+const trio = (name, scene, height, phone) => [
+	[name, name, scene, 1280, height, false],
+	[`${name}-phone`, name, scene, 360, phone, false],
+	[`${name}-dark`, name, scene, 1280, height, true]
+];
 const CASE_PAIRS = [
 	['K-overview', 'K-overview', 'overview', 1280, 1420, false],
 	['K-overview-phone', 'K-overview', 'overview', 360, 2000, false],
@@ -274,27 +289,29 @@ const CASE_PAIRS = [
 	['K-upload-dark', 'K-upload', 'upload', 1280, 2120, true],
 	['K-check', 'K-check', 'check', 1280, 1860, false],
 	['K-check-phone', 'K-check', 'check', 360, 2900, false],
-	['K-check-dark', 'K-check', 'check', 1280, 1860, true]
+	['K-check-dark', 'K-check', 'check', 1280, 1860, true],
+	...trio('K-volumes', 'volumes', 2060, 3200)
 ];
 const STATUS = ['status-empty', 'status-ready', 'status-paused', 'status-stopped', 'status-offline', 'status-readonly', 'no-case'];
 const set = arg('set', 'all');
+const only = arg('only', ''); // один макет со своими обёртками: --only K-volumes (состояния и матрица не снимаются)
 
 const browser = await chromium.launch({
 	executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined
 });
 const report = [];
 if (set !== 'd') {
-	for (const [name, source, scene, width, height, dark] of CASE_PAIRS) {
+	for (const [name, source, scene, width, height, dark] of CASE_PAIRS.filter((p) => !only || p[1] === only)) {
 		const overflow = await shotCase(browser, scene, width, height, dark, join(out, `${name}.page.png`));
 		if (mocks) await mock(browser, name, width, height, dark, join(out, `${name}.mock.png`), source);
 		report.push({ mock: name, scene, width, dark, overflow });
 	}
-	if (mocks) await mock(browser, 'K-status', 1280, 940, false, join(out, 'K-status.mock.png'));
-	for (const scene of STATUS) {
+	if (mocks && !only) await mock(browser, 'K-status', 1280, 940, false, join(out, 'K-status.mock.png'));
+	for (const scene of only ? [] : STATUS) {
 		const overflow = await shotCase(browser, scene, 1280, 720, false, join(out, `K-status.${scene}.page.png`));
 		report.push({ mock: 'K-status', scene, width: 1280, dark: false, overflow });
 	}
-	for (const scene of Object.keys(CASE_SCENES)) {
+	for (const scene of only ? [] : Object.keys(CASE_SCENES)) {
 		for (const width of [1280, 360]) {
 			for (const dark of [false, true]) {
 				const file = join(out, 'matrix', `case-${scene}.${width}.${dark ? 'dark' : 'light'}.png`);

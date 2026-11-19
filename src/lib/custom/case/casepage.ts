@@ -18,6 +18,21 @@ export type Boot = {
 	case_id: string | null;
 };
 
+export type InputFact = {
+	photo?: boolean;
+	layer_all?: boolean;
+	pages?: number;
+	layer_pages?: number;
+	image_pages?: number;
+};
+export type Suggest = {
+	volume_id?: number | null;
+	label?: string | null;
+	basis?: string;
+	first?: string | number | null;
+	last?: string | number | null;
+	candidates?: { id?: number; label: string }[];
+};
 export type FileFacts = {
 	id?: number;
 	filename?: string;
@@ -27,7 +42,11 @@ export type FileFacts = {
 	input_kind?: string;
 	block_reason?: string | null;
 	estimate_usd?: string | null;
+	input_fact?: InputFact | null;
+	suggest?: Suggest | null;
+	image?: boolean;
 };
+export type CourtInventory = { n_court: number; n_model: number; diffs?: string[] };
 export type Volume = {
 	id: number;
 	label: string | null;
@@ -36,6 +55,19 @@ export type Volume = {
 	pages?: number;
 	range?: { first?: string | null; last?: string | null } | null;
 	files?: FileFacts[];
+	label_source?: string | null;
+	gaps?: { text?: string; missing?: (string | number)[] }[];
+	shortfalls?: { text?: string }[];
+	duplicates?: { text?: string; number?: string | number; page_ids?: number[] }[];
+	disagreements?: { text?: string; page_id: number; reads?: (string | number)[] }[];
+	court_inventory?: CourtInventory | null;
+};
+export type VolumeExtra = {
+	label_source?: string | null;
+	label_page_id?: number | null;
+	label_page_no?: number | null;
+	label_sheet?: string | null;
+	label_checked?: boolean | null;
 };
 export type CheckRow = {
 	page_id: number | null;
@@ -83,7 +115,12 @@ export type CaseData = {
 		case?: { title?: string | null; engine_note?: string | null };
 		volumes?: Volume[];
 		files_without_volume?: FileFacts[];
-		e_case?: { file_id: number; label: string; pages: number }[];
+		e_case?: {
+			file_id: number;
+			label: string;
+			pages: number;
+			court_inventory?: CourtInventory | null;
+		}[];
 		size?: { pages: number; documents: number };
 		index_coverage?: { indexed: number; total: number };
 		check_sheets?: CheckRow[];
@@ -94,6 +131,9 @@ export type CaseData = {
 	version?: number;
 	paused?: { reason: string; since: string | null; until: string | null } | null;
 	files?: Record<string, FileFacts>;
+	volumes_extra?: Record<string, VolumeExtra>;
+	page_nos?: Record<string, number>;
+	spent?: { processing: string; work: string };
 	uploads?: Upload[];
 	counts?: Record<string, number>;
 	deadlines_next?: Deadline[];

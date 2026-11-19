@@ -2,7 +2,7 @@
 	// ai-dvokat: окно страниц «Дел» (макет K-dialogs: затемнение и карточка .dlg). Поведение — родное окно браузера
 	// <dialog> (как на прежней странице сервиса): фокус не уходит за окно, Esc закрывает, фон не прокручивается.
 	// Общий Modal форка здесь не годится: его рамка, тень и место заданы классами чата и не переопределяются.
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	export let open = false;
 	export let title = '';
 	export let labelledby = 'cg-dialog-title';
@@ -13,8 +13,20 @@
 		mounted = true;
 	});
 	$: if (mounted && dialog) {
-		if (open && !dialog.open) dialog.showModal();
-		else if (!open && dialog.open) dialog.close();
+		if (open && !dialog.open) {
+			dialog.showModal();
+			void focusFirst();
+		} else if (!open && dialog.open) dialog.close();
+	}
+	// фокус — в первое поле окна; полей нет — на само окно (не на кнопку: Enter не должен ничего нажимать сам).
+	// После закрытия браузер возвращает фокус туда, откуда окно открыли.
+	async function focusFirst() {
+		await tick();
+		if (!dialog?.open) return;
+		const field = dialog.querySelector<HTMLElement>(
+			'input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]), select, textarea'
+		);
+		(field ?? dialog).focus();
 	}
 	// нажатие на затемнение (сам <dialog>, не его содержимое) закрывает окно
 	const backdrop = (ev: MouseEvent) => {
@@ -25,6 +37,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
 <dialog
 	bind:this={dialog}
+	tabindex="-1"
 	aria-labelledby={labelledby}
 	on:close={() => (open = false)}
 	on:click={backdrop}
@@ -47,6 +60,9 @@
 		background: transparent;
 		color: inherit;
 		overflow: visible;
+	}
+	dialog:focus {
+		outline: none;
 	}
 	dialog::backdrop {
 		background: rgba(20, 20, 30, 0.45);

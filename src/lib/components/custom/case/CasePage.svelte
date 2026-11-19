@@ -24,6 +24,7 @@
 	import Overview from './Overview.svelte';
 	import StateCard from './StateCard.svelte';
 	import Upload from './Upload.svelte';
+	import Volumes from './Volumes.svelte';
 
 	export let folderId: string;
 	/** Раздел из адреса; пусто — «Обзор». */
@@ -62,6 +63,8 @@
 				? fmt(S.case_title, { title: name })
 				: S.case_no_title;
 	$: checks = Math.max($data?.check_total ?? 0, ($data?.overview.check_sheets ?? []).length);
+	// число у заголовка раздела — то же, что у пункта меню; у «Проверьте листы» — с учётом пришедших строк
+	$: headCount = section === 'check' ? checks : (item?.count ?? 0);
 
 	async function createCase() {
 		if (creating) return;
@@ -198,10 +201,10 @@
 				<div class="head">
 					<div class="col g2 grow">
 						<span class="eyebrow">{section ? name || S.case_no_title : S.case_caption}</span>
-						{#if section === 'check' && checks}
+						{#if section && headCount}
 							<div class="row g12">
 								<h1>{label}</h1>
-								<span class="cnt w headcnt">{checks}</span>
+								<span class="cnt headcnt" class:w={item?.warn}>{headCount}</span>
 							</div>
 						{:else}
 							<h1>{section ? label || S.not_found : name || S.case_no_title}</h1>
@@ -225,6 +228,8 @@
 					<Upload {state} {S} {hrefOf} />
 				{:else if section === 'check'}
 					<CheckSheets {state} {S} />
+				{:else if section === 'volumes'}
+					<Volumes {state} {S} {hrefOf} />
 				{:else}
 					<!-- раздел следующей сдачи: пока открывается на прежней странице дела сервиса -->
 					<section class="card" data-testid="case-section-later">
