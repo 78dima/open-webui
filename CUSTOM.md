@@ -57,6 +57,7 @@ docker compose --env-file ~/ai-dvokat/.env -p legal-assistant \
 | `src/lib/components/chat/MessageInput/Commands/AtCommands.svelte` | Тот же фильтр для @-моделей |
 | `src/lib/components/chat/SettingsModal.svelte`, `Settings/Shortcuts.svelte`, `src/lib/components/common/InterfaceSettings.svelte`, `src/lib/utils/settings-access.ts` | Hide audio/voice/temporary и выбор собственного About |
 | `src/lib/components/OnBoarding.svelte`, `src/routes/auth/+page.svelte`, `src/lib/components/layout/Sidebar.svelte` | Бренд, логотип, имя; новые размеры OnBoarding сохранены |
+| `src/lib/components/layout/Sidebar.svelte` | Страницы «Дел» (19.11.2026): импорт и две вставки `CustomCasesLink` — пункт «Дела» после кнопки поиска в свёрнутой и развёрнутой панели |
 | `src/lib/components/channel/Channel.svelte`, `src/routes/(app)/channels/[id]/encrypted/+page.svelte` | Конфигурируемое имя приложения |
 | `src/lib/components/workspace/common/CommunityDiscover.svelte` | Атрибут отключения продвижения сообщества |
 | `src/lib/components/common/ToolCallDisplay.svelte`, `src/lib/components/chat/Messages/Markdown/ConsecutiveDetailsGroup.svelte` | `hide.tool_details`: русская строка статуса вместо имён/аргументов/результата инструментов у user (логика в `src/lib/custom/toolStatus.ts`) |
@@ -378,3 +379,47 @@ Playwright/Chromium вместо недоступного Claude in Chrome от�
 манифестом, свой `ai8` VPS (собранный по §3 `docs/deploy.md`) — с суммами тега, затем те же проверки 3 и 4. Стенд и
 VPS получают один и тот же слой поверх своих `ai8`, полной пересборки на VPS нет. Фронтенд в `ai9` — как в `ai8`: русские строки статуса для `case_*` — в следующей полной сборке форка
 (не условие выпуска В1). Образ `-rc` локальный, не публикуется; тег git и публикация — по слову владельца.
+
+## Страницы «Дел» в форке, вариант «Г» (ветка `case/native-ui`), 19.11.2026
+
+Решение владельца 19.11: «Мои дела» и страница дела — страницы самого форка, в принятом дизайне «Г» (шрифт Geologica);
+сервер legal-tools (ручки, права, обработка, данные) остаётся. Снимок дизайна, опись блоков и поручение —
+`~/ai-dvokat-case-samples/design-pack-2026-11-19/` (в репозиторий не входит). Сдача 1 — основа и «Мои дела»; страница
+дела пока прежняя, в сервисе (`<база>/case/<папка>`), туда ведут «Открыть дело» и «Завести дело».
+
+**Где что лежит**
+
+| Что | Где |
+| --- | --- |
+| Маршруты | `src/routes/case/` — вне группы `(app)`: оболочки чата (левая панель, шапка) у страниц нет. `+layout.svelte` — вход (без входа — `/auth?redirect=…`), стили, корень; `+page.svelte` — «Мои дела» (`/case`) |
+| Корень страниц | `src/lib/components/custom/case/CaseRoot.svelte`: своя прокрутка (корневой макет держит окно `overflow-hidden`), фон, спрайт значков, получение строк; карточка «Не найдено» / «Страница сейчас недоступна», если выключатель снят или строки не пришли |
+| Стили | `src/lib/custom/case/case.css` — `g.css` снимка дизайна, каждое правило под корневым классом `.cg` (чат не задевают и от него не зависят); тёмная схема — по классу `dark` на `<html>` (тема чата), узкий экран — `@media (max-width:720px)`; в начале файла — блок «изоляция от стилей чата» (что приходит из `app.css` и `tailwind.css` и чем закрыто). Стили одной страницы — в её компоненте (`MyCases.svelte`: значения макетов `D-*`) |
+| Шрифт | `src/lib/custom/case/fonts/` — Geologica Variable, четыре файла woff2 (кириллица, латиница и их расширения; из `@fontsource-variable/geologica` 5.3.0) и `OFL.txt`; подключён из `case.css` относительным адресом — сборка кладёт его к остальным файлам приложения. Запросов к Google Fonts нет |
+| Строки | Все слова — из файла текстов сервиса (`tools/src/legal_tools/case/texts/PAGE_STRINGS.json` ai-dvokat), ручка `GET <база>/api/cases/ui.json` (ETag); `src/lib/custom/case/strings.ts` — хранилище `caseStrings`, `fmt`, `plural`, `count`. Копии строк в форке нет. Слова самого форка — только там, где строк сервиса нет по определению: пункт «Дела» в панели чата и карточка «страница недоступна» (`case_page` в `src/lib/custom/locales/ru-RU.json`) |
+| Клиент ручек | `src/lib/custom/case/api.ts` — `createCaseApi`: база `legal_tools_base` (путь того же источника, как у `jobs.ts`), токен сессии, запись с `X-Ai-Case: 1`, ошибки по видам (`network`, `auth`, `forbidden`, `not_found`, `conflict`, `unavailable`) с фразой сервиса из `detail` |
+| «Мои дела» | `MyCases.svelte`, `SectionTree.svelte`, `StateCard.svelte`; всё, что страница считает сама, — `src/lib/custom/case/mycases.ts` (счётчики, плитки, отбор, порядок, дерево разделов). Дерево разделов — папки чата: `getFolders` и `getSharedFolders` из `$lib/apis/folders` (те же два списка, из которых сервис собирает `api/cases`) |
+| Значки | `Sprite.svelte` (один спрайт, как в макетах) и `Icon.svelte` |
+| Сообщения | `Toast.svelte` и `src/lib/custom/case/toast.ts`: показ и срок — `svelte-sonner` форка (Toaster корневого макета), вид — «Г» |
+| Переспрашивание | `src/lib/custom/case/poll.ts` — правило прежней страницы дела (5 с при обработке, 30 с без неё и после сбоя, скрытая вкладка не спрашивает); понадобится странице дела |
+| Пункт «Дела» в панели чата | `src/lib/components/custom/CasesLink.svelte`, виден при `custom_ui.case === true` |
+
+**Включение.** `CUSTOM_UI`: `"case": true` и, если база сервиса не `/legal-tools`, — `"legal_tools_base"`. Сервис должен
+быть доступен по этому пути с адреса чата (на сервере — Caddy, правило `/legal-tools/*` в `deploy/caddy/Caddyfile`
+ai-dvokat; ручка строк проходит по уже открытому пути `/api/cases/*`). Заглушки прежнего пакета B4 (`CasePanel.svelte`,
+маршрут `(app)/custom/case/[folderId]`) удалены: выключатель `case` теперь включает настоящие страницы.
+
+**Правила кода страниц (держит проверка `tests/custom/case-code.spec.ts`).** Данные сервиса в разметку — только
+текстом: `{@html}` и `innerHTML` запрещены (в данных — распознанный текст документов). Слово для юриста — только
+`S.ключ` из строк сервиса; русских слов в коде компонентов нет. Внешних адресов в коде и стилях нет. Каждое правило
+`case.css` — под `.cg`. Синтаксис Svelte — как во всём слое и в upstream этой версии: `export let` и хранилища, без рун.
+
+**Проверки.**
+- `npx vitest run src/lib/custom/case` — разбор ответа, счётчики, отбор, порядок, формы слов, клиент, переспрашивание.
+- `cd tests/custom && npm test` — стенд компонентов: `case.spec.ts` (все состояния «Моих дел» на 1280 и 360, обе схемы,
+  права, запросы) и `case-code.spec.ts` (правила кода). Данные — выдуманные, `tests/custom/fixtures/case/` (формы
+  настоящих ответов). `CUSTOM_TEST_PORT=<порт>` — свой порт стенда, если 5174 занят другой рабочей копией.
+- `tests/custom/fixtures/case/strings.json` — снимок строк только для проверок (ключи, которые читает код); обновляется
+  `node tests/custom/case-strings-sync.mjs <путь к PAGE_STRINGS.json>`, проверка сверяет его с файлом строк сервиса,
+  когда рабочая копия ai-dvokat лежит рядом или задан `CASE_PAGE_STRINGS`.
+- `node tests/custom/case-shots.mjs --base <адрес стенда> --out <каталог> --mocks <design-g-snapshot/project>` — снимки
+  страницы парами с макетами снимка дизайна и сетка «состояние × 1280/360 × схема».

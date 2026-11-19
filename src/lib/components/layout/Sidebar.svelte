@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { brandAsset } from '$lib/custom/brand'; // ai-dvokat: opt-in logo
+	import CustomCasesLink from '$lib/components/custom/CasesLink.svelte'; // ai-dvokat: «Дела» за выключателем custom_ui.case
 
 	import { toast } from 'svelte-sonner';
 	import { v4 as uuidv4 } from 'uuid';
@@ -1194,6 +1195,7 @@
 						</Tooltip>
 					</div>
 
+					<CustomCasesLink variant="rail" /> <!-- ai-dvokat: «Дела» -->
 					{#each pinnedItems as itemId (itemId)}
 						{@const meta = getMenuItemMeta(itemId)}
 						{#if meta && isMenuItemVisible(itemId)}
@@ -1442,6 +1444,7 @@
 							</button>
 						</div>
 
+						<CustomCasesLink /> <!-- ai-dvokat: «Дела» -->
 						<div id="pinned-menu-items-list">
 							{#each pinnedItems as itemId (itemId)}
 								{@const meta = getMenuItemMeta(itemId)}
