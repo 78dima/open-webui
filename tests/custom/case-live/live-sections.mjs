@@ -281,7 +281,16 @@ await step('опись', async () => {
 	const rows = page.getByTestId('case-doc');
 	await rows.first().waitFor({ timeout: 60000 });
 	const total = async () => (await tools('/documents?page=0')).total;
-	const n0 = await total(); // в описи больше строк, чем первая порция страницы, — счёт по ответу сервиса
+	/** Счёт документов описи по ответу сервиса — ждать, пока станет ожидаемым (не дольше 15 с). */
+	const totalIs = async (want) => {
+		let got = -1;
+		for (let i = 0; i < 15; i++) {
+			got = await total();
+			if (got === want) break;
+			await sleep(1000);
+		}
+		return got;
+	};
 	const listed = (await tools('/documents?page=0')).documents;
 	const pick = listed.find((d) => d.sheets > 1 && d.title && !d.edited) ?? listed.find((d) => d.sheets > 1 && d.title);
 	const id = pick.id;
@@ -299,13 +308,15 @@ await step('опись', async () => {
 	await dlg(page).getByRole('button', { name: S.revert }).first().click();
 	ok(hist.length >= 1 && (await toast(page, S.revert_done)) && (await mine.locator('.b').first().filter({ hasText: new RegExp(`^${title0.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).waitFor({ timeout: 30000 }).then(() => true, () => false)),
 		`«История» из окна «Изменить»: «${(hist[0] ?? '').slice(0, 80)}»; откат вернул название`);
-	// разделить и объединить обратно
+	// разделить и объединить обратно; в описи больше строк, чем первая порция страницы, — счёт по ответу сервиса
+	const n0 = await total();
 	await mine.getByRole('button', { name: S.doc_split, exact: true }).click();
 	const at = await dlg(page).locator('select option').first().textContent();
 	await dlg(page).getByRole('button', { name: S.doc_split, exact: true }).click();
 	await toast(page, S.saved);
 	await page.getByTestId('case-doc').first().waitFor({ timeout: 30000 });
-	ok((await total()) === n0 + 1, `«Разделить»: новый документ начинается с листа «${at}» — в описи стало ${n0 + 1} документов`);
+	const afterSplit = await totalIs(n0 + 1);
+	ok(afterSplit === n0 + 1, `«Разделить»: новый документ начинается с листа «${at}» — в описи было ${n0} документов, стало ${afterSplit}`);
 	const docs = (await tools('/documents?page=0')).documents;
 	const i = docs.findIndex((d) => String(d.id) === String(id));
 	const pair = [docs[i], docs[i + 1]].filter(Boolean);
@@ -317,7 +328,8 @@ await step('опись', async () => {
 	await merge.click();
 	await toast(page, S.saved);
 	await page.getByTestId('case-doc').first().waitFor({ timeout: 30000 });
-	ok(needTwo && label === fmt(S.doc_merge_n, { n: 2 }) && (await total()) === n0, `«Объединить отмеченные»: без отметок — «${S.doc_merge_need_two}»; «${label}» — в описи снова ${n0} документов`);
+	const afterMerge = await totalIs(n0);
+	ok(needTwo && label === fmt(S.doc_merge_n, { n: 2 }) && afterMerge === n0, `«Объединить отмеченные»: без отметок — «${needTwo ? S.doc_merge_need_two : 'сообщения нет'}»; «${label}» — в описи снова ${afterMerge} документов (было ${n0})`);
 	// выгрузка
 	for (const [name, mark, ext] of [[S.export_docx, 'word/document.xml', '.docx'], [S.export_xlsx, 'xl/workbook.xml', '.xlsx']]) {
 		const wait = page.waitForEvent('download', { timeout: 60000 });
@@ -378,7 +390,7 @@ await step('выписка листов', async () => {
 	await box.getByRole('button', { name: S.extract_submit }).click();
 	const err = page.getByTestId('case-extract-error');
 	await err.waitFor({ timeout: 30000 });
-	ok((await err.textContent()).includes('т. 1, л.д. 999') && (await page.locator('[data-sonner-toast]').count()) === 0, `ошибка выписки — под полем, фразой сервиса: «${(await err.textContent()).trim().slice(0, 90)}»`);
+	ok((await err.textContent()).includes('т. 1, л.д. 999') && (await page.locator('[data-sonner-toast]', { hasText: 'т. 1, л.д. 999' }).count()) === 0, `ошибка выписки — под полем, фразой сервиса: «${(await err.textContent()).trim().slice(0, 90)}»`);
 });
 
 // ================================================================ карта дела
@@ -564,7 +576,16 @@ await step('файлы папки вне дела', async () => {
 	const upd = file?.id
 		? await api('POST', `/api/v1/folders/${folder}/update`, owner.token, { name: current.name, data: { ...(current.data ?? {}), files: [...(current.data?.files ?? []), { type: 'file', id: file.id, name: 'Доверенность.pdf' }] } })
 		: { status: 0 };
-	const listed = (await tools('/folder-files'))?.files ?? [];
+	// права на папку и её «Знания» сервис помнит до 60 с: файл появляется в разделе не сразу (так же на прежней странице)
+	let listed = [];
+	let seen = 0;
+	const t0 = Date.now();
+	while (file?.id && upd.status === 200 && Date.now() - t0 < 100000 && seen < 4) {
+		listed = (await tools('/folder-files'))?.files ?? [];
+		seen = listed.length ? seen + 1 : 0;
+		await sleep(4000);
+	}
+	const waited = Math.round((Date.now() - t0) / 1000);
 	if (!file?.id || upd.status !== 200 || !listed.length)
 		return cannot(`файл папки: положить файл в «Знания» папки через Open WebUI этой среды не получилось (загрузка ${up.status}, папка ${upd.status}, файлов вне дела ${listed.length})`);
 	await page.goto(base + CASE);
@@ -583,7 +604,7 @@ await step('файлы папки вне дела', async () => {
 	ok((await row.textContent()).includes('Доверенность.pdf'), `файл из «Знаний» папки в разделе назван по имени: «${(await row.locator('.b').first().textContent()).trim()}» (сервис: ${JSON.stringify(listed[0]).slice(0, 140)})`);
 	await row.getByRole('combobox').selectOption({ label: S.upload_kind_ecase });
 	await row.getByRole('button', { name: S.folder_file_add, exact: true }).click();
-	ok(await toast(page, S.folder_file_added), 'файл из «Знаний» папки: пункт «Файлы папки вне дела» появился в меню; «Добавить в дело» с ответом «электронное дело» — «Файл передан в дело»');
+	ok(await toast(page, S.folder_file_added), `файл из «Знаний» папки: пункт «Файлы папки вне дела» появился в меню (сервис назвал файл через ${waited} с после того, как его положили в папку); «Добавить в дело» с ответом «электронное дело» — «Файл передан в дело»`);
 	const d = await settle('файл папки');
 	ok(Object.values(d.files ?? {}).some((f) => f.filename === 'Доверенность.pdf' && f.status === 'indexed'), 'файл папки принят в дело и прочитан');
 });
