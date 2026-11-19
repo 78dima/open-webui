@@ -5,6 +5,7 @@
 	// кнопка не нажимается. Без `submit` — только чтение (кнопка «Закрыть»).
 	import { errorText } from '$lib/custom/case/sections';
 	import Dialog from './Dialog.svelte';
+	import Icon from './Icon.svelte';
 
 	export let open = false;
 	export let title = '';
@@ -39,10 +40,21 @@
 	}
 </script>
 
-<Dialog bind:open {title} labelledby="{testid}-title">
+<Dialog bind:open title={danger ? '' : title} labelledby="{testid}-title">
 	{#if open}
 		<form class="col g14" on:submit|preventDefault={onSubmit} data-testid={testid} novalidate>
-			<slot />
+			{#if danger}
+				<!-- необратимое действие: значок и вопрос рядом (макет K-danger) -->
+				<div class="row g12 nw as">
+					<span class="ico s" aria-hidden="true"><Icon name="al" klass="l" /></span>
+					<div class="col g6">
+						<h2 id="{testid}-title">{title}</h2>
+						<slot />
+					</div>
+				</div>
+			{:else}
+				<slot />
+			{/if}
 			{#if error}<span class="sm b c-stop" role="alert" data-testid="case-dialog-error"
 					>{error}</span
 				>{/if}

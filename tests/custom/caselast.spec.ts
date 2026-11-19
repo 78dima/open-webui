@@ -16,7 +16,8 @@ test.describe('«Файлы папки вне дела»', () => {
 		await expect(pdf.getByRole('combobox').locator('option')).toHaveText([S.upload_kind_volume, S.upload_kind_ecase]);
 		await expect(page.getByTestId('case-folder-files')).toContainText(S.folder_file_unreadable);
 		await expect(page.getByTestId('case-folder-files')).toContainText(S.folder_file_adding);
-		await expect(page.getByTestId('case-folder-files')).toContainText('этот формат не принимается');
+		await expect(page.getByTestId('case-folder-files')).toContainText(S.folder_file_bad_format);
+		await expect(page.locator('.head .cnt')).toHaveText(String(files.length)); // число файлов — в шапке раздела
 		await pdf.getByRole('combobox').selectOption({ label: S.upload_kind_ecase });
 		await pdf.getByRole('button', { name: S.folder_file_add }).click();
 		await expect(page.getByText(S.folder_file_added)).toBeVisible();

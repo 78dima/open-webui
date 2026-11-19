@@ -29,7 +29,7 @@
 <a bind:this={away} href={casesHref} hidden aria-hidden="true" tabindex="-1">{S.back_to_cases}</a>
 
 <section class="card g16 box" data-testid="case-danger">
-	<p class="md">{S.delete_case_confirm_g} {S.delete_case_owner_note}</p>
+	<p class="md lead">{S.delete_case_confirm_g} {S.delete_case_owner_note}</p>
 	<button type="button" class="btn big d" on:click={() => (open = true)}>{S.delete_case}</button>
 </section>
 
@@ -46,6 +46,10 @@
 </FormDialog>
 
 <style>
+	.lead {
+		max-width: 620px;
+	}
+
 	.box {
 		align-items: flex-start;
 	}

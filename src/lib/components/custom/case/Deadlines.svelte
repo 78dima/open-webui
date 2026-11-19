@@ -157,8 +157,8 @@
 		>
 			<div class="row sp g12 as">
 				<div class="col g4 grow">
-					<span class="b num" class:mut={dates.none}>{dates.text}</span>
-					<h3 class="aw">{x.title}</h3>
+					<span class="b num dates" class:mut={dates.none}>{dates.text}</span>
+					<h3 class="aw name">{x.title}</h3>
 				</div>
 				<div class="row g8">
 					{#if x.hidden}
@@ -284,6 +284,13 @@
 />
 
 <style>
+	.dates {
+		font-size: 20px;
+	}
+	.name {
+		font-size: 17px;
+	}
+
 	.lbl input,
 	.lbl textarea {
 		min-width: 0;

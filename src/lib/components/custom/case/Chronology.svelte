@@ -279,7 +279,7 @@
 {:else if !$answer}
 	<section class="card"><p class="mut" role="status">{S.loading}</p></section>
 {:else}
-	<section class="card" data-testid="case-facts">
+	<section class="card list" data-testid="case-facts">
 		<div class="col g2 totals">
 			<p class="sm mut">{fmt(S.map_facts_total, { n: $answer.total })}</p>
 			{#if $answer.undated}<p class="sm mut">{fmt(S.map_undated, { n: $answer.undated })}</p>{/if}
@@ -290,7 +290,8 @@
 			{@const note = dateNote(f, S)}
 			<div class="li t" class:hid={f.hidden} data-testid="case-fact">
 				<span class="b date" class:mut={date.none}
-					>{date.text}{#if date.value}{' '}<span class="sm mut">({date.value})</span>{/if}</span
+					>{date.text}{#if date.value}{' '}<span class="sm mut plain">({date.value})</span
+						>{/if}</span
 				>
 				<div class="col g6 grow body">
 					<span class="b aw">{f.summary}</span>
@@ -452,11 +453,21 @@
 />
 
 <style>
+	.list {
+		padding: 8px 24px;
+	}
+	.plain {
+		font-weight: 400;
+	}
+	form .in.grow {
+		min-width: 160px;
+	}
+
 	.totals {
 		padding-bottom: 8px;
 	}
 	.date {
-		flex: 0 0 150px;
+		flex: 0 0 170px;
 		overflow-wrap: anywhere;
 	}
 	.copy {

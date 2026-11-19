@@ -105,8 +105,8 @@
 {:else if !$answer}
 	<section class="card"><p class="mut" role="status">{S.loading}</p></section>
 {:else}
-	<section class="card" data-testid="case-amounts">
-		<div class="row sp g12">
+	<section class="card list" data-testid="case-amounts">
+		<div class="row sp g12 bar1">
 			<label class="chk"
 				><input
 					type="checkbox"
@@ -244,6 +244,16 @@
 />
 
 <style>
+	.list {
+		padding-bottom: 10px;
+	}
+	.bar1 {
+		padding-bottom: 8px;
+	}
+	.tr > .q {
+		margin-top: 8px;
+	}
+
 	.t-amt {
 		padding-top: 8px;
 	}

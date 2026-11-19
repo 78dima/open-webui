@@ -191,12 +191,13 @@ test.describe('открытая таблица, 1280', () => {
 		// остановлен пределом трат: дочитать с новым пределом — через окно (цена больше 1 USD)
 		view = { ...fixture('table-open'), sweep: { ...fixture('table-open').sweep, status: 'partial', stop: 'limit', rest: { windows: 7, pages: 41, estimate_usd: 1.2, raise_to_usd: 3, spent_usd: 1.5, limit_usd: 1.5 } } };
 		await page.getByTestId('case-table-open').first().click();
-		await expect(action).toHaveText([S.tables_resume_limit]);
+		await expect(action).toHaveText(['Дочитать с новым пределом — около 1,20 USD']);
+		await expect(page.getByTestId('case-table-facts').getByTestId('case-table-action')).toHaveCount(1); // кнопка — у своего пояснения
 		await expect(page.getByTestId('case-table-facts')).toContainText('Потрачено 1,50 USD из предела прохода 1,50 USD.');
 		await action.click();
 		const dlg = dialog(page);
 		await expect(dlg).toContainText('Оценка цены прохода: около 1,20 USD.');
-		await dlg.getByRole('button', { name: S.tables_resume_limit }).click();
+		await dlg.getByRole('button', { name: 'Дочитать с новым пределом — около 1,20 USD' }).click();
 		await expect(dlg).toHaveCount(0);
 		expect(calls.filter((c) => c.method === 'POST').at(-1)!.path).toBe(`/tables/${OPEN}/catch-up?raise_limit=true`);
 	});

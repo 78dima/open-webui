@@ -69,7 +69,7 @@
 {:else if !files}
 	<section class="card"><p class="mut" role="status">{S.loading}</p></section>
 {:else}
-	<section class="card" data-testid="case-folder-files">
+	<section class="card list" data-testid="case-folder-files">
 		{#each files as f (f.id)}
 			<div class="li" data-testid="case-folder-file">
 				<div class="col g2 grow">
@@ -77,13 +77,11 @@
 					{#if f.size}<span class="sm mut">{size(f.size)}</span>{/if}
 				</div>
 				{#if !f.readable}
-					<span class="pill ro box"><Icon name="lock" />{S.folder_file_unreadable}</span>
+					<span class="pill ro box"><Icon name="al" />{S.folder_file_unreadable}</span>
 				{:else if f.adding}
 					<span class="pill i"><Icon name="clock" />{S.folder_file_adding}</span>
 				{:else if !f.kind}
-					<span class="pill ro box"
-						><Icon name="al" />{fmt(S.upload_bad_format, { name: f.name || '' })}</span
-					>
+					<span class="pill ro box"><Icon name="al" />{S.folder_file_bad_format}</span>
 				{:else if canWrite}
 					<div class="row g8">
 						{#if f.kind !== 'photo'}
@@ -103,8 +101,12 @@
 {/if}
 
 <style>
+	.list {
+		padding: 8px 24px;
+	}
+
 	.intro {
-		max-width: 760px;
+		max-width: 680px;
 		color: var(--muted2);
 	}
 	.li:first-child {

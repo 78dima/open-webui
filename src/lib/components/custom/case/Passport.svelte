@@ -19,7 +19,7 @@
 	import { fmt } from '$lib/custom/case/strings';
 	import FormDialog from './FormDialog.svelte';
 	import HistoryDialog from './HistoryDialog.svelte';
-	import Icon from './Icon.svelte';
+	import Icon, { type IconName } from './Icon.svelte';
 	import SheetRef from './SheetRef.svelte';
 
 	export let state: CaseState;
@@ -72,7 +72,6 @@
 	$: canWrite = !!$answer?.can_write;
 
 	const PARTIES = 4; // участников до «Показать ещё»
-	const ROLES = 2; // ролей участника до «ещё N»
 	const ROWS = 3; // записей в «Ключевых датах» и «Ключевых суммах» до «Показать ещё»
 	let opened = new Set<string>();
 	const flip = (key: string) => {
@@ -81,6 +80,7 @@
 		else next.add(key);
 		opened = next;
 	};
+	const cap = (t: string) => (t ? t[0].toLocaleUpperCase('ru-RU') + t.slice(1) : t);
 	let search = '';
 	$: needle = search.trim().toLocaleLowerCase('ru-RU');
 	$: found = (parties?.items ?? []).filter(
@@ -88,7 +88,7 @@
 	);
 	$: partiesShown = needle || opened.has('parties:all') ? found : found.slice(0, PARTIES);
 
-	type Pill = { text: string; warn: boolean };
+	type Pill = { text: string; warn: boolean; icon?: IconName };
 	function pills(it: Item): Pill[] {
 		const out: Pill[] = [];
 		if (it.source === 'lawyer') out.push({ text: S.map_passport_lawyer, warn: false });
@@ -102,7 +102,8 @@
 					it.handwritten >= (it.records || 1)
 						? S.map_passport_handwritten
 						: fmt(S.map_passport_handwritten_some, { n: it.handwritten, m: it.records }),
-				warn: true
+				warn: true,
+				icon: 'pen'
 			});
 		return out;
 	}
@@ -175,12 +176,12 @@
 	<section class="card"><p class="mut" role="status">{S.loading}</p></section>
 {:else}
 	<section class="card g4" data-testid="case-passport-about">
-		<h2>{S.passport_group_case}</h2>
+		<h2 class="grouph">{S.passport_group_case}</h2>
 		{#each about as f (f.key)}
 			<div class="li t" data-testid="case-passport-field" data-field={f.key}>
 				<div class="kv grow">
 					<dt class="col g4">
-						<span class="b">{passportName(S, f.key)}</span>
+						<span class="b fname">{passportName(S, f.key)}</span>
 						{#if !(f.lawyer_only && !f.items.length)}
 							<span class="row g4">
 								{#if canWrite}<button type="button" class="btn t" on:click={() => edit(f)}
@@ -217,7 +218,7 @@
 										>{/if}
 									{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}
 									{#each pills(it) as p}<span class="pill t" class:w={p.warn}
-											>{#if p.warn}<Icon name="al" />{/if}{p.text}</span
+											>{#if p.warn}<Icon name={p.icon ?? 'al'} />{/if}{p.text}</span
 										>{/each}
 									{#if it.quote}
 										<button
@@ -257,7 +258,7 @@
 	</section>
 
 	{#if parties}
-		<section class="card g8" data-testid="case-passport-parties">
+		<section class="card g8 tight" data-testid="case-passport-parties">
 			<div class="row sp g12">
 				<div class="row g12">
 					<h2>{passportName(S, 'parties')}</h2>
@@ -295,7 +296,6 @@
 				{#each partiesShown as it (it.value)}
 					{@const key = `party:${it.value}`}
 					{@const roles = it.roles ?? []}
-					{@const rolesShown = opened.has(`${key}:roles`) ? roles : roles.slice(0, ROLES)}
 					<div class="li t" data-testid="case-party">
 						<div class="col g6 grow">
 							<div class="row g8">
@@ -305,7 +305,7 @@
 									>{/if}
 								{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}
 								{#each pills(it) as p}<span class="pill t" class:w={p.warn}
-										>{#if p.warn}<Icon name="al" />{/if}{p.text}</span
+										>{#if p.warn}<Icon name={p.icon ?? 'al'} />{/if}{p.text}</span
 									>{/each}
 								{#if it.quote}
 									<button
@@ -334,9 +334,10 @@
 								</p>
 							{/if}
 							{#if roles.length}
-								<div class="col g4 sm fg2" data-testid="case-party-roles">
+								{@const all = opened.has(`${key}:roles`) || roles.length === 1}
+								<div class="{all ? 'col g4' : 'row g8'} sm fg2" data-testid="case-party-roles">
 									<span class="mut">{S.map_passport_roles}</span>
-									{#each rolesShown as r, i (i)}
+									{#each all ? roles : roles.slice(0, 1) as r, i (i)}
 										<span class="aw"
 											>{r.value}{#if (r.documents ?? 0) > 1}{' · '}{fmt(S.map_passport_in_docs, {
 													n: r.documents
@@ -349,12 +350,10 @@
 												/>{/each}</span
 										>
 									{/each}
-									{#if roles.length > rolesShown.length}
-										<div>
-											<button type="button" class="btn s" on:click={() => flip(`${key}:roles`)}
-												>{fmt(S.more_n, { n: roles.length - rolesShown.length })}</button
-											>
-										</div>
+									{#if !all}
+										<button type="button" class="btn t" on:click={() => flip(`${key}:roles`)}
+											>{fmt(S.more_n, { n: roles.length - 1 })}</button
+										>
 									{/if}
 								</div>
 							{/if}
@@ -377,7 +376,7 @@
 
 	{#each lists as f (f.key)}
 		{@const all = opened.has(`${f.key}:all`)}
-		<section class="card g4" data-testid="case-passport-field" data-field={f.key}>
+		<section class="card g4 tight" data-testid="case-passport-field" data-field={f.key}>
 			<div class="row sp g12">
 				<div class="row g12">
 					<h2>{passportName(S, f.key)}</h2>
@@ -403,7 +402,7 @@
 						<div class="row g8">
 							{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}
 							{#each pills(it) as p}<span class="pill t" class:w={p.warn}
-									>{#if p.warn}<Icon name="al" />{/if}{p.text}</span
+									>{#if p.warn}<Icon name={p.icon ?? 'al'} />{/if}{p.text}</span
 								>{/each}
 							{#if it.quote}
 								<button
@@ -437,7 +436,7 @@
 			{#if !all && f.items.length > ROWS}
 				<div class="li">
 					<button type="button" class="btn s" on:click={() => flip(`${f.key}:all`)}
-						>{fmt(S.show_more_n, { n: f.items.length - ROWS })}</button
+						>{cap(fmt(S.more_n, { n: f.items.length - ROWS }))}</button
 					>
 				</div>
 			{/if}
@@ -476,11 +475,30 @@
 />
 
 <style>
+	.grouph {
+		padding-bottom: 6px;
+	}
+	.fname {
+		color: var(--fg);
+	}
+	.tight {
+		padding-bottom: 10px;
+	}
+
 	.find {
+		position: relative;
 		color: var(--muted);
 	}
+	.find :global(.ic) {
+		position: absolute;
+		left: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		pointer-events: none;
+	}
 	.find input {
-		width: 190px;
+		width: 220px;
+		padding-left: 34px;
 	}
 	.as {
 		align-self: flex-start;

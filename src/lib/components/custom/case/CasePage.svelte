@@ -79,7 +79,15 @@
 				: S.case_no_title;
 	$: checks = Math.max($data?.check_total ?? 0, ($data?.overview.check_sheets ?? []).length);
 	// число у заголовка раздела — то же, что у пункта меню; у «Проверьте листы» — с учётом пришедших строк
-	$: headCount = section === 'check' ? checks : (item?.count ?? 0);
+	// у «Копий» числа в шапке нет (счёт — у каждого блока раздела); у «Файлов папки вне дела» — число файлов
+	$: headCount =
+		section === 'check'
+			? checks
+			: section === 'copies'
+				? 0
+				: section === 'folder-files'
+					? $folderFiles
+					: (item?.count ?? 0);
 	// заголовок раздела в шапке — как в макете раздела (у паспорта и сумм он длиннее пункта меню)
 	const HEAD_TITLE: Record<string, string> = {
 		passport: 'section_passport',

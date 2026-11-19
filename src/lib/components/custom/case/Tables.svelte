@@ -135,7 +135,7 @@
 {:else if !$answer}
 	<section class="card"><p class="mut" role="status">{S.loading}</p></section>
 {:else}
-	<section class="card" data-testid="case-tables">
+	<section class="card list" data-testid="case-tables">
 		{#if !tables.length}<p class="md fg2" data-testid="case-tables-empty">{S.tables_empty}</p>{/if}
 		{#each tables as sw (sw.id)}
 			{@const tone = statusTone(sw)}
@@ -156,7 +156,7 @@
 						{#if sw.parent}<span class="pill t">{S.tables_parent}</span>{/if}
 					</div>
 					{#if sw.status === 'running'}
-						<div class="bar" aria-hidden="true"><i style:width="{percent(sw)}%"></i></div>
+						<div class="bar run" aria-hidden="true"><i style:width="{percent(sw)}%"></i></div>
 					{/if}
 					{#if sw.title}<p class="sm fg2 aw">
 							{fmt(S.tables_question, { question: sw.question })}
@@ -227,8 +227,8 @@
 					</div>
 				</fieldset>
 			{/if}
-			<div class="row sp g12 sep">
-				<p class="md fg2" aria-live="polite" data-testid="case-tables-scope">
+			<div class="row sp g12 sep go">
+				<p class="md fg2 scope" aria-live="polite" data-testid="case-tables-scope">
 					{#if scopeError}{scopeError}{:else if !scope}{S.loading}{:else if !scope.pages}{S.tables_estimate_none}{:else}{fmt(
 							S.runs_scope_facts,
 							{ documents: scope.documents, pages: scope.pages, windows: scope.windows }
@@ -274,8 +274,21 @@
 </FormDialog>
 
 <style>
+	.list {
+		padding: 10px 24px;
+	}
+	.run {
+		max-width: 420px;
+	}
+	.go {
+		margin-top: 0;
+	}
+	.scope {
+		max-width: 520px;
+	}
+
 	.intro {
-		max-width: 760px;
+		max-width: 720px;
 		color: var(--muted2);
 	}
 	.name {

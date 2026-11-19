@@ -137,12 +137,27 @@
 	}
 
 	// ---- дочитать, перечитать ----
-	type Action = { text: string; query: string; estimate: unknown; note: string; warn: boolean };
+	type Action = {
+		text: string;
+		query: string;
+		estimate: unknown;
+		note: string;
+		warn: boolean;
+		/** У какого пояснения стоит кнопка: остаток прохода, изменившееся дело, прежняя версия чтения. */
+		where: 'rest' | 'stale' | 'reader';
+	};
 	$: actions = !sw || !canWrite ? [] : sweepActions(sw);
 	function sweepActions(s: Sweep): Action[] {
 		const out: Action[] = [];
 		if (s.stale && s.finished)
-			out.push({ text: S.tables_catch_up, query: '', estimate: 0, note: '', warn: false });
+			out.push({
+				text: S.tables_catch_up,
+				query: '',
+				estimate: 0,
+				note: '',
+				warn: false,
+				where: 'stale'
+			});
 		if (!s.stale && s.reader_stale)
 			out.push({
 				text: s.reread
@@ -157,14 +172,15 @@
 							pages: s.reread.pages
 						})
 					: '',
-				warn: false
+				warn: false,
+				where: 'reader'
 			});
 		if (!s.stale && s.rest) {
 			const raise = s.rest.raise_to_usd != null;
 			out.push({
-				text: raise
-					? S.tables_resume_limit
-					: fmt(S.runs_resume_usd, { usd: usd(s.rest.estimate_usd) }),
+				text: fmt(raise ? S.runs_resume_limit_usd : S.runs_resume_usd, {
+					usd: usd(s.rest.estimate_usd)
+				}),
 				query: raise ? '?raise_limit=true' : '',
 				estimate: s.rest.estimate_usd,
 				note: fmt(S.runs_confirm_rest, {
@@ -172,7 +188,8 @@
 					n: s.rest.windows,
 					pages: s.rest.pages
 				}),
-				warn: raise
+				warn: raise,
+				where: 'rest'
 			});
 		}
 		return out;
@@ -269,16 +286,6 @@
 	{#if refAction}<GotoForm action={refAction} {volumes} {S} />{/if}
 	{#if sw}
 		<div class="row g8">
-			{#each actions as a (a.text)}
-				<button
-					type="button"
-					class="btn"
-					class:p={!a.warn}
-					disabled={acting}
-					on:click={() => press(a)}
-					data-testid="case-table-action">{a.text}</button
-				>
-			{/each}
 			<button type="button" class="btn" disabled={exporting} on:click={exportXlsx}
 				><Icon name="dl" />{S.tables_export}</button
 			>
@@ -298,13 +305,19 @@
 {:else}
 	<div class="col g8" data-testid="case-table-facts">
 		{#if !sw.stale && sw.rest}
-			<p
-				class="sm"
-				class:c-warn={sw.rest.raise_to_usd != null}
-				class:mut={sw.rest.raise_to_usd == null}
-			>
-				{restText(sw.rest, S)}
-			</p>
+			<!-- остаток частичного прохода и «Дочитать» — одной строкой: действие стоит у своего пояснения (макет) -->
+			<div class="note row g12 act" class:n={sw.rest.raise_to_usd == null}>
+				<p class="grow">{restText(sw.rest, S)}</p>
+				{#each actions.filter((a) => a.where === 'rest') as a (a.text)}
+					<button
+						type="button"
+						class="btn p"
+						disabled={acting}
+						on:click={() => press(a)}
+						data-testid="case-table-action">{a.text}</button
+					>
+				{/each}
+			</div>
 		{/if}
 		{#if sw.title}<p class="md fg2 aw">{fmt(S.tables_question, { question: sw.question })}</p>{/if}
 		<p class="sm mut">{coverage(sw, S, true)}</p>
@@ -319,12 +332,12 @@
 							{#if g.sheets.length}
 								<div class="row g6">
 									{#each all ? g.sheets : g.sheets.slice(0, SHEETS) as x (x.page_id)}
-										<a class="chipl" href={place(x)} data-sveltekit-reload
+										<a class="chipl small" href={place(x)} data-sveltekit-reload
 											>{x.label || S.tables_col_sheet}</a
 										>
 									{/each}
 									{#if !all && g.sheets.length > SHEETS}
-										<button type="button" class="btn s" on:click={() => flip(g.id)}
+										<button type="button" class="btn s clear" on:click={() => flip(g.id)}
 											>{fmt(S.more_n, { n: g.sheets.length - SHEETS })}</button
 										>
 									{/if}
@@ -335,26 +348,44 @@
 				</div>
 			</div>
 		{/if}
-		{#if sw.stale}<div class="note">
-				<Icon name="al" klass="l" />
-				<p>{S.tables_stale}</p>
-			</div>{/if}
+		{#if sw.stale}
+			<div class="note row g12 act">
+				<p class="grow">{S.tables_stale}</p>
+				{#each actions.filter((a) => a.where === 'stale') as a (a.text)}
+					<button
+						type="button"
+						class="btn p"
+						disabled={acting}
+						on:click={() => press(a)}
+						data-testid="case-table-action">{a.text}</button
+					>
+				{/each}
+			</div>
+		{/if}
 		{#if sw.reader_stale}
-			<div class="note">
-				<Icon name="al" klass="l" />
-				<p>
+			<div class="note row g12 act">
+				<p class="grow">
 					{S.tables_reader_stale}{#if sw.reread}{' '}{fmt(S.tables_reread_note, {
 							n: sw.reread.windows,
 							pages: sw.reread.pages,
 							usd: usd(sw.reread.estimate_usd)
 						})}{/if}
 				</p>
+				{#each actions.filter((a) => a.where === 'reader') as a (a.text)}
+					<button
+						type="button"
+						class="btn p"
+						disabled={acting}
+						on:click={() => press(a)}
+						data-testid="case-table-action">{a.text}</button
+					>
+				{/each}
 			</div>
 		{/if}
 	</div>
 
 	{#if view.kind === 'table'}
-		<section class="card" data-testid="case-table">
+		<section class="card grid-card" data-testid="case-table">
 			<div class="scroll">
 				<div
 					class="grid t-open"
@@ -364,7 +395,7 @@
 					<div class="hc">{S.tables_col_document}</div>
 					{#each columns as c (c.key)}
 						<div class="hc" title={c.question || undefined}>
-							<span class="b">{c.title}</span><br />{summaryText(view.summary?.[c.key], S)}
+							<span class="b colname">{c.title}</span><br />{summaryText(view.summary?.[c.key], S)}
 						</div>
 					{/each}
 					{#each rows as r (r.document_id)}
@@ -542,6 +573,23 @@
 </FormDialog>
 
 <style>
+	.act {
+		align-items: center;
+	}
+
+	.grid-card {
+		padding: 12px 24px 14px;
+	}
+	.chipl.small {
+		min-height: 30px;
+	}
+	.btn.clear {
+		background: none;
+	}
+	.colname {
+		color: var(--fg);
+	}
+
 	.doc {
 		color: inherit;
 	}

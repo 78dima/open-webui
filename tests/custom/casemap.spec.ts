@@ -67,8 +67,9 @@ test.describe('«Паспорт», 1280', () => {
 		await expect(rows).toHaveCount(4);
 		await expect(box).toContainText('показано 4 из 6');
 		const first = rows.first();
-		await expect(first.getByTestId('case-party-roles').locator('> span.aw')).toHaveCount(2);
-		await first.getByRole('button', { name: 'ещё 2' }).click();
+		// свёрнуто — первая роль и «ещё N» в одну строку; раскрыто — все роли перечнем
+		await expect(first.getByTestId('case-party-roles').locator('> span.aw')).toHaveCount(1);
+		await first.getByRole('button', { name: 'ещё 3' }).click();
 		await expect(first.getByTestId('case-party-roles').locator('> span.aw')).toHaveCount(4);
 		await box.getByRole('searchbox', { name: S.parties_search_label }).fill('вектор');
 		await expect(rows).toHaveCount(1);
