@@ -16,14 +16,18 @@
 	} from '$lib/custom/case/casepage';
 	import { caseStrings, count, fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
+	import Amounts from './Amounts.svelte';
 	import CaseNav from './CaseNav.svelte';
 	import CheckSheets from './CheckSheets.svelte';
+	import Chronology from './Chronology.svelte';
 	import Copies from './Copies.svelte';
+	import Deadlines from './Deadlines.svelte';
 	import Dialog from './Dialog.svelte';
 	import GotoForm from './GotoForm.svelte';
 	import Icon from './Icon.svelte';
 	import Inventory from './Inventory.svelte';
 	import Overview from './Overview.svelte';
+	import Passport from './Passport.svelte';
 	import StateCard from './StateCard.svelte';
 	import Extract from './Extract.svelte';
 	import Replace from './Replace.svelte';
@@ -240,6 +244,14 @@
 					<Inventory {state} {S} />
 				{:else if section === 'copies'}
 					<Copies {state} {S} />
+				{:else if section === 'passport'}
+					<Passport {state} {S} {hrefOf} />
+				{:else if section === 'amounts'}
+					<Amounts {state} {S} />
+				{:else if section === 'chronology'}
+					<Chronology {state} {S} />
+				{:else if section === 'deadlines'}
+					<Deadlines {state} {S} />
 				{:else if section === 'replace'}
 					<Replace {state} {S} />
 				{:else if section === 'extract'}

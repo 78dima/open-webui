@@ -4,6 +4,7 @@
 	// неоткаченной правки поля, без подтверждения: сообщение «Откачено», окно закрывается, раздел перечитывается.
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { when } from '$lib/custom/case/casepage';
+	import { editField, editValue } from '$lib/custom/case/mapcore';
 	import { casePath, errorText, query } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
@@ -18,6 +19,11 @@
 
 	type Edit = {
 		id: number;
+		entity?: string;
+		entity_id?: number | string;
+		field?: string;
+		before?: unknown;
+		after?: unknown;
 		field_text?: string | null;
 		who: string;
 		at: string;
@@ -58,12 +64,22 @@
 			caseToast(errorText(S, err), true);
 		}
 	}
+	// значения словами готовит сервис (том, файл, опись); у записей карты дела сервис отдаёт сами значения —
+	// слова для них здесь, тем же правилом, что на прежней странице
+	const mapped = (e: Edit) =>
+		e.field_text == null &&
+		e.before_text == null &&
+		e.after_text == null &&
+		!!e.entity &&
+		!!e.field;
+	const fieldOf = (e: Edit) =>
+		mapped(e) ? editField(e.entity!, e.field!, e.entity_id, S) : (e.field_text ?? '');
 	const line = (e: Edit) =>
 		fmt(S.edit_history_row, {
 			who: e.who,
 			when: when(e.at),
-			a: e.before_text || S.value_empty,
-			b: e.after_text || S.value_empty
+			a: mapped(e) ? editValue(e.entity!, e.field!, e.before, S) : e.before_text || S.value_empty,
+			b: mapped(e) ? editValue(e.entity!, e.field!, e.after, S) : e.after_text || S.value_empty
 		});
 </script>
 
@@ -80,7 +96,7 @@
 				<div class="li t" data-testid="case-history-row">
 					<div class="col g4 grow">
 						<div class="row g8">
-							{#if e.field_text}<span class="b">{e.field_text}</span>{/if}
+							{#if fieldOf(e)}<span class="b">{fieldOf(e)}</span>{/if}
 							{#if e.revert_of}<span class="pill t">{S.history_revert_of}</span>{/if}
 							{#if e.reverted_by}<span class="pill t">{S.history_reverted}</span>{/if}
 						</div>

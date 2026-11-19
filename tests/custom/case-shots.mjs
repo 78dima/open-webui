@@ -194,6 +194,14 @@ const CASE_SCENES = {
 	} },
 	replace: { data: () => fixture('case-overview'), section: 'replace', routes: { deltas: 'deltas' } },
 	extract: { data: () => fixture('case-overview'), section: 'extract' },
+	passport: { data: () => fixture('case-overview'), section: 'passport', after: async (page) => {
+		await page.getByTestId('case-passport-item').first().getByRole('button').first().click();
+	} },
+	amounts: { data: () => fixture('case-overview'), section: 'amounts', routes: { 'amounts**': 'amounts' } },
+	chronology: { data: () => fixture('case-overview'), section: 'chronology', routes: { 'facts**': 'facts' }, after: async (page) => {
+		await page.getByTestId('case-fact').first().getByRole('button').first().click();
+	} },
+	deadlines: { data: () => fixture('case-overview'), section: 'deadlines', routes: { 'deadlines**': 'deadlines' } },
 	copies: { data: () => fixture('case-overview'), section: 'copies', routes: { copies: 'copies' }, after: async (page) => {
 		await page.getByTestId('case-copy').first().getByRole('button').first().click();
 	} },
@@ -282,6 +290,14 @@ async function shotCase(browser, scene, width, height, dark, file) {
 	return overflow;
 }
 // макет (или его основа для обёрток -phone и -dark) → состояние страницы дела
+/** Высота макета из его описания (`$preview`); без папки макетов — запасная. */
+const PH = (name) => {
+	try {
+		return Number(/"\$preview":\{"width":\d+,"height":(\d+)\}/.exec(readFileSync(join(mocks, `${name}.dc.html`), 'utf8'))[1]);
+	} catch {
+		return 1600;
+	}
+};
 const trio = (name, scene, height, phone) => [
 	[name, name, scene, 1280, height, false],
 	[`${name}-phone`, name, scene, 360, phone, false],
@@ -302,7 +318,11 @@ const CASE_PAIRS = [
 	...trio('K-replace', 'replace', 1720, 2900),
 	...trio('K-extract', 'extract', 1020, 1300),
 	...trio('K-inventory', 'inventory', 1460, 3100),
-	...trio('K-copies', 'copies', 1380, 2300)
+	...trio('K-copies', 'copies', 1380, 2300),
+	...trio('K-passport', 'passport', PH('K-passport'), PH('K-passport-phone')),
+	...trio('K-amounts', 'amounts', PH('K-amounts'), PH('K-amounts-phone')),
+	...trio('K-chronology', 'chronology', PH('K-chronology'), PH('K-chronology-phone')),
+	...trio('K-deadlines', 'deadlines', PH('K-deadlines'), PH('K-deadlines-phone'))
 ];
 const STATUS = ['status-empty', 'status-ready', 'status-paused', 'status-stopped', 'status-offline', 'status-readonly', 'no-case'];
 const set = arg('set', 'all');

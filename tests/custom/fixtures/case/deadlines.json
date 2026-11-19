@@ -1,0 +1,80 @@
+{
+ "deadlines": [
+  {
+   "id": 1,
+   "title": "Апелляционная жалоба на решение от 12.03.2025",
+   "state": "draft",
+   "start_date": "2025-03-13",
+   "end_date": "2025-04-11",
+   "basis": {
+    "page_id": 640,
+    "label": "т. 4, л.д. 151",
+    "quote": "Решение может быть обжаловано в Девятый арбитражный апелляционный суд в течение месяца со дня его принятия.",
+    "quote_rest": 0,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/640?v=1501&hl=120-232"
+   },
+   "calc": "месяц со дня принятия решения; последний день — 11.04.2025",
+   "norm": "ст. 259 АПК РФ",
+   "norm_edition_date": "2025-01-01",
+   "norm_edition_status": "действует",
+   "confirmed_by": null,
+   "confirmed_at": null,
+   "created_by": "model",
+   "via": "chat",
+   "hidden": false,
+   "confirmed_name": null,
+   "created_name": null
+  },
+  {
+   "id": 2,
+   "title": "Отзыв на апелляционную жалобу",
+   "state": "confirmed",
+   "start_date": null,
+   "end_date": "2025-05-20",
+   "basis": {
+    "page_id": 655,
+    "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 46",
+    "quote": "Лицам, участвующим в деле, представить отзывы на апелляционную жалобу в срок до 20 мая 2025 года.",
+    "quote_rest": 0,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/655"
+   },
+   "calc": null,
+   "norm": null,
+   "norm_edition_date": null,
+   "norm_edition_status": null,
+   "confirmed_by": "u-0001",
+   "confirmed_at": "2025-05-02T10:15:00+00:00",
+   "created_by": "u-0001",
+   "via": "page",
+   "hidden": false,
+   "confirmed_name": "Лебедева Анна Викторовна",
+   "created_name": "Лебедева Анна Викторовна"
+  },
+  {
+   "id": 3,
+   "title": "Ходатайство об отложении (не понадобилось)",
+   "state": "draft",
+   "start_date": null,
+   "end_date": null,
+   "basis": {
+    "page_id": 660,
+    "label": "т. 4, л.д. 163",
+    "quote": "Судебное заседание отложить на 14 час. 30 мин. 03 июня 2025 года, предложив сторонам представить дополнительные доказательства, а также письменные пояснения по существу спора и расчёт неустойки на дату заседания.",
+    "quote_rest": 186,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/660"
+   },
+   "calc": null,
+   "norm": null,
+   "norm_edition_date": null,
+   "norm_edition_status": null,
+   "confirmed_by": null,
+   "confirmed_at": null,
+   "created_by": "u-0001",
+   "via": "page",
+   "hidden": true,
+   "confirmed_name": null,
+   "created_name": null
+  }
+ ],
+ "can_write": true
+}

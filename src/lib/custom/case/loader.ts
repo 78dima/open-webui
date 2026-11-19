@@ -21,7 +21,7 @@ export function createLoader<T>(
 	options: { gap?: number; now?: () => number } = {}
 ): Loader<T> {
 	const gap = options.gap ?? 0;
-	const now = options.now ?? Date.now;
+	const now = options.now ?? (() => Date.now());
 	const data = writable<T | null>(null);
 	const error = writable('');
 	let json = '';
