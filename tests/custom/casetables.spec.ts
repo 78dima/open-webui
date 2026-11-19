@@ -123,7 +123,8 @@ test.describe('открытая таблица, 1280', () => {
 		await expect(table.locator('.hc')).toHaveCount(5);
 		await expect(table.locator('.hc').nth(1)).toContainText('ответ есть: 22');
 		await expect(page.getByTestId('case-table-doc')).toHaveCount(4);
-		await expect(page.getByTestId('case-table-doc').first().getByRole('link')).toHaveAttribute('href', `/legal-tools/case/${F}/p/629`);
+		await expect(page.getByTestId('case-table-doc').first().getByRole('link').first()).toHaveAttribute('href', `/legal-tools/case/${F}/p/629`);
+		await expect(page.getByTestId('case-table-doc').first().locator('.fn')).toHaveText('tom-2-chast-1.pdf'); // листы документа — ссылкой, имя файла мелко
 		const cell = page.getByTestId('case-table-cell').first();
 		await expect(cell.getByRole('link').first()).toHaveAttribute('href', /\/p\/\d+\?v=\d+&hl=\d+-\d+$/);
 		await expect(cell.locator('.q')).toHaveCount(0);

@@ -239,16 +239,19 @@
 							<span class="eyebrow">{section ? name || S.case_no_title : S.case_caption}</span>
 							{#if section && (headCount || quiet.length)}
 								<div class="row g12">
-									<h1>{headTitle}</h1>
-									{#if headCount}
-										<span class="cnt headcnt" class:w={item?.warn}
-											>{section === 'inventory'
-												? count(headCount, S.documents_forms)
-												: section === 'chronology'
-													? count(headCount, S.records_forms)
-													: headCount}</span
-										>
-									{/if}
+									<!-- заголовок и число не разлучаются переносом; тихие действия переносятся на следующую строку -->
+									<span class="row g12 nw titlenum">
+										<h1>{headTitle}</h1>
+										{#if headCount}
+											<span class="cnt headcnt" class:w={item?.warn}
+												>{section === 'inventory'
+													? count(headCount, S.documents_forms)
+													: section === 'chronology'
+														? count(headCount, S.records_forms)
+														: headCount}</span
+											>
+										{/if}
+									</span>
 									{#each quiet as a (a.id)}
 										<button type="button" class="btn t" on:click={a.run} data-testid={a.testid}
 											>{a.text}</button
@@ -333,6 +336,13 @@
 </Dialog>
 
 <style>
+	.titlenum {
+		min-width: 0;
+	}
+	.titlenum h1 {
+		min-width: 0;
+	}
+
 	.plain {
 		border: 0;
 		font: inherit;

@@ -401,6 +401,10 @@ export function splitLabel(label: string): { main: string; file: string } {
 }
 
 /** Подпись листа внутри тома: «т. 4, л.д. 12» → «л.д. 12» (том назван перед перечнем). */
+/** Том из подписи листа («т. 5/1, л.д. 88» → «5/1»); подпись без тома — пусто. */
+export function volumeOf(label: string | null | undefined): string {
+	return /^т\. ([^,]+), /.exec(label ?? '')?.[1] ?? '';
+}
 export function inVolume(label: string, volume: string | null | undefined): string {
 	const head = volume ? `т. ${volume}, ` : '';
 	return head && label.startsWith(head) ? label.slice(head.length) : label;

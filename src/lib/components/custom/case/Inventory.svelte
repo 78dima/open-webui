@@ -344,7 +344,7 @@
 						>{:else}<span></span>{/if}
 					{#if date}<span class="md" class:nob={date.length <= 12} data-l={S.inventory_col_date}
 							>{date}</span
-						>{:else}<span class="md mut dash">—</span>{/if}
+						>{:else}<span class="md mut" data-l={S.inventory_col_date}>—</span>{/if}
 					<span class="md num" data-l={S.inventory_col_count}>{d.sheets}</span>
 					<span class="row g4">
 						{#if canWrite}
@@ -505,10 +505,5 @@
 	}
 	.lbl.grow {
 		flex-basis: 180px;
-	}
-	@media (max-width: 720px) {
-		.dash {
-			display: none;
-		}
 	}
 </style>

@@ -9,6 +9,7 @@
 	import { onMount } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { saveBlob } from '$lib/custom/case/loader';
+	import { inVolume, volumeOf } from '$lib/custom/case/casepage';
 	import { day } from '$lib/custom/case/mycases';
 	import { casePath, errorText, sheetHref } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
@@ -120,6 +121,9 @@
 		opened = next;
 	};
 	const SHEETS = 4; // листов перечня до «ещё N»
+	/** Подпись листа в перечне после первого: без тома, если том тот же («т. 4, л.д. 15» → «л.д. 15»). */
+	const within = (label: string | undefined, first: string | undefined) =>
+		label ? inVolume(label, volumeOf(first)) : S.tables_col_sheet;
 
 	// ---- выгрузка ----
 	let exporting = false;
@@ -331,9 +335,9 @@
 							<p>{fmt(g.text, { n: g.n })}</p>
 							{#if g.sheets.length}
 								<div class="row g6">
-									{#each all ? g.sheets : g.sheets.slice(0, SHEETS) as x (x.page_id)}
-										<a class="chipl small" href={place(x)} data-sveltekit-reload
-											>{x.label || S.tables_col_sheet}</a
+									{#each all ? g.sheets : g.sheets.slice(0, SHEETS) as x, n (x.page_id)}
+										<a class="chipl small" href={place(x)} title={x.label} data-sveltekit-reload
+											>{n ? within(x.label, g.sheets[0].label) : x.label || S.tables_col_sheet}</a
 										>
 									{/each}
 									{#if !all && g.sheets.length > SHEETS}
@@ -407,7 +411,10 @@
 									>{r.title || r.label || ''}</a
 								>
 								<span class="sm mut aw"
-									>{[r.label, r.doc_type, r.date].filter(Boolean).join(' · ')}</span
+									><SheetRef
+										label={r.label ?? ''}
+										href={sheetHref(state, r.first_page_id)}
+									/>{#each [r.doc_type, r.date].filter(Boolean) as t}{' · '}{t}{/each}</span
 								>
 							{/if}
 						</div>

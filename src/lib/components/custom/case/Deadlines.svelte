@@ -155,7 +155,7 @@
 			data-testid="case-deadline"
 			data-state={x.hidden ? 'hidden' : x.state}
 		>
-			<div class="row sp g12 as">
+			<div class="row sp g12 as toprow">
 				<div class="col g4 grow">
 					<span class="b num dates" class:mut={dates.none}>{dates.text}</span>
 					<h3 class="aw name">{x.title}</h3>
@@ -284,6 +284,13 @@
 />
 
 <style>
+	/* телефон: даты и название — во всю ширину, пометка состояния — строкой ниже (иначе название сжимается в столбик) */
+	@media (max-width: 720px) {
+		.toprow > .col {
+			flex-basis: 100%;
+		}
+	}
+
 	.dates {
 		font-size: 20px;
 	}
