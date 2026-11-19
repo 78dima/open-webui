@@ -465,17 +465,27 @@ await step('проход таблицы', async () => {
 	}
 	await action.first().click();
 	if (await dlg().count()) await dlg().getByRole('button', { name: resume, exact: true }).click();
+	// после «Дочитать» страница возвращается к перечню проходов (как прежняя): проход дочитывается там
+	await page.waitForURL(`${base}${CASE}/tables`, { timeout: 30000 });
+	const started = (await toast(S.tables_started)) || (await toast(S.tables_cached));
 	let done = false;
+	let cur = null;
+	const t2 = Date.now();
 	for (let i = 0; i < 160; i++) {
-		const cur = ((await tools('/tables'))?.tables ?? [])[0];
+		cur = ((await tools('/tables'))?.tables ?? [])[0];
 		if (cur && ['done', 'failed'].includes(cur.status)) {
 			done = cur.status === 'done';
 			break;
 		}
-		if (cur && cur.status === 'partial' && i > 20) break; // снова остановился
+		if (cur && cur.status === 'partial' && i > 60) break; // снова остановился
 		await sleep(3000);
 	}
-	await page.reload();
+	console.log(
+		`     после «Дочитать»: сообщение о запуске — ${started ? 'есть' : 'нет'}; проход за ${stamp(t2)}: ${cur?.status}, прочитано страниц ${cur?.pages_read} из ${cur?.pages_scope}, не прочитано ${cur?.not_read} (${JSON.stringify(cur?.not_read_reasons ?? {})})`
+	);
+	await refresh();
+	await page.getByTestId('case-table-row').first().getByTestId('case-table-open').click();
+	await page.waitForURL(new RegExp(`${CASE}/tables/[0-9a-f-]+$`));
 	await page.getByTestId('case-table-doc').first().waitFor({ timeout: 60000 });
 	const head = one(await page.getByTestId('case-table-head').textContent());
 	ok(
