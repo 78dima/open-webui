@@ -203,7 +203,12 @@ const page = await context.newPage();
 const errors = [];
 const outside = [];
 page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text().slice(0, 200)));
+// отказ сервиса на негодный номер листа (400) браузер пишет в консоль сам — он вызван проверкой нарочно
+page.on(
+	'console',
+	(m) =>
+		m.type() === 'error' && !/status of 400/.test(m.text()) && errors.push(m.text().slice(0, 200))
+);
 page.on('request', (r) => {
 	const u = new URL(r.url());
 	if (u.origin !== base && !['data:', 'blob:', 'about:'].includes(u.protocol))

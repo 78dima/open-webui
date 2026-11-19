@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SheetRef from './SheetRef.svelte';
 	// ai-dvokat: «Тома» (макет K-volumes; опись § 2.5): карточка тома — состояние, откуда номер, замечания по нумерации,
 	// сверка с внутренней описью (сворачивается), файлы с «Действиями»; файлы без тома с подсказкой «продолжение» и
 	// подтверждением; электронное дело. Данные — ответ обзора (его переспрашивает общий макет дела). Раскрытые
@@ -247,7 +248,11 @@
 			{#if src}
 				<p class="sm mut" data-testid="case-volume-source">
 					{src.text}
-					{#if src.pageId != null}
+					{#if src.pageId != null && src.sheet}
+						<!-- макет: «Лист с номером: т. 4, стр. 1 том.pdf» — подпись листа ссылкой -->
+						{S.label_sheet_caption_g}
+						<SheetRef label={src.sheet} href={sheetHref(state, src.pageId)} />
+					{:else if src.pageId != null}
 						<a
 							class="ref"
 							href={sheetHref(state, src.pageId)}

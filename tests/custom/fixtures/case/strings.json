@@ -197,6 +197,7 @@
  "inventory_volume_filter": "Том описи",
  "label_not_on_sheet": "в тексте этого листа метку не нашли — проверьте",
  "label_sheet_caption": "Лист с номером",
+ "label_sheet_caption_g": "Лист с номером:",
  "label_sheet_link": "лист с меткой: {label}",
  "label_source_cover_g": "Номер тома прочитан с обложки.",
  "label_source_inventory_g": "Номер тома взят из описи.",
