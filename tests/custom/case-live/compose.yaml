@@ -36,6 +36,9 @@ x-tools-env: &tools-env
   LEGAL_TOOLS_CASE_RELEASE_GROUPS: ${LIVE_RELEASE_GROUP:-}
   LEGAL_TOOLS_CASE_ALLOWED_ORIGINS: http://127.0.0.1:${LIVE_PORT:?}
   LEGAL_TOOLS_CASE_STAGE: "3"
+  # переадресация прежних страниц сервиса на страницы чата (сдача 5): по умолчанию выключена — прежние страницы нужны
+  # сверке; включает и выключает сценарий live-redirect.mjs (LIVE_REDIRECT)
+  LEGAL_TOOLS_CASE_PAGE_REDIRECT: "${LIVE_REDIRECT:-false}"
   LEGAL_TOOLS_CASE_MIN_FREE_GB: "1"
   LEGAL_TOOLS_CASE_EVENTS_SECRET: live-events-secret-0123456789
   LEGAL_TOOLS_CASE_TEXTS_DRAFTS_OK: "true"
@@ -116,7 +119,9 @@ services:
       USER_PERMISSIONS_FEATURES_FOLDERS: "true"
       USER_PERMISSIONS_FOLDERS_ALLOW_SHARING: "true"
       CUSTOM_UI: '{"case":true,"brand":{"name":"Ai - dvokat","suffix":false,"about":true,"community":false}}'
-    volumes: ["${LIVE_BUILD:?}:/app/build"]
+    # фронтенд — сборка рабочей копии поверх образа; LIVE_OWUI_BUILD=image (run.sh) — фронтенд самого образа: каталог
+    # тогда подключается в сторону и ничего не заменяет
+    volumes: ["${LIVE_BUILD:?}:${LIVE_BUILD_TARGET:-/app/build}"]
   caddy:
     image: caddy:2-alpine
     networks: [live]

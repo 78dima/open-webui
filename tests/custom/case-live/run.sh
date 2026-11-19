@@ -9,6 +9,8 @@
 #   flock /tmp/ai-dvokat-docker-build.lock docker build -t legal-assistant/legal-tools:case-ui-g <ai-dvokat>/tools/
 #   LIVE_NAME=<проект> LIVE_SUBNET=<свободная /24> tests/custom/case-live/run.sh [каталог для снимков]
 # LIVE_KEEP=1 — оставить среду (убрать: docker compose -p $LIVE_NAME down -v). Код выхода 0 — все проверки OK.
+# LIVE_OWUI_BUILD=image — проверять фронтенд самого образа чата (LIVE_OWUI_IMAGE=<образ слоя deploy/ui-layer/build.sh>),
+# а не сборку рабочей копии, подключённую поверх образа.
 # LIVE_ENV_ONLY=<файл состояния> — поднять среду и выйти, не запуская сценариев (её ведёт платная проверка
 # live-paid.mjs: настоящий провайдер задаётся LIVE_OPENROUTER_URL и LIVE_OPENROUTER_KEY, пределы — LIVE_BUDGET_USD и
 # LIVE_SWEEP_MAX_USD; только по слову владельца).
@@ -29,15 +31,23 @@ PROBE="$TOOLS_REPO/tools/tests/case_probe"
 CORPUS="$TOOLS_REPO/corpus/case-v1"
 case "$LIVE_PORT" in 8080|8000|4000|9001) echo "порт $LIVE_PORT занят стендом"; exit 2;; esac
 [ "$LIVE_NAME" != legal-assistant ] || { echo "это проект стенда"; exit 2; }
-[ -f "$FORK/build/index.html" ] || { echo "нет сборки фронтенда ($FORK/build): см. начало файла"; exit 2; }
+[ "${LIVE_OWUI_BUILD:-copy}" = image ] || [ -f "$FORK/build/index.html" ] || { echo "нет сборки фронтенда ($FORK/build): см. начало файла"; exit 2; }
 [ -f "$TOOLS_REPO/deploy/caddy/Caddyfile" ] || { echo "нет рабочей копии ai-dvokat: LIVE_TOOLS_REPO=<путь>"; exit 2; }
 [ -f "$CORPUS/key.json" ] && [ -f "$PROBE/prov.py" ] || { echo "нет выдуманного дела corpus/case-v1 или пробы дела в $TOOLS_REPO"; exit 2; }
 for i in "$LIVE_TOOLS_IMAGE" "$LIVE_OWUI_IMAGE" "$LIVE_MINIO_IMAGE" "$LIVE_PROV_IMAGE" pgvector/pgvector:pg17 redis:7-alpine caddy:2-alpine; do
   docker image inspect "$i" >/dev/null 2>&1 || { echo "нет образа $i"; exit 2; }
 done
 WORK=$(mktemp -d)
-# сборка — копией: Open WebUI пишет в свой каталог сборки, рабочая копия остаётся нетронутой
-cp -a --reflink=auto "$FORK/build" "$WORK/build"
+if [ "${LIVE_OWUI_BUILD:-copy}" = image ]; then
+  # проверяется сам образ чата (слой deploy/ui-layer/build.sh): его фронтенд ничем не заменяется
+  mkdir "$WORK/build"
+  export LIVE_BUILD_TARGET=/mnt/live-unused-build
+  FRONT="фронтенд образа ($(docker image inspect -f '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$LIVE_OWUI_IMAGE" | cut -c1-9))"
+else
+  # сборка — копией: Open WebUI пишет в свой каталог сборки, рабочая копия остаётся нетронутой
+  cp -a --reflink=auto "$FORK/build" "$WORK/build"
+  FRONT="сборка $(git -C "$FORK" rev-parse --short HEAD)"
+fi
 export LIVE_BUILD="$WORK/build" LIVE_CADDYFILE="$WORK/Caddyfile" LIVE_WORK="$WORK/prov" LIVE_PROV="$PROBE/prov.py"
 mkdir -p "$LIVE_WORK" "$WORK/files"
 # «идеальная модель»: карта «изображение листа → текст и номер» по ключу выдуманного дела — тем же рендером, что конвейер
@@ -107,7 +117,7 @@ cleanup() {
 }
 trap cleanup EXIT
 BASE="http://127.0.0.1:$LIVE_PORT"
-echo "живая проверка $LIVE_NAME ($LIVE_SUBNET): $BASE; Open WebUI = $LIVE_OWUI_IMAGE + сборка $(git -C "$FORK" rev-parse --short HEAD); legal-tools = $LIVE_TOOLS_IMAGE"
+echo "живая проверка $LIVE_NAME ($LIVE_SUBNET): $BASE; Open WebUI = $LIVE_OWUI_IMAGE, $FRONT; legal-tools = $LIVE_TOOLS_IMAGE"
 "${COMPOSE[@]}" up -d --pull never --quiet-pull pg redis minio prov owui caddy >/dev/null 2>&1
 python3 -I "$HERE/setup.py" owui "$BASE" "$WORK/state.json"
 export LIVE_RELEASE_GROUP=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["group"])' "$WORK/state.json")
@@ -136,6 +146,12 @@ rc=0
 if [ "${LIVE_SHEET:-1}" = 1 ] && [ -f "$WORK/case.json" ]; then
   (cd "$HERE/.." && node case-live/live-sheet.mjs --state "$WORK/state.json" --case "$WORK/case.json" --old "$OLD" \
      ${OUT:+--out "$OUT"}) || rc=1
+fi
+# переадресация прежних адресов на новые страницы и время открытия прежних и новых страниц (сдача 5) — на том же
+# деле; сценарий сам включает переадресацию и возвращает её выключенной; пропуск: LIVE_REDIRECT_CHECK=0
+if [ "${LIVE_REDIRECT_CHECK:-1}" = 1 ] && [ -f "$WORK/case.json" ]; then
+  (cd "$HERE/.." && node case-live/live-redirect.mjs --state "$WORK/state.json" --case "$WORK/case.json" \
+     --compose "docker compose -p $LIVE_NAME -f $HERE/compose.yaml" ${OUT:+--out "$OUT"}) || rc=1
 fi
 # остальные разделы страницы дела — на том же деле (сдача 3); пропуск: LIVE_SECTIONS=0
 if [ "${LIVE_SECTIONS:-1}" = 1 ] && [ -f "$WORK/case.json" ]; then
