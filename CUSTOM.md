@@ -423,3 +423,14 @@ ai-dvokat; ручка строк проходит по уже открытому
   когда рабочая копия ai-dvokat лежит рядом или задан `CASE_PAGE_STRINGS`.
 - `node tests/custom/case-shots.mjs --base <адрес стенда> --out <каталог> --mocks <design-g-snapshot/project>` — снимки
   страницы парами с макетами снимка дизайна и сетка «состояние × 1280/360 × схема».
+- Живая проверка — `LIVE_NAME=<проект> LIVE_SUBNET=<свободная /24> tests/custom/case-live/run.sh [каталог снимков]`:
+  своя среда (свой compose-проект и подсеть, один порт на 127.0.0.1, по выходу удаляется; стенд не трогается):
+  Open WebUI — образ форка с фронтендом рабочей копии (каталог `build/` подключён вместо `/app/build`), legal-tools
+  ветки ai-dvokat (образ `legal-assistant/legal-tools:case-ui-g`) с Postgres, Redis и MinIO, Caddy — блок `chat.<домен>`
+  настоящего `deploy/caddy/Caddyfile`. Настоящий браузер, вход формой, список от сервиса, «Завести дело»; подмен нет.
+- Сборка фронтенда на этой машине (Node 26.12; `node_modules` — как в `ai-dvokat-0.13`, `package-lock.json` тот же):
+  `node --max-old-space-size=6144 node_modules/vite/bin/vite.js build` — 1,5 минуты; чтобы не теснить стенд, запускалась
+  в `systemd-run --user --scope -p MemoryMax=8G`. Без `npm run pyodide:fetch` в `build/` нет пакетов Pyodide — для
+  живой проверки они не нужны, для образа — нужны (или оставить `pyodide/` базового образа).
+- Tailwind читает и `tests/custom`: строка вида `[data-testid="…"]:visible` в проверке попадала в CSS приложения битым
+  правилом. Видимые элементы в проверках отбираются `.filter({ visible: true })`.
