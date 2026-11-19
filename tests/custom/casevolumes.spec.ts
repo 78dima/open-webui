@@ -72,7 +72,9 @@ test.describe('«Тома», 1280', () => {
 		await dialog(page).getByRole('button', { name: S.cancel }).click();
 		const ecase = page.getByTestId('case-ecase');
 		await expect(ecase.getByTestId('case-file')).toContainText('48 страниц · у всех страниц цифровой текст');
-		await expect(ecase.locator('.pill')).toHaveText(S.ecase_state_ready);
+		await expect(ecase.locator('.pill')).toHaveText(S.file_state_ecase_ready); // слова состояния файла — по макету
+		await expect(loose.locator('.pill').first()).toHaveText(S.file_state_queued);
+		await expect(page.getByTestId('case-file').first()).not.toContainText('USD'); // оценки в строке файла нет
 	});
 
 	test('«Действия» у файла: раскрытое не сбрасывается обновлением; указать том, изменить вид, убрать из тома', async ({ page }) => {

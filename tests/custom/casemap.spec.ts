@@ -25,6 +25,8 @@ test.describe('«Паспорт», 1280', () => {
 		await expect(page.getByTestId('case-passport-note')).toContainText(S.map_passport_pointer);
 		await expect(page.getByTestId('case-passport-note')).toContainText('Построен по карточкам 22 из 22 документов.');
 		await expect(page.getByTestId('case-passport-note')).not.toContainText('gpt'); // названия модели нет (решение владельца)
+		await expect(page.locator('.head h1')).toHaveText(S.section_passport);
+		await expect(page.locator('.head').getByTestId('case-map-refresh')).toBeVisible(); // «Обновить» — в шапке раздела
 		const about = page.getByTestId('case-passport-about');
 		await expect(about.getByRole('heading', { level: 2 })).toHaveText(S.passport_group_case);
 		const number = about.locator('[data-field="case_number"]');
@@ -157,6 +159,8 @@ test.describe('«Суммы», 1280', () => {
 		a.amounts[0] = { ...a.amounts[0], value_num: '1597806.6', unchecked: true, edited: true };
 		const { calls } = await openSection(page, { section: 'amounts', routes: { 'amounts**': (r: any, c: any) => (c.method === 'GET' ? r.fulfill({ json: a }) : ok(r)), 'edits?**': { edits: [] } } });
 		await expect(page.getByTestId('case-amounts-note')).toHaveText(S.map_amounts_hint);
+		await expect(page.locator('.head h1')).toHaveText(S.map_amounts_title); // заголовок раздела — как в макете
+		await expect(page.getByTestId('case-map-state')).toContainText('Документов без записей хронологии');
 		const rows = page.getByTestId('case-amount');
 		await expect(rows).toHaveCount(4);
 		await expect(rows.nth(0)).toContainText('числом: 1 597 806,60 руб.');
@@ -182,6 +186,16 @@ test.describe('«Суммы», 1280', () => {
 		await expect.poll(() => calls.filter((c) => c.method === 'PATCH').at(-1)).toMatchObject({ path: '/amounts/3', body: { hidden: true } });
 		await rows.nth(1).getByRole('button', { name: S.map_history }).click();
 		expect(calls.some((c) => c.path === '/edits?entity=amount&id=3')).toBe(true);
+	});
+
+	test('сумм больше порции: «показано n из total» и «Показать ещё N»', async ({ page }) => {
+		const a = fixture('amounts');
+		a.amounts = Array.from({ length: 43 }, (_, n) => ({ ...a.amounts[n % 4], id: 1000 + n }));
+		await openSection(page, { section: 'amounts', routes: { 'amounts**': a } });
+		await expect(page.getByTestId('case-amount')).toHaveCount(30);
+		await expect(page.getByTestId('case-amounts')).toContainText('показано 30 из 43');
+		await page.getByRole('button', { name: 'Показать ещё 13' }).click();
+		await expect(page.getByTestId('case-amount')).toHaveCount(43);
 	});
 
 	test('«только чтение» видит суммы и «Историю», без «Править» и «Убрать»; сумм нет — сказано', async ({ page }) => {
@@ -322,6 +336,8 @@ test.describe('«Сроки», 1280', () => {
 			}
 		});
 		await expect(page.getByTestId('case-deadlines-note')).toContainText(S.map_deadlines_hint);
+		await expect(page.locator('.head').getByTestId('case-deadline-add')).toBeVisible(); // «Добавить срок» и «Обновить» — в шапке
+		await expect(page.locator('.head').getByTestId('case-map-refresh')).toBeVisible();
 		const cards = page.getByTestId('case-deadline');
 		await expect(cards).toHaveCount(3);
 		expect(calls.find((c) => c.path.startsWith('/deadlines'))!.path).toBe('/deadlines?hidden=true');
@@ -416,6 +432,11 @@ for (const [section, routes, wait] of [
 		await openSection(page, { section, dark: true, routes: routes as any });
 		await expect(page.getByTestId(wait).first()).toBeVisible();
 		await noSideScroll(page);
+		// в хронологии на телефоне действия записи свёрнуты под «Действия»
+		if (section === 'chronology') {
+			await expect(page.getByRole('button', { name: S.map_edit }).first()).toBeHidden();
+			await page.getByTestId('case-fact').first().getByRole('button', { name: S.file_actions }).click();
+		}
 		const first = page.getByRole('button', { name: S.map_edit }).first();
 		await first.click();
 		await expect(dialog(page)).toBeVisible();

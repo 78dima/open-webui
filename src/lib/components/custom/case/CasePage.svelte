@@ -15,6 +15,7 @@
 		SECTION_SETTING
 	} from '$lib/custom/case/casepage';
 	import { caseStrings, count, fmt } from '$lib/custom/case/strings';
+	import { provideHead, type HeadAction } from '$lib/custom/case/head';
 	import { caseToast } from '$lib/custom/case/toast';
 	import Amounts from './Amounts.svelte';
 	import CaseNav from './CaseNav.svelte';
@@ -25,7 +26,7 @@
 	import Deadlines from './Deadlines.svelte';
 	import Dialog from './Dialog.svelte';
 	import GotoForm from './GotoForm.svelte';
-	import Icon from './Icon.svelte';
+	import Icon, { type IconName } from './Icon.svelte';
 	import Inventory from './Inventory.svelte';
 	import Overview from './Overview.svelte';
 	import Passport from './Passport.svelte';
@@ -79,6 +80,18 @@
 	$: checks = Math.max($data?.check_total ?? 0, ($data?.overview.check_sheets ?? []).length);
 	// число у заголовка раздела — то же, что у пункта меню; у «Проверьте листы» — с учётом пришедших строк
 	$: headCount = section === 'check' ? checks : (item?.count ?? 0);
+	// заголовок раздела в шапке — как в макете раздела (у паспорта и сумм он длиннее пункта меню)
+	const HEAD_TITLE: Record<string, string> = {
+		passport: 'section_passport',
+		amounts: 'map_amounts_title'
+	};
+	$: headTitle = (HEAD_TITLE[section] && S[HEAD_TITLE[section]]) || label;
+	// действия раздела в шапке: «Обновить» у заголовка, главное действие — справа (их называет сам раздел)
+	const head = provideHead();
+	$: quiet = open ? $head.actions.filter((a) => !a.main) : [];
+	$: main = open
+		? ($head.actions.filter((a) => a.main) as (HeadAction & { icon?: IconName })[])
+		: [];
 
 	async function createCase() {
 		if (creating) return;
@@ -216,17 +229,26 @@
 					<div class="head">
 						<div class="col g2 grow">
 							<span class="eyebrow">{section ? name || S.case_no_title : S.case_caption}</span>
-							{#if section && headCount}
+							{#if section && (headCount || quiet.length)}
 								<div class="row g12">
-									<h1>{label}</h1>
-									<span class="cnt headcnt" class:w={item?.warn}
-										>{section === 'inventory'
-											? count(headCount, S.documents_forms)
-											: headCount}</span
-									>
+									<h1>{headTitle}</h1>
+									{#if headCount}
+										<span class="cnt headcnt" class:w={item?.warn}
+											>{section === 'inventory'
+												? count(headCount, S.documents_forms)
+												: section === 'chronology'
+													? count(headCount, S.records_forms)
+													: headCount}</span
+										>
+									{/if}
+									{#each quiet as a (a.id)}
+										<button type="button" class="btn t" on:click={a.run} data-testid={a.testid}
+											>{a.text}</button
+										>
+									{/each}
 								</div>
 							{:else}
-								<h1>{section ? label || S.not_found : name || S.case_no_title}</h1>
+								<h1>{section ? headTitle || S.not_found : name || S.case_no_title}</h1>
 							{/if}
 						</div>
 						<div class="row g8">
@@ -234,6 +256,11 @@
 							{#if !section}
 								<a class="btn big p" href={chatHref}><Icon name="chat" />{S.chat_of_case}</a>
 							{/if}
+							{#each main as a (a.id)}
+								<button type="button" class="btn big p" on:click={a.run} data-testid={a.testid}
+									>{#if a.icon}<Icon name={a.icon} />{/if}{a.text}</button
+								>
+							{/each}
 						</div>
 					</div>
 				{/if}

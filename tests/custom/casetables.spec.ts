@@ -27,6 +27,13 @@ test.describe('«Таблицы и проходы», 1280', () => {
 		await expect(rows.nth(2)).toContainText('Прочитано страниц: 168 из 209. Не прочитано страниц: 41. (предел расходов прохода: 41) Проход остановлен пределом трат.');
 		await expect(rows.nth(2)).toContainText(S.tables_stale);
 		await expect(rows.nth(0).getByTestId('case-table-open')).toHaveAttribute('href', new RegExp(`tables/${d.tables[0].id}$`));
+		// главная «Открыть» и название-ссылка — только у готового прохода на нынешнем составе дела и версии чтения
+		await expect(rows.nth(0).getByTestId('case-table-open')).not.toHaveClass(/\bp\b/);
+		await expect(rows.nth(1).getByTestId('case-table-open')).not.toHaveClass(/\bp\b/);
+		// длинное название — не больше двух строк, целиком — в подсказке
+		const name = rows.nth(2).locator('.name');
+		expect(await name.evaluate((e) => Math.round(e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight)))).toBeLessThanOrEqual(2);
+		await expect(name).toHaveAttribute('title', d.tables[2].question);
 		const spent = fixture('case-overview').spent;
 		await expect(page.getByTestId('case-spent')).toHaveText(`Потрачено по делу: обработка ${spent.processing} USD, работа ${spent.work} USD`);
 	});

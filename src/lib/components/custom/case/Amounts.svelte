@@ -6,7 +6,7 @@
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { createLoader } from '$lib/custom/case/loader';
-	import { quoteMore, rub } from '$lib/custom/case/mapcore';
+	import { quoteMore, rub, stateLines, type MapState } from '$lib/custom/case/mapcore';
 	import { casePath, errorText, query } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
@@ -37,7 +37,7 @@
 	let hidden = false;
 	const loader = createLoader(
 		() =>
-			state.api.get<{ amounts: Amount[]; can_write?: boolean }>(
+			state.api.get<{ amounts: Amount[]; can_write?: boolean; state?: MapState | null }>(
 				casePath(state, `/amounts${query({ hidden })}`)
 			),
 		{ gap: 20000 }
@@ -199,6 +199,9 @@
 			</div>
 		{/if}
 	</section>
+	{#each stateLines($answer.state, S) as t}<p class="sm mut" data-testid="case-map-state">
+			{t}
+		</p>{/each}
 {/if}
 
 <FormDialog

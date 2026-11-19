@@ -7,6 +7,7 @@
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { when } from '$lib/custom/case/casepage';
+	import { useHead } from '$lib/custom/case/head';
 	import { createLoader } from '$lib/custom/case/loader';
 	import { day, deadlineDates, quoteMore } from '$lib/custom/case/mapcore';
 	import { casePath, errorText } from '$lib/custom/case/sections';
@@ -103,28 +104,33 @@
 	let historyId: number | null = null;
 	let historyOpen = false;
 	$: loader.hold(winOpen || historyOpen);
+	const setHead = useHead();
+	$: setHead([
+		{
+			id: 'refresh',
+			text: S.map_refresh,
+			run: () => void loader.refresh(true),
+			testid: 'case-map-refresh'
+		},
+		...(canWrite
+			? [
+					{
+						id: 'add',
+						text: S.map_deadline_add,
+						run: () => show(null),
+						main: true,
+						icon: 'plus',
+						testid: 'case-deadline-add'
+					}
+				]
+			: [])
+	]);
 </script>
 
 <div class="note n" data-testid="case-deadlines-note">
 	<Icon name="info" klass="l" />
 	<p class="grow">{S.map_deadlines_hint}</p>
-	<button
-		type="button"
-		class="btn t"
-		on:click={() => loader.refresh(true)}
-		data-testid="case-map-refresh">{S.map_refresh}</button
-	>
 </div>
-{#if canWrite}
-	<div class="row">
-		<button
-			type="button"
-			class="btn big p"
-			on:click={() => show(null)}
-			data-testid="case-deadline-add"><Icon name="plus" />{S.map_deadline_add}</button
-		>
-	</div>
-{/if}
 
 {#if $error && !$answer}
 	<section class="card" data-testid="case-deadlines-error">
@@ -278,10 +284,6 @@
 />
 
 <style>
-	.note .btn {
-		flex: 0 0 auto;
-		align-self: center;
-	}
 	.lbl input,
 	.lbl textarea {
 		min-width: 0;

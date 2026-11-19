@@ -341,7 +341,7 @@
 			<div class="col">
 				<h3 class="filesh">{S.volume_files_title}</h3>
 				{#each (v.files ?? []).map(facts) as f (f.id)}
-					{@const fs = fileStatus(f, S)}
+					{@const fs = fileStatus(f, S, 'volume')}
 					{@const key = String(f.id)}
 					<div class="li" data-testid="case-file" data-file={f.filename}>
 						<div class="col g2 grow">
@@ -411,7 +411,7 @@
 			</div>
 			<div class="col">
 				{#each loose.map(facts) as f (f.id)}
-					{@const fs = fileStatus(f, S)}
+					{@const fs = fileStatus(f, S, 'loose')}
 					{@const key = String(f.id)}
 					{@const sug = suggestText(f.suggest, S, (id) => volumeLabel(volumes, id))}
 					<div class="li t" data-testid="case-file" data-file={f.filename}>
@@ -498,7 +498,7 @@
 			<div class="col">
 				{#each ecase as e (e.file_id)}
 					{@const f = ecaseFile(e)}
-					{@const fs = fileStatus(f, S)}
+					{@const fs = fileStatus(f, S, 'ecase')}
 					{@const key = String(f.id)}
 					{@const court = e.court_inventory}
 					<div class="li" data-testid="case-file" data-file={f.filename}>
@@ -508,9 +508,7 @@
 							<span class="sm mut">{fileLine(f, 'ecase', S)}</span>
 						</div>
 						<span class="pill {TONE[fs.tone]}" class:box={f.status === 'blocked'}
-							><Icon name={ICON[fs.tone]} />{f.status === 'indexed'
-								? S.ecase_state_ready
-								: fs.text}</span
+							><Icon name={ICON[fs.tone]} />{fs.text}</span
 						>
 						<button
 							type="button"

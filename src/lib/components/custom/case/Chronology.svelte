@@ -6,6 +6,7 @@
 	// открыто окно. Поведение — прежний `sections/mapcore.js` (`chronology`, `drawFacts`, `factItem`, `editFact`).
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
+	import { useHead } from '$lib/custom/case/head';
 	import { createLoader } from '$lib/custom/case/loader';
 	import {
 		LINES,
@@ -134,6 +135,13 @@
 		else next.add(id);
 		opened = next;
 	};
+	let acts = new Set<number>(); // телефон: у каких записей раскрыты действия
+	const flipActs = (id: number) => {
+		const next = new Set(acts);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		acts = next;
+	};
 	const hide = (f: Fact) =>
 		state.api.request('PATCH', casePath(state, `/facts/${f.id}`), { hidden: !f.hidden }).then(
 			() => loader.refresh(true),
@@ -187,17 +195,20 @@
 	let historyId: number | null = null;
 	let historyOpen = false;
 	$: loader.hold(editOpen || historyOpen);
+	const setHead = useHead();
+	$: setHead([
+		{
+			id: 'refresh',
+			text: S.map_refresh,
+			run: () => void loader.refresh(true),
+			testid: 'case-map-refresh'
+		}
+	]);
 </script>
 
 <div class="note n" data-testid="case-facts-note">
 	<Icon name="info" klass="l" />
 	<p class="grow">{S.map_model_reading}</p>
-	<button
-		type="button"
-		class="btn t"
-		on:click={() => loader.refresh(true)}
-		data-testid="case-map-refresh">{S.map_refresh}</button
-	>
 </div>
 
 <form class="col g8" on:submit|preventDefault={find} data-testid="case-facts-filter">
@@ -342,7 +353,16 @@
 						<p class="sm c-warn">{S.map_cut}</p>
 					{/if}
 				</div>
-				<span class="row g4 acts">
+				<div class="only-n">
+					<button
+						type="button"
+						class="btn s"
+						aria-expanded={acts.has(f.id)}
+						on:click={() => flipActs(f.id)}
+						>{S.file_actions}<Icon name={acts.has(f.id) ? 'u' : 'd'} /></button
+					>
+				</div>
+				<span class="row g4 acts" class:shown={acts.has(f.id)}>
 					{#if canWrite}
 						<button type="button" class="btn t" on:click={() => edit(f)}>{S.map_edit}</button>
 						<button type="button" class="btn t" on:click={() => hide(f)}
@@ -432,10 +452,6 @@
 />
 
 <style>
-	.note .btn {
-		flex: 0 0 auto;
-		align-self: center;
-	}
 	.totals {
 		padding-bottom: 8px;
 	}
@@ -465,6 +481,9 @@
 		resize: vertical;
 	}
 	@media (max-width: 720px) {
+		.acts:not(.shown) {
+			display: none;
+		}
 		.date {
 			flex-basis: 100%;
 		}

@@ -73,20 +73,28 @@ export const blockKey = (code: unknown, S: Strings): string => {
 };
 
 export type FileTone = 'plain' | 'info' | 'stop';
-/** Состояние файла словами сервиса; незнакомое выводится как есть. */
-export function fileStatus(f: FileFacts, S: Strings): { text: string; tone: FileTone } {
+/** Состояние файла. Обычный ход (в очереди, распознаётся, распознан; у электронного дела — прочитан) — словами
+ *  страницы по коду состояния, как в макете K-volumes; блокировки и сбои — словами сервиса; незнакомое — как есть. */
+export function fileStatus(
+	f: FileFacts,
+	S: Strings,
+	mode: FileMode = 'volume'
+): { text: string; tone: FileTone } {
 	switch (f.status) {
 		case 'queued':
-			return { text: S.status_queued, tone: 'info' };
+			return { text: S.file_state_queued, tone: 'info' };
 		case 'splitting':
 			return { text: S.status_splitting, tone: 'info' };
 		case 'reading':
 			return {
-				text: fmt(S.status_reading, { n: f.pages_indexed || 0, m: f.pages || '?' }),
+				text: fmt(S.file_state_reading, { n: f.pages_indexed || 0, m: f.pages || '?' }),
 				tone: 'info'
 			};
 		case 'indexed':
-			return { text: S.status_indexed, tone: 'plain' };
+			return {
+				text: mode === 'ecase' ? S.file_state_ecase_ready : S.file_state_indexed,
+				tone: 'plain'
+			};
 		case 'failed':
 			return { text: S.status_failed, tone: 'stop' };
 		case 'blocked':
@@ -119,7 +127,8 @@ export function factText(fact: InputFact | null | undefined, S: Strings): string
 }
 
 export type FileMode = 'volume' | 'loose' | 'ecase';
-/** Строка фактов файла: страницы · вид (где он не ясен из места) · цифровой текст · оценка. */
+/** Строка фактов файла: страницы · вид (где он не ясен из места) · цифровой текст. Оценки в строке нет: оценка
+ *  показывается только у платного действия (решение владельца), общая — в «Загрузить материалы». */
 export function fileLine(f: FileFacts, mode: FileMode, S: Strings): string {
 	const out: string[] = [];
 	if (f.pages) out.push(count(f.pages, S.file_pages_forms));
@@ -127,7 +136,6 @@ export function fileLine(f: FileFacts, mode: FileMode, S: Strings): string {
 		out.push(kindText(f.input_kind, S));
 	const fact = factText(f.input_fact, S);
 	if (fact) out.push(fact);
-	if (f.estimate_usd) out.push(fmt(S.file_estimate, { usd: f.estimate_usd }));
 	return out.join(' · ');
 }
 

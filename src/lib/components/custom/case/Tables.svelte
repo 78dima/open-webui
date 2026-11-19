@@ -116,6 +116,9 @@
 	$: startText = scope?.pages
 		? fmt(S.runs_start_usd, { usd: usd(scope.estimate_usd) })
 		: S.tables_start;
+	/** Готовый проход на нынешнем составе дела и нынешней версии чтения — им и пользуются: его название — ссылка,
+	 *  «Открыть» у него главная (макет K-tables); у идущих, неполных и устаревших — обычная. */
+	const current = (sw: Sweep) => sw.status === 'done' && !sw.stale && !sw.reader_stale;
 	const percent = (sw: Sweep) =>
 		sw.windows_total ? Math.round((100 * (sw.windows_done ?? 0)) / sw.windows_total) : 0;
 </script>
@@ -139,7 +142,13 @@
 			<div class="li t" data-testid="case-table-row">
 				<div class="col g6 grow">
 					<div class="row g8">
-						<a class="b lg aw name" href={hrefOf(`tables/${sw.id}`)}>{title(sw)}</a>
+						{#if current(sw)}
+							<a class="b lg aw name" href={hrefOf(`tables/${sw.id}`)} title={title(sw)}
+								>{title(sw)}</a
+							>
+						{:else}
+							<span class="b lg aw name" title={title(sw)}>{title(sw)}</span>
+						{/if}
 						<span class="pill t">{kindWord(sw, S)}</span>
 						<span class="pill t {tone}"
 							><Icon name={tone === 'i' ? 'clock' : tone ? 'al' : 'ok'} />{statusWord(sw, S)}</span
@@ -171,8 +180,11 @@
 						</div>
 					{/if}
 				</div>
-				<a class="btn s" href={hrefOf(`tables/${sw.id}`)} data-testid="case-table-open"
-					>{S.tables_open}</a
+				<a
+					class="btn s"
+					class:p={current(sw)}
+					href={hrefOf(`tables/${sw.id}`)}
+					data-testid="case-table-open">{S.tables_open}</a
 				>
 			</div>
 		{/each}
@@ -269,6 +281,14 @@
 	.name {
 		color: inherit;
 		text-decoration: none;
+		/* длинное название (вопрос прохода-«находки») — две строки с многоточием; целиком — в подсказке и в самой таблице */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
+		flex: 1 1 100%;
+		max-width: max-content;
 	}
 	.note {
 		padding: 10px 12px;

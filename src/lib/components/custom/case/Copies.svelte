@@ -8,7 +8,7 @@
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { createLoader } from '$lib/custom/case/loader';
 	import { casePath, sheetHref } from '$lib/custom/case/sections';
-	import { fmt } from '$lib/custom/case/strings';
+	import { count, fmt } from '$lib/custom/case/strings';
 	import Icon from './Icon.svelte';
 
 	export let state: CaseState;
@@ -180,7 +180,7 @@
 									{#if !more && part.list.length > DIFFS}
 										<div>
 											<button type="button" class="btn s" on:click={() => flip(`${key}:${part.id}`)}
-												>{fmt(S.show_more_n, { n: part.list.length - DIFFS })}</button
+												>{count(part.list.length - DIFFS, S.pairs_more_diffs_forms)}</button
 											>
 										</div>
 									{/if}

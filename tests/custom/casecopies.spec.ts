@@ -41,7 +41,7 @@ test.describe('«Копии и расхождения», 1280', () => {
 		await expect(diffs.locator('> .row').first().getByRole('link').first()).toHaveAttribute('target', '_blank');
 		await expect(diffs.locator('> .row').first().locator('.pill')).toHaveText(S.copies_note_ocr);
 		const src = copies().copies[0].differences.filter((x: any) => x.shown).length;
-		await first.getByRole('button', { name: `Показать ещё ${src - 3}` }).click();
+		await first.getByRole('button', { name: new RegExp(`^Показать ещё ${src - 3} расхождени`) }).click();
 		await expect(diffs.locator('> .row')).toHaveCount(src);
 		const before = calls.filter((c) => c.path === '/copies').length;
 		await refresh(page);

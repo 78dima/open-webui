@@ -6,6 +6,7 @@
 	// не пока открыто окно; раскрытое — состояние компонента. Поведение — прежний `sections/mapcore.js`.
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
+	import { useHead } from '$lib/custom/case/head';
 	import { createLoader } from '$lib/custom/case/loader';
 	import {
 		lines,
@@ -130,6 +131,15 @@
 		historyOpen = true;
 	};
 	$: loader.hold(editOpen || historyOpen);
+	const setHead = useHead();
+	$: setHead([
+		{
+			id: 'refresh',
+			text: S.map_refresh,
+			run: () => void loader.refresh(true),
+			testid: 'case-map-refresh'
+		}
+	]);
 </script>
 
 <div class="note n" data-testid="case-passport-note">
@@ -152,12 +162,6 @@
 			</p>
 		{/if}
 	</div>
-	<button
-		type="button"
-		class="btn t"
-		on:click={() => loader.refresh(true)}
-		data-testid="case-map-refresh">{S.map_refresh}</button
-	>
 </div>
 
 {#if $error && !$answer}
@@ -207,7 +211,7 @@
 							{@const key = `${f.key}:${n}`}
 							<div class="col g6" data-testid="case-passport-item">
 								<div class="row g8">
-									<span class="b aw">{it.value}</span>
+									<span class="aw" class:b={it.source === 'cards'}>{it.value}</span>
 									{#if (it.documents ?? 0) > 1}<span class="sm mut"
 											>{fmt(S.map_passport_in_docs, { n: it.documents })}</span
 										>{/if}
@@ -472,10 +476,6 @@
 />
 
 <style>
-	.note .btn {
-		flex: 0 0 auto;
-		align-self: center;
-	}
 	.find {
 		color: var(--muted);
 	}
