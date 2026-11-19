@@ -143,7 +143,7 @@ test('job tabs, sources, usage and authenticated artifact download', async ({ pa
 	expect((await download).suggestedFilename()).toBe('synthetic.docx');
 	expect(requests).toHaveLength(2);
 	expect(
-		requests.every((url) => url.startsWith('http://127.0.0.1:5174/legal-tools/'))
+		requests.every((url) => url.startsWith(`${new URL(page.url()).origin}/legal-tools/`))
 	).toBeTruthy();
 });
 for (const status of [401, 403, 500])

@@ -10,5 +10,5 @@ export default defineConfig({
     { find: '$lib/stores', replacement: fileURLToPath(new URL('./stores.ts', import.meta.url)) },
     { find: '$lib', replacement: fileURLToPath(new URL('../../src/lib', import.meta.url)) }
   ] },
-  server: { host: '127.0.0.1', port: 5174, strictPort: true, fs: { allow: ['../..'] } }
+  server: { host: '127.0.0.1', port: Number(process.env.CUSTOM_TEST_PORT ?? 5174), strictPort: true, fs: { allow: ['../..'] } }
 });
