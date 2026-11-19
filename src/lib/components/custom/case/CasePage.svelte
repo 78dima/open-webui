@@ -264,7 +264,15 @@
 					<Deadlines {state} {S} />
 				{:else if section === 'tables'}
 					{#if sub}
-						{#key sub}<TableOpen {state} {S} {hrefOf} id={sub} caseName={name} />{/key}
+						{#key sub}<TableOpen
+								{state}
+								{S}
+								{hrefOf}
+								id={sub}
+								caseName={name}
+								{refAction}
+								{volumes}
+							/>{/key}
 					{:else}
 						<Tables {state} {S} {hrefOf} />
 					{/if}

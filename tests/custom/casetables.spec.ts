@@ -106,6 +106,7 @@ test.describe('открытая таблица, 1280', () => {
 		await expect(head.getByRole('heading', { level: 1 })).toHaveText('Реестр доказательств');
 		await expect(head.locator('.pill')).toHaveText([S.tables_status_done, S.tables_parent]);
 		await expect(head.getByRole('link', { name: S.runs_back })).toHaveAttribute('href', /s=tables$/);
+		await expect(head.getByTestId('case-goto')).toBeVisible(); // «Открыть лист» — и в шапке открытой таблицы
 		expect(calls.some((c) => c.path === `/tables/${OPEN}?page=0`)).toBe(true);
 		const facts = page.getByTestId('case-table-facts');
 		await expect(facts).toContainText('Охват: всё дело. Прочитано страниц: 209 из 209.');

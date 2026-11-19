@@ -34,6 +34,7 @@
 	} from '$lib/custom/case/tablescore';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
+	import GotoForm from './GotoForm.svelte';
 	import Icon from './Icon.svelte';
 	import SheetRef from './SheetRef.svelte';
 
@@ -42,6 +43,9 @@
 	export let hrefOf: (slug: string) => string;
 	export let id: string;
 	export let caseName = '';
+	/** «Открыть лист» в шапке — та же форма, что у остальных разделов (адрес и тома даёт страница дела). */
+	export let refAction = '';
+	export let volumes: string[] = [];
 
 	type Column = { key: string; title: string; question?: string | null };
 	type Row = {
@@ -262,6 +266,7 @@
 			{/if}
 		</div>
 	</div>
+	{#if refAction}<GotoForm action={refAction} {volumes} {S} />{/if}
 	{#if sw}
 		<div class="row g8">
 			{#each actions as a (a.text)}
