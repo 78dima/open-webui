@@ -195,7 +195,7 @@ await step('архив ZIP и выбор папки', async () => {
 	const hold = new Promise((r) => (release = r));
 	await context.route('**/uploads/*/parts/1', async (route) => {
 		await hold;
-		await route.continue();
+		await route.continue().catch(() => undefined);
 	});
 	await page.getByTestId('case-upload-start').click();
 	await page.getByTestId('case-upload').filter({ hasText: 'том-а.pdf' }).waitFor({ timeout: 30000 });
@@ -208,8 +208,8 @@ await step('архив ZIP и выбор папки', async () => {
 	await sleep(500);
 	const stayed = (await page.getByTestId('case-upload').filter({ hasText: 'том-а.pdf' }).count()) === 1;
 	release();
-	await context.unroute('**/uploads/*/parts/1');
 	await page.getByTestId('case-upload').filter({ hasText: 'том-а.pdf' }).filter({ hasText: S.upload_done }).waitFor({ timeout: 120000 });
+	await context.unroute('**/uploads/*/parts/1');
 	const asksAfter = await page.evaluate(() => !window.dispatchEvent(new Event('beforeunload', { cancelable: true })));
 	page.off('dialog', onDialog);
 	ok(asksWhileUploading && !asksAfter, 'уход со страницы во время передачи файла: страница просит браузер спросить; после передачи — не просит');
