@@ -1,0 +1,52 @@
+[
+ {
+  "id": "5a1c0001-0000-4000-a000-000000000001",
+  "user_id": "u-owner",
+  "name": "Северный ветер — поставка",
+  "parent_id": null,
+  "is_expanded": false,
+  "unread_count": 0,
+  "created_at": 1763000000,
+  "updated_at": 1763000000
+ },
+ {
+  "id": "5a1c0002-0000-4000-a000-000000000002",
+  "user_id": "u-owner",
+  "name": "А40-123456/2025",
+  "parent_id": "5a1c0005-0000-4000-a000-000000000005",
+  "is_expanded": false,
+  "unread_count": 0,
+  "created_at": 1763000000,
+  "updated_at": 1763000000
+ },
+ {
+  "id": "5a1c0003-0000-4000-a000-000000000003",
+  "user_id": "u-owner",
+  "name": "Гусева М. О. — раздел имущества",
+  "parent_id": null,
+  "is_expanded": false,
+  "unread_count": 0,
+  "created_at": 1763000000,
+  "updated_at": 1763000000
+ },
+ {
+  "id": "5a1c0004-0000-4000-a000-000000000004",
+  "user_id": "u-owner",
+  "name": "Арбитраж",
+  "parent_id": null,
+  "is_expanded": false,
+  "unread_count": 0,
+  "created_at": 1763000000,
+  "updated_at": 1763000000
+ },
+ {
+  "id": "5a1c0005-0000-4000-a000-000000000005",
+  "user_id": "u-owner",
+  "name": "2025",
+  "parent_id": "5a1c0004-0000-4000-a000-000000000004",
+  "is_expanded": false,
+  "unread_count": 0,
+  "created_at": 1763000000,
+  "updated_at": 1763000000
+ }
+]

@@ -1,0 +1,94 @@
+{
+ "own": [
+  {
+   "folder_id": "5a1c0001-0000-4000-a000-000000000001",
+   "title": "Северный ветер — поставка",
+   "path": "",
+   "write": true,
+   "owner": true,
+   "shared": false,
+   "case": {
+    "id": "5a1c0101-0000-4000-a000-000000000101",
+    "volumes": 4,
+    "changed": "2025-11-14T09:12:40+00:00"
+   }
+  },
+  {
+   "folder_id": "5a1c0002-0000-4000-a000-000000000002",
+   "title": "А40-123456/2025",
+   "path": "Арбитраж / 2025",
+   "write": true,
+   "owner": true,
+   "shared": false,
+   "case": {
+    "id": "5a1c0102-0000-4000-a000-000000000102",
+    "volumes": 1,
+    "changed": "2025-11-02T16:03:11+00:00"
+   }
+  },
+  {
+   "folder_id": "5a1c0003-0000-4000-a000-000000000003",
+   "title": "Гусева М. О. — раздел имущества",
+   "path": "",
+   "write": true,
+   "owner": true,
+   "shared": false,
+   "case": null
+  },
+  {
+   "folder_id": "5a1c0004-0000-4000-a000-000000000004",
+   "title": "Арбитраж",
+   "path": "",
+   "write": true,
+   "owner": true,
+   "shared": false,
+   "case": null
+  },
+  {
+   "folder_id": "5a1c0005-0000-4000-a000-000000000005",
+   "title": "2025",
+   "path": "Арбитраж",
+   "write": true,
+   "owner": true,
+   "shared": false,
+   "case": null
+  }
+ ],
+ "shared": [
+  {
+   "folder_id": "5a1c0006-0000-4000-a000-000000000006",
+   "title": "Бета-Логистик (апелляция)",
+   "path": "",
+   "write": true,
+   "owner": false,
+   "shared": true,
+   "case": {
+    "id": "5a1c0106-0000-4000-a000-000000000106",
+    "volumes": 7,
+    "changed": "2025-10-30T11:45:00+00:00"
+   }
+  },
+  {
+   "folder_id": "5a1c0007-0000-4000-a000-000000000007",
+   "title": "Тихонов — трудовой спор",
+   "path": "",
+   "write": false,
+   "owner": false,
+   "shared": true,
+   "case": null
+  },
+  {
+   "folder_id": "5a1c0008-0000-4000-a000-000000000008",
+   "title": "Миронов Д. П. — наследство",
+   "path": "",
+   "write": false,
+   "owner": false,
+   "shared": true,
+   "case": {
+    "id": "5a1c0108-0000-4000-a000-000000000108",
+    "volumes": 2,
+    "changed": "2025-09-18T08:20:00+00:00"
+   }
+  }
+ ]
+}

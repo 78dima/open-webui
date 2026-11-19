@@ -1,0 +1,26 @@
+[
+ {
+  "id": "5a1c0006-0000-4000-a000-000000000006",
+  "user_id": "u-colleague",
+  "name": "Бета-Логистик (апелляция)",
+  "parent_id": null,
+  "owner_name": "Коллега",
+  "permission": "write"
+ },
+ {
+  "id": "5a1c0007-0000-4000-a000-000000000007",
+  "user_id": "u-colleague",
+  "name": "Тихонов — трудовой спор",
+  "parent_id": null,
+  "owner_name": "Коллега",
+  "permission": "read"
+ },
+ {
+  "id": "5a1c0008-0000-4000-a000-000000000008",
+  "user_id": "u-colleague",
+  "name": "Миронов Д. П. — наследство",
+  "parent_id": null,
+  "owner_name": "Коллега",
+  "permission": "read"
+ }
+]

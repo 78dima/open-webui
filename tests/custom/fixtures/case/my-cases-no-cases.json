@@ -1,0 +1,42 @@
+{
+ "own": [
+  {
+   "folder_id": "5a1c0003-0000-4000-a000-000000000003",
+   "title": "Гусева М. О. — раздел имущества",
+   "path": "",
+   "write": true,
+   "owner": true,
+   "shared": false,
+   "case": null
+  },
+  {
+   "folder_id": "5a1c0004-0000-4000-a000-000000000004",
+   "title": "Арбитраж",
+   "path": "",
+   "write": true,
+   "owner": true,
+   "shared": false,
+   "case": null
+  },
+  {
+   "folder_id": "5a1c0005-0000-4000-a000-000000000005",
+   "title": "2025",
+   "path": "Арбитраж",
+   "write": true,
+   "owner": true,
+   "shared": false,
+   "case": null
+  }
+ ],
+ "shared": [
+  {
+   "folder_id": "5a1c0007-0000-4000-a000-000000000007",
+   "title": "Тихонов — трудовой спор",
+   "path": "",
+   "write": false,
+   "owner": false,
+   "shared": true,
+   "case": null
+  }
+ ]
+}
