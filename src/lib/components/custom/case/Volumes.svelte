@@ -633,7 +633,7 @@
 			</div>
 		</fieldset>
 	{:else if win?.kind === 'remove'}
-		<p class="md fg2 aw">{fmt(S.remove_file_confirm, { name: win.file.filename })}</p>
+		<p class="md fg2 aw">{fmt(S.remove_file_confirm_g, { name: win.file.filename })}</p>
 	{/if}
 </FormDialog>
 

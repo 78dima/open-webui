@@ -53,7 +53,7 @@
 						>{submit ? S.cancel : S.close}</button
 					>
 					{#if submit}
-						<button type="submit" class="btn {danger ? 'd' : 'p'}" disabled={busy}
+						<button type="submit" class="btn {danger ? 'dp' : 'p'}" disabled={busy}
 							>{submitText || S.save}</button
 						>
 					{/if}

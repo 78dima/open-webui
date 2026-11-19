@@ -21,6 +21,7 @@
 	import CheckSheets from './CheckSheets.svelte';
 	import Chronology from './Chronology.svelte';
 	import Copies from './Copies.svelte';
+	import Danger from './Danger.svelte';
 	import Deadlines from './Deadlines.svelte';
 	import Dialog from './Dialog.svelte';
 	import GotoForm from './GotoForm.svelte';
@@ -30,6 +31,7 @@
 	import Passport from './Passport.svelte';
 	import StateCard from './StateCard.svelte';
 	import Extract from './Extract.svelte';
+	import FolderFiles from './FolderFiles.svelte';
 	import Replace from './Replace.svelte';
 	import TableOpen from './TableOpen.svelte';
 	import Tables from './Tables.svelte';
@@ -266,21 +268,14 @@
 					{:else}
 						<Tables {state} {S} {hrefOf} />
 					{/if}
+				{:else if section === 'folder-files'}
+					<FolderFiles {state} {S} />
+				{:else if section === 'danger'}
+					<Danger {state} {S} {casesHref} caseName={name} />
 				{:else if section === 'replace'}
 					<Replace {state} {S} />
 				{:else if section === 'extract'}
 					<Extract {state} {S} />
-				{:else}
-					<!-- раздел следующей сдачи: пока открывается на прежней странице дела сервиса -->
-					<section class="card" data-testid="case-section-later">
-						<div class="row">
-							<a
-								class="btn"
-								href={`${api.url(`case/${encodeURIComponent(folderId)}`)}#sec-${SECTION_SETTING[section] ?? section}`}
-								data-sveltekit-reload>{S.open_case}</a
-							>
-						</div>
-					</section>
 				{/if}
 			{/if}
 		</main>
