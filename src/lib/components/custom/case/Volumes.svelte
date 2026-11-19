@@ -256,11 +256,11 @@
 						<a
 							class="ref"
 							href={sheetHref(state, src.pageId)}
-							title={fmt(S.label_sheet_link, { label: src.sheet })}
+							title={fmt(S.label_sheet_link_g, { label: src.sheet })}
 							data-sveltekit-reload>{S.label_sheet_caption}</a
 						>
 					{/if}
-					{#if src.unchecked}<span class="c-warn"> · {S.label_not_on_sheet}</span>{/if}
+					{#if src.unchecked}<span class="c-warn"> · {S.label_not_on_sheet_g}</span>{/if}
 				</p>
 			{/if}
 			{#if note}

@@ -33,6 +33,14 @@ test('каждое слово страницы — ключ строк серв�
 	expect(Object.fromEntries(full.all.map((k) => [k, real[k]]))).toEqual(strings);
 });
 
+test('в строках новых страниц том называется номером: слова «метка» (тома) нет', () => {
+	// «отметка» (проверено в таблице) и «пометка» — другие слова; прежние страницы сервиса и тексты для модели — со своими строками
+	const bad = Object.entries(strings as Record<string, unknown>)
+		.filter(([, v]) => typeof v === 'string' && /(?<!от)(?<!по)метк/i.test(v))
+		.map(([k]) => k);
+	expect(bad).toEqual([]);
+});
+
 test('русские слова в компонентах — только в комментариях: фраз для юриста в коде нет', () => {
 	const stripped = (text: string) =>
 		text

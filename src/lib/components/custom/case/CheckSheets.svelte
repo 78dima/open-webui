@@ -38,7 +38,7 @@
 	const hint = (g: CheckGroup) =>
 		g.hint ? S[g.hint] : g.chips.length === 1 && !g.rows.length ? cap(g.chips[0].reason) : '';
 	const volumeTitle = (label: string | null) =>
-		label ? fmt(S.volume_title, { label }) : S.volume_no_label;
+		label ? fmt(S.volume_title, { label }) : S.volume_no_label_g;
 </script>
 
 <div class="row sp g12" data-testid="case-check">
@@ -53,7 +53,7 @@
 			<option value={null}>{S.check_filter_all}</option>
 			{#each withRows as v (v.id)}
 				<option value={v.id}
-					>{v.label ? fmt(S.check_filter_volume, { label: v.label }) : S.volume_no_label}</option
+					>{v.label ? fmt(S.check_filter_volume, { label: v.label }) : S.volume_no_label_g}</option
 				>
 			{/each}
 		</select>

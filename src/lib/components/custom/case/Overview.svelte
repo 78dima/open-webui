@@ -330,7 +330,7 @@
 					{@const st = volumeState(v)}
 					<div class="tr" data-testid="case-comp-volume">
 						<span class="b lg aw"
-							>{v.label ? fmt(S.volume_title, { label: v.label }) : S.volume_no_label}</span
+							>{v.label ? fmt(S.volume_title, { label: v.label }) : S.volume_no_label_g}</span
 						>
 						<span
 							><span class="pill {TONE[st.tone]}"><Icon name={ICON[st.tone]} />{text(st)}</span

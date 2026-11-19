@@ -171,7 +171,7 @@ export function suggestText(
 export const volumeLabel = (volumes: Volume[], id: number | string): string =>
 	volumes.find((v) => String(v.id) === String(id))?.label ?? '?';
 export const volumeTitle = (label: string | null | undefined, S: Strings): string =>
-	label ? fmt(S.volume_title, { label }) : S.volume_no_label;
+	label ? fmt(S.volume_title, { label }) : S.volume_no_label_g;
 /** Тома по порядку номеров («1, 2, 5/1, 10») — для списков «продолжение тома». */
 export const volumesSorted = (volumes: Volume[]): Volume[] =>
 	[...volumes].sort((a, b) => (naturalKey(a.label) < naturalKey(b.label) ? -1 : 1));

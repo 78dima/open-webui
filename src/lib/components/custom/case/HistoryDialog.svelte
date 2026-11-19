@@ -69,8 +69,12 @@
 	// прежней странице (`sections/mapcore.js`)
 	const MAP_ENTITIES = new Set(['passport', 'fact', 'amount', 'deadline']);
 	const mapped = (e: Edit) => MAP_ENTITIES.has(e.entity ?? '') && !!e.field && !e.field_text;
+	// название поля тома «номер тома» — строка страницы: сервис отдаёт слово прежней страницы («Метка тома»)
+	const OWN_FIELD: Record<string, string> = { 'volume:label': 'edit_field_volume_label_g' };
 	const fieldOf = (e: Edit) =>
-		mapped(e) ? editField(e.entity!, e.field!, e.entity_id, S) : (e.field_text ?? '');
+		mapped(e)
+			? editField(e.entity!, e.field!, e.entity_id, S)
+			: (S[OWN_FIELD[`${e.entity}:${e.field}`]] ?? e.field_text ?? '');
 	const line = (e: Edit) =>
 		fmt(S.edit_history_row, {
 			who: e.who,

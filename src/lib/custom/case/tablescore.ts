@@ -53,7 +53,7 @@ const REF: Record<string, string> = {
 	found: 'tables_ref_found',
 	not_found: 'tables_ref_not_found',
 	partial: 'tables_ref_partial',
-	no_volume: 'tables_ref_no_volume',
+	no_volume: 'runs_ref_no_volume', // редакция «номер тома» (строка прежней страницы — tables_ref_no_volume)
 	too_long: 'tables_ref_too_long'
 };
 

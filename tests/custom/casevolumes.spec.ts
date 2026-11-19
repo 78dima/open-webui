@@ -6,7 +6,9 @@ const EDITS = {
 	edits: [
 		{ id: 31, field_text: 'Том файла', who: 'вы', at: '2025-12-07T09:41:00Z', before_text: 'т. 5/1', after_text: '', can_revert: true },
 		{ id: 30, field_text: 'Том файла', who: 'модель', at: '2025-12-02T18:24:00Z', before_text: '', after_text: 'т. 5/1', reverted_by: 31 },
-		{ id: 29, field_text: 'Том файла', who: 'Лебедева А. В.', at: '2025-12-02T18:20:00Z', before_text: 'т. 4', after_text: '', revert_of: 28 }
+		{ id: 29, field_text: 'Том файла', who: 'Лебедева А. В.', at: '2025-12-02T18:20:00Z', before_text: 'т. 4', after_text: '', revert_of: 28 },
+		// правка номера тома: сервис называет поле словом прежней страницы, новая страница — своей строкой «Номер тома»
+		{ id: 27, entity: 'volume', field: 'label', field_text: 'Метка тома', who: 'вы', at: '2025-12-01T10:00:00Z', before_text: '5', after_text: '5/1' }
 	]
 };
 const ok = (r: any) => r.fulfill({ json: { ok: true } });
@@ -184,8 +186,11 @@ test.describe('«Тома», 1280', () => {
 		const dlg = dialog(page);
 		await expect(dlg.getByRole('heading')).toHaveText(S.history_title);
 		const rows = dlg.getByTestId('case-history-row');
-		await expect(rows).toHaveCount(3);
+		await expect(rows).toHaveCount(4);
 		await expect(rows.nth(0)).toContainText('Том файла');
+		// поле тома — «Номер тома», а не «Метка тома» (слово прежней страницы в ответе сервиса)
+		await expect(rows.nth(3).locator('.b')).toHaveText(S.edit_field_volume_label_g);
+		await expect(rows.nth(3)).not.toContainText('Метка');
 		await expect(rows.nth(0)).toContainText(/вы, 07\.12\.2025, \d\d:41: было «т\. 5\/1», стало «пусто»/);
 		await expect(rows.nth(1).locator('.pill')).toHaveText(S.history_reverted);
 		await expect(rows.nth(2).locator('.pill')).toHaveText(S.history_revert_of);
