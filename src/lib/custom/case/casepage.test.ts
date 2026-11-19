@@ -167,9 +167,9 @@ describe('обработка и состояние сводки', () => {
 			check_total: 0
 		};
 		expect(summary(empty as CaseData).kind).toBe('empty');
-		expect(summary({ ...empty, uploads: [{ id: 'u', phase: 'receiving' }] } as CaseData).kind).toBe(
-			'processing'
-		);
+		expect(
+			summary({ ...empty, uploads: [{ id: 'u', phase: 'receiving' }] } as unknown as CaseData).kind
+		).toBe('processing');
 	});
 	it('том распознан, а опись ещё составляется — дело ещё не «готово»', () => {
 		const v = { ...ready.overview.volumes![0], status: 'indexed' };
