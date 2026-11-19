@@ -67,9 +67,9 @@ rm -rf "$ctx/build/pyodide"            # пакеты Pyodide — из базо�
 {
   echo "# ai-dvokat: слой фронтенда поверх $BASE_IMG (deploy/ui-layer/build.sh); фронтенд из $REV"
   echo "FROM $BASE_IMG"
-  echo "RUN mv /app/build/pyodide /app/.pyodide-base && rm -rf /app/build && mkdir -p /app/build"
+  # прежний фронтенд убирается весь, кроме pyodide (его слой не трогает — образ не растёт на его размер)
+  echo "RUN find /app/build -mindepth 1 -maxdepth 1 ! -name pyodide -exec rm -rf {} +"
   echo "COPY build/ /app/build/"
-  echo "RUN mv /app/.pyodide-base /app/build/pyodide"
   echo "LABEL org.opencontainers.image.revision=\"$REV\" ai-dvokat.ui-layer-base=\"$BASE_IMG\" ai-dvokat.ui-layer-base-revision=\"$BASE_REV\""
 } > "$ctx/Dockerfile"
 docker build -q -t "$OUT" "$ctx" >/dev/null
