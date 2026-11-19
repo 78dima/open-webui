@@ -85,6 +85,10 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 		const url = new URL(r.url());
 		if (url.pathname.includes('/uploads')) sent.push(`${r.method()} ${url.pathname.split('/uploads')[1] || '/'}`);
 	});
+	const posted = []; // тела запросов «начать загрузку»
+	page.on('request', (r) => {
+		if (r.method() === 'POST' && new URL(r.url()).pathname.endsWith('/uploads')) posted.push(r.postData());
+	});
 	const external = [];
 	page.on('request', (r) => {
 		if (!r.url().startsWith(base) && !/^(data|blob|about):/.test(r.url())) external.push(r.url());
@@ -139,9 +143,10 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 		`тот же файл выбран снова: вопросов «что это» нет, дослана только вторая часть (запросы частей до обрыва: ${[...new Set(parts(before))].join(', ')} — вторая оборвана; после: ${parts(again).join(', ')}), файл передан на обработку`);
 	ok((await page.evaluate((f) => localStorage.getItem(`case-up:${f}`), folder)) === '{}', 'запись «файл → загрузка» в хранилище браузера снята после завершения (ключ тот же, что у прежней страницы)');
 
-	// --- остальные материалы выдуманного дела: тома, электронное дело, фото
-	const VOLUMES = ['Том 1.pdf', 'Том 2.pdf', 'Том 2 (продолжение).pdf', 'tom5.pdf'];
-	const files = readdirSync(corpus).sort();
+	// --- остальные материалы выдуманного дела: тома, электронное дело, фото; продолжение тома 2 — отдельно, вторым шагом
+	const VOLUMES = ['Том 1.pdf', 'Том 2.pdf', 'tom5.pdf'];
+	const CONT = 'Том 2 (продолжение).pdf';
+	const files = readdirSync(corpus).sort().filter((f) => f !== CONT);
 	await page.getByTestId('case-pick-files').setInputFiles(files.map((f) => join(corpus, f)));
 	const rows = page.getByTestId('case-queue-row');
 	await rows.first().waitFor();
@@ -151,20 +156,37 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 		const name = (await r.locator('.b').first().textContent()).trim();
 		if (name.startsWith('Фото:')) await r.getByRole('textbox').fill('3');
 		else await r.getByRole('radio', { name: VOLUMES.includes(name) ? 'том дела' : 'электронное дело' }).check();
+		if (name === 'Том 2.pdf') await r.getByRole('textbox').fill('2');
 	}
 	const photoRow = await texts(rows.filter({ hasText: 'Фото:' }).locator('.b'));
-	ok(n === 9 && photoRow[0] === 'Фото: 8 шт.', `к загрузке: ${n} строк — 8 PDF по строке и «${photoRow[0]}» одной строкой`);
+	ok(n === 8 && photoRow[0] === 'Фото: 8 шт.', `к загрузке: ${n} строк — 7 PDF по строке и «${photoRow[0]}» одной строкой; указано, что это, тому 2 и фото — номер тома`);
 	await shot(page, 'live-case-upload-queue-1280');
+	await page.getByTestId('case-upload-start').click();
+	await page.waitForFunction(() => {
+		const list = [...document.querySelectorAll('[data-testid="case-upload"]')];
+		return list.length >= 16 && list.every((e) => e.dataset.state === 'done');
+	}, null, { timeout: 180000 });
+	ok(true, '15 файлов переданы (по два одновременно), у каждого — «передан на обработку»');
+	// продолжение тома: юрист выбирает том из списка — он появляется в списке, как только том заведён (обзор переспрашивается)
+	await page.getByTestId('case-pick-files').setInputFiles(join(corpus, CONT));
+	const contRow = page.getByTestId('case-queue-row');
+	await contRow.getByRole('radio', { name: 'том дела' }).check();
+	const contSelect = contRow.locator('select');
+	await contSelect.locator('option', { hasText: 'продолжение тома 2' }).waitFor({ state: 'attached', timeout: 180000 });
+	ok((await contRow.getByRole('radio', { name: 'том дела' }).isChecked()), 'том 2 появился в списке «продолжение» без перезагрузки; выбранное в строке очереди при этом не сброшено');
+	await contSelect.selectOption({ label: 'продолжение тома 2' });
 	await page.getByTestId('case-upload-start').click();
 	await page.waitForFunction(() => {
 		const list = [...document.querySelectorAll('[data-testid="case-upload"]')];
 		return list.length >= 17 && list.every((e) => e.dataset.state === 'done');
 	}, null, { timeout: 180000 });
-	ok(true, 'все 16 файлов переданы (по два одновременно), у каждого — «передан на обработку»');
+	const sentCont = JSON.parse(posted.at(-1) ?? '{}');
+	ok(typeof sentCont.continues_volume_id === 'number' && sentCont.volume_hint == null && sentCont.input_kind === 'volume',
+		`«${CONT}» передан как продолжение тома 2 (в запросе — continues_volume_id, номера тома нет)`);
 	ok(external.length === 0, 'внешних запросов со страницы нет');
 
-	// --- обработка: смотреть на ход на «Обзоре»; подсказку «продолжение тома» подтверждает юрист (кнопка — в разделе
-	// «Тома», сдача 3; здесь — той же ручкой, что нажимает кнопка)
+	// --- обработка: смотреть на ход на «Обзоре». Подсказок «продолжение тома» быть не должно: том указан при загрузке
+	// (кнопка подтверждения подсказки — в разделе «Тома», сдача 3)
 	await page.getByTestId('case-nav-overview').click();
 	const summary = page.getByTestId('case-summary');
 	await page.evaluate(() => (window.__sameDocument = true));
@@ -182,7 +204,7 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 			if (f.input_kind === 'volume' && f.suggest?.volume_id && !confirmed.has(f.id)) {
 				const r = await api('PATCH', `/legal-tools/api/cases/${folder}/files/${f.id}`, owner.token, { confirm_suggest: true }, { 'X-Ai-Case': '1', Origin: base });
 				confirmed.add(f.id);
-				ok(r.status === 200, `подсказка «продолжение тома» подтверждена: ${f.filename}`);
+				ok(false, `подсказки «продолжение тома» быть не должно — том указан при загрузке: ${f.filename} (${r.status})`);
 			}
 		}
 		const files = Object.values(ov.files ?? {});
