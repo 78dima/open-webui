@@ -9,6 +9,8 @@
 #   flock /tmp/ai-dvokat-docker-build.lock docker build -t legal-assistant/legal-tools:case-ui-g <ai-dvokat>/tools/
 #   LIVE_NAME=<проект> LIVE_SUBNET=<свободная /24> tests/custom/case-live/run.sh [каталог для снимков]
 # LIVE_KEEP=1 — оставить среду (убрать: docker compose -p $LIVE_NAME down -v). Код выхода 0 — все проверки OK.
+# LIVE_TOOLS_OLD_IMAGE=<образ сервиса до сдачи 4> — рядом поднимается прежняя страница листа (/legal-tools-old): с ней
+# сверяется скопированная строка.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 FORK=$(cd "$HERE/../../.." && pwd)
@@ -81,17 +83,22 @@ os.remove(os.path.join(out, "Письмо.pdf"))
 EOF
 ) || { echo "FAIL файлы живой проверки не собраны"; exit 1; }
 # правила Caddy — блок chat.<домен> настоящего Caddyfile сервера, только адрес — порт без TLS
-python3 - "$TOOLS_REPO/deploy/caddy/Caddyfile" > "$LIVE_CADDYFILE" <<'EOF'
+python3 - "$TOOLS_REPO/deploy/caddy/Caddyfile" "${LIVE_TOOLS_OLD_IMAGE:-}" > "$LIVE_CADDYFILE" <<'EOF'
 import sys
 lines = open(sys.argv[1], encoding="utf-8").read().split("\n")
 start = next(i for i, l in enumerate(lines) if l.startswith("chat.{$PUBLIC_DOMAIN}"))
 end = next(i for i in range(start + 1, len(lines)) if lines[i] == "}")
-print("{\n\tauto_https off\n\tadmin off\n}\n:80 {\n" + "\n".join(lines[start + 1:end + 1]))
+body = lines[start + 1:end + 1]
+if len(sys.argv) > 2 and sys.argv[2]:
+    # сервис прежнего образа (прежняя страница листа) — рядом, по своему адресу
+    at = next(i for i, l in enumerate(body) if l.strip().startswith("handle_path /legal-tools/*"))
+    body[at:at] = ["\thandle_path /legal-tools-old/* {", "\t\treverse_proxy tools-old:8000", "\t}"]
+print("{\n\tauto_https off\n\tadmin off\n}\n:80 {\n" + "\n".join(body))
 EOF
 COMPOSE=(docker compose -p "$LIVE_NAME" -f "$HERE/compose.yaml")
 cleanup() {
   if [ -n "${LIVE_KEEP:-}" ]; then echo "LIVE_KEEP: среда $LIVE_NAME оставлена на http://127.0.0.1:$LIVE_PORT (каталог $WORK)"; return; fi
-  "${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
+  "${COMPOSE[@]}" --profile old down -v --remove-orphans >/dev/null 2>&1 || true
   docker run --rm -v "$WORK:/w" alpine:latest rm -rf /w/build >/dev/null 2>&1 || true
   rm -rf "$WORK"
 }
@@ -105,11 +112,20 @@ for _ in $(seq 30); do "${COMPOSE[@]}" run --rm --no-deps tools init-buckets >/d
 "${COMPOSE[@]}" up -d --pull never --wait --wait-timeout 180 tools >/dev/null 2>&1 || { echo "FAIL legal-tools не поднялся"; "${COMPOSE[@]}" logs --no-color --tail 40 tools; exit 1; }
 "${COMPOSE[@]}" run --rm --no-deps case-worker case-worker --resume >/dev/null 2>&1 || true
 "${COMPOSE[@]}" up -d --pull never --no-recreate case-worker jobs-worker >/dev/null 2>&1
+OLD=0
+if [ -n "${LIVE_TOOLS_OLD_IMAGE:-}" ] && docker image inspect "$LIVE_TOOLS_OLD_IMAGE" >/dev/null 2>&1; then
+  "${COMPOSE[@]}" --profile old up -d --pull never --no-recreate tools-old >/dev/null 2>&1 && OLD=1
+fi
 python3 -I "$HERE/setup.py" cases "$BASE" "$WORK/state.json"
 rc=0
 (cd "$HERE/.." && node case-live/live.mjs --state "$WORK/state.json" ${OUT:+--out "$OUT"}) || rc=1
 (cd "$HERE/.." && node case-live/live-case.mjs --state "$WORK/state.json" --corpus "$CORPUS/mini" \
    --big "$WORK/files/Том 7 (большой).pdf" ${OUT:+--out "$OUT"}) || rc=1
+# страница листа и «несколько листов» (сдача 4) — на том же деле, до правок разделов; пропуск: LIVE_SHEET=0
+if [ "${LIVE_SHEET:-1}" = 1 ] && [ -f "$WORK/case.json" ]; then
+  (cd "$HERE/.." && node case-live/live-sheet.mjs --state "$WORK/state.json" --case "$WORK/case.json" --old "$OLD" \
+     ${OUT:+--out "$OUT"}) || rc=1
+fi
 # остальные разделы страницы дела — на том же деле (сдача 3); пропуск: LIVE_SECTIONS=0
 if [ "${LIVE_SECTIONS:-1}" = 1 ] && [ -f "$WORK/case.json" ]; then
   (cd "$HERE/.." && node case-live/live-sections.mjs --state "$WORK/state.json" --case "$WORK/case.json" --files "$WORK/files" \

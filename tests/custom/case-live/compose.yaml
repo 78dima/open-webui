@@ -58,6 +58,17 @@ services:
     command: ["api"]
     environment: *tools-env
     depends_on: {pg: {condition: service_healthy}}
+  # прежняя страница листа — сервис прежнего образа на той же базе, по адресу /legal-tools-old (сдача 4: сверка
+  # скопированной строки со строкой прежней страницы); поднимается только по просьбе (LIVE_TOOLS_OLD_IMAGE в run.sh)
+  tools-old:
+    image: ${LIVE_TOOLS_OLD_IMAGE:-none}
+    profiles: [old]
+    networks: [live]
+    command: ["api"]
+    environment:
+      <<: *tools-env
+      LEGAL_TOOLS_RECEIPT_PAGE_BASE: /legal-tools-old
+    depends_on: {pg: {condition: service_healthy}}
   case-worker:
     image: ${LIVE_TOOLS_IMAGE:?}
     networks: [live]
