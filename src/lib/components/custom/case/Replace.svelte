@@ -147,10 +147,10 @@
 		<section class="card g16" data-testid="case-delta">
 			<div class="row sp g12 as">
 				<div class="col g4 grow">
-					<h2>{fmt(S.whatsnew_head_g, { volume: d.volume_label || '—' })}</h2>
+					<h2>{fmt(S.replace_head, { volume: d.volume_label || '—' })}</h2>
 					<p class="md fg2 aw">
 						<span class="b">{d.new.filename || '—'}</span>
-						{S.whatsnew_versus}
+						{S.replace_versus}
 						<span class="b">{d.old.filename || '—'}</span>
 					</p>
 					<p class="sm mut">

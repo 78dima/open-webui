@@ -17,12 +17,12 @@ test.describe('«Копии и расхождения», 1280', () => {
 		const { calls } = await openSection(page, { section: 'copies', routes: { copies: copies() } });
 		await expect(page.getByTestId('case-copies-hint')).toHaveText(S.copies_hint);
 		const real = page.getByTestId('case-copies-real');
-		await expect(real.getByRole('heading')).toHaveText(S.copies_real_title);
+		await expect(real.getByRole('heading')).toHaveText(S.pairs_real_title);
 		await expect(real.locator('.cnt')).toHaveText('1');
 		await expect(real.getByTestId('case-copy')).toContainText(S.copies_doc_gone);
 		const other = page.getByTestId('case-copies-other');
-		await expect(other.getByRole('heading')).toHaveText(S.copies_similar_title);
-		await expect(other).toContainText(S.copies_similar_note);
+		await expect(other.getByRole('heading')).toHaveText(S.pairs_similar_title);
+		await expect(other).toContainText(S.pairs_similar_note);
 		await expect(other.locator('.cnt')).toHaveText('5');
 		const pairs = other.getByTestId('case-copy');
 		await expect(pairs).toHaveCount(4);

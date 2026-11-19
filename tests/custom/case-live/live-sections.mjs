@@ -280,7 +280,8 @@ await step('опись', async () => {
 	await go(page, 'inventory');
 	const rows = page.getByTestId('case-doc');
 	await rows.first().waitFor({ timeout: 60000 });
-	const n0 = await rows.count();
+	const total = async () => (await tools('/documents?page=0')).total;
+	const n0 = await total(); // в описи больше строк, чем первая порция страницы, — счёт по ответу сервиса
 	const listed = (await tools('/documents?page=0')).documents;
 	const pick = listed.find((d) => d.sheets > 1 && d.title && !d.edited) ?? listed.find((d) => d.sheets > 1 && d.title);
 	const id = pick.id;
@@ -303,8 +304,8 @@ await step('опись', async () => {
 	const at = await dlg(page).locator('select option').first().textContent();
 	await dlg(page).getByRole('button', { name: S.doc_split, exact: true }).click();
 	await toast(page, S.saved);
-	await page.waitForFunction((n) => document.querySelectorAll('[data-testid="case-doc"]').length === n + 1, n0, { timeout: 30000 });
-	ok(true, `«Разделить»: новый документ начинается с листа «${at}» — в описи стало ${n0 + 1} строк`);
+	await page.getByTestId('case-doc').first().waitFor({ timeout: 30000 });
+	ok((await total()) === n0 + 1, `«Разделить»: новый документ начинается с листа «${at}» — в описи стало ${n0 + 1} документов`);
 	const docs = (await tools('/documents?page=0')).documents;
 	const i = docs.findIndex((d) => String(d.id) === String(id));
 	const pair = [docs[i], docs[i + 1]].filter(Boolean);
@@ -315,8 +316,8 @@ await step('опись', async () => {
 	const label = (await merge.textContent()).trim();
 	await merge.click();
 	await toast(page, S.saved);
-	await page.waitForFunction((n) => document.querySelectorAll('[data-testid="case-doc"]').length === n, n0, { timeout: 30000 });
-	ok(needTwo && label === fmt(S.doc_merge_n, { n: 2 }), `«Объединить отмеченные»: без отметок — «${S.doc_merge_need_two}»; «${label}» — в описи снова ${n0} строк`);
+	await page.getByTestId('case-doc').first().waitFor({ timeout: 30000 });
+	ok(needTwo && label === fmt(S.doc_merge_n, { n: 2 }) && (await total()) === n0, `«Объединить отмеченные»: без отметок — «${S.doc_merge_need_two}»; «${label}» — в описи снова ${n0} документов`);
 	// выгрузка
 	for (const [name, mark, ext] of [[S.export_docx, 'word/document.xml', '.docx'], [S.export_xlsx, 'xl/workbook.xml', '.xlsx']]) {
 		const wait = page.waitForEvent('download', { timeout: 60000 });
@@ -478,7 +479,7 @@ await step('замена тома', async () => {
 	const head = (await card.getByRole('heading', { level: 2 }).textContent()).trim();
 	const tiles = await texts(card.getByTestId('case-delta-tiles').locator('.v'));
 	const d = (await tools('/deltas')).deltas[0];
-	ok(head === fmt(S.whatsnew_head_g, { volume: '1' }) && Number(tiles[0]) === d.same && Number(tiles[1]) === d.added.length && Number(tiles[2]) === d.removed.length,
+	ok(head === fmt(S.replace_head, { volume: '1' }) && Number(tiles[0]) === d.same && Number(tiles[1]) === d.added.length && Number(tiles[2]) === d.removed.length,
 		`«${head}»: плитки счёта — те же листы ${tiles[0]}, добавлены ${tiles[1]}, нет в новом ${tiles[2]}, изменены ${tiles[3]}, не сверены ${tiles[4]} (как в ответе сервиса)`);
 	await shot(page, 'live-sec-replace-1280');
 	await page.getByTestId('case-replace').click();
@@ -548,7 +549,7 @@ await step('таблицы и проходы', async () => {
 	if (actions.length) ok(true, `у таблицы есть действие: ${actions.join(', ')}`);
 	else cannot('«Дочитать» и «Перечитать таблицу» вживую: проход подставной модели закончился полностью, дочитывать нечего (проверено на стенде компонентов)');
 	await shot(page, 'live-sec-table-open-1280');
-	await page.getByRole('link', { name: S.tables_back_g }).click();
+	await page.getByRole('link', { name: S.runs_back }).click();
 	await page.getByTestId('case-tables').waitFor({ timeout: 30000 });
 });
 

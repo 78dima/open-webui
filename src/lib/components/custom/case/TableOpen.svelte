@@ -142,12 +142,12 @@
 		if (!s.stale && s.reader_stale)
 			out.push({
 				text: s.reread
-					? fmt(S.tables_reread_usd, { usd: usd(s.reread.estimate_usd) })
+					? fmt(S.runs_reread_usd, { usd: usd(s.reread.estimate_usd) })
 					: S.tables_reread,
 				query: '',
 				estimate: s.reread ? s.reread.estimate_usd : 0,
 				note: s.reread
-					? fmt(S.tables_confirm_rest, {
+					? fmt(S.runs_confirm_rest, {
 							title: title(s),
 							n: s.reread.windows,
 							pages: s.reread.pages
@@ -160,10 +160,10 @@
 			out.push({
 				text: raise
 					? S.tables_resume_limit
-					: fmt(S.tables_resume_usd, { usd: usd(s.rest.estimate_usd) }),
+					: fmt(S.runs_resume_usd, { usd: usd(s.rest.estimate_usd) }),
 				query: raise ? '?raise_limit=true' : '',
 				estimate: s.rest.estimate_usd,
-				note: fmt(S.tables_confirm_rest, {
+				note: fmt(S.runs_confirm_rest, {
 					title: title(s),
 					n: s.rest.windows,
 					pages: s.rest.pages
@@ -250,7 +250,7 @@
 
 <div class="head" data-testid="case-table-head">
 	<div class="col g4 grow">
-		<a class="ref sm" href={hrefOf('tables')}>{S.tables_back_g}</a>
+		<a class="ref sm" href={hrefOf('tables')}>{S.runs_back}</a>
 		<div class="row g12">
 			<h1 class="aw">{sw ? title(sw) : caseName}</h1>
 			{#if sw}
@@ -505,7 +505,7 @@
 
 <FormDialog
 	bind:open={confirmOpen}
-	title={S.tables_confirm_title}
+	title={S.runs_confirm_title}
 	{S}
 	submit={() => (pending ? catchUp(pending) : undefined)}
 	submitText={pending?.text ?? ''}
@@ -516,7 +516,7 @@
 		{#if sw?.rest?.raise_to_usd != null && pending.warn}<p class="sm fg2">
 				{restText(sw.rest, S)}
 			</p>{/if}
-		<p class="md bb">{fmt(S.tables_confirm_price, { usd: usd(pending.estimate) })}</p>
+		<p class="md bb">{fmt(S.runs_confirm_price, { usd: usd(pending.estimate) })}</p>
 	{/if}
 </FormDialog>
 

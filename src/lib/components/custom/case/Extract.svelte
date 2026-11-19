@@ -68,7 +68,7 @@
 			{#each error.split('\n').filter(Boolean) as line}<span>{line}</span>{/each}
 		</div>
 	{/if}
-	<p class="sm mut">{S.extract_examples}</p>
+	<p class="sm mut">{S.sheets_extract_examples}</p>
 </section>
 
 <style>

@@ -136,7 +136,7 @@ test.describe('«Выписка листов»', () => {
 		});
 		const box = page.getByTestId('case-extract');
 		await expect(box).toContainText(S.extract_hint);
-		await expect(box).toContainText(S.extract_examples);
+		await expect(box).toContainText(S.sheets_extract_examples);
 		await box.getByRole('textbox', { name: S.extract_label }).fill('т. 4, л.д. 148–160; т. 4, л.д. 16 об. ;');
 		const download = page.waitForEvent('download');
 		await box.getByRole('button', { name: S.extract_submit }).click();

@@ -15,7 +15,7 @@ test.describe('«Таблицы и проходы», 1280', () => {
 		d.tables[0] = { ...d.tables[0], status: 'running', finished: false, windows_done: 12, windows_total: 29 };
 		d.tables[2] = { ...d.tables[2], stale: true, status: 'partial', not_read: 41, not_read_reasons: { limit: 41 }, stop: 'limit', pages_read: 168 };
 		await openSection(page, { section: 'tables', routes: { tables: d, 'tables/scope?**': scope(0.02) } });
-		await expect(page.getByText(S.tables_intro)).toBeVisible();
+		await expect(page.getByText(S.runs_intro)).toBeVisible();
 		const rows = page.getByTestId('case-table-row');
 		await expect(rows).toHaveCount(3);
 		await expect(rows.nth(0).locator('.pill')).toHaveText([S.tables_kind_table, 'идёт: прочитано частей документов 12 из 29', S.tables_parent]);
@@ -73,7 +73,7 @@ test.describe('«Таблицы и проходы», 1280', () => {
 		await expect(page.getByTestId('case-tables-start')).toHaveText('Запустить — около 1,84 USD');
 		await page.getByTestId('case-tables-start').click();
 		const dlg = dialog(page);
-		await expect(dlg.getByRole('heading')).toHaveText(S.tables_confirm_title);
+		await expect(dlg.getByRole('heading')).toHaveText(S.runs_confirm_title);
 		await expect(dlg).toContainText('«Извещения», охват — всё дело: документов — 264, страниц — 3120.');
 		await expect(dlg).toContainText('Оценка цены прохода: около 1,84 USD.');
 		expect(writes(calls)).toEqual([]);
@@ -105,7 +105,7 @@ test.describe('открытая таблица, 1280', () => {
 		const head = page.getByTestId('case-table-head');
 		await expect(head.getByRole('heading', { level: 1 })).toHaveText('Реестр доказательств');
 		await expect(head.locator('.pill')).toHaveText([S.tables_status_done, S.tables_parent]);
-		await expect(head.getByRole('link', { name: S.tables_back_g })).toHaveAttribute('href', /s=tables$/);
+		await expect(head.getByRole('link', { name: S.runs_back })).toHaveAttribute('href', /s=tables$/);
 		expect(calls.some((c) => c.path === `/tables/${OPEN}?page=0`)).toBe(true);
 		const facts = page.getByTestId('case-table-facts');
 		await expect(facts).toContainText('Охват: всё дело. Прочитано страниц: 209 из 209.');

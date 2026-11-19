@@ -48,8 +48,8 @@
 	$: real = ($answer?.copies ?? []).filter((c) => c.same_document);
 	$: other = ($answer?.copies ?? []).filter((c) => !c.same_document);
 	$: blocks = [
-		{ id: 'real', title: S.copies_real_title, note: '', pairs: real },
-		{ id: 'other', title: S.copies_similar_title, note: S.copies_similar_note, pairs: other }
+		{ id: 'real', title: S.pairs_real_title, note: '', pairs: real },
+		{ id: 'other', title: S.pairs_similar_title, note: S.pairs_similar_note, pairs: other }
 	].filter((b) => b.id === 'real' || b.pairs.length);
 
 	const PAIRS = 4; // пар в блоке до «Показать ещё»

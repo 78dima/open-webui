@@ -114,13 +114,13 @@
 		}
 	}
 	$: startText = scope?.pages
-		? fmt(S.tables_start_usd, { usd: usd(scope.estimate_usd) })
+		? fmt(S.runs_start_usd, { usd: usd(scope.estimate_usd) })
 		: S.tables_start;
 	const percent = (sw: Sweep) =>
 		sw.windows_total ? Math.round((100 * (sw.windows_done ?? 0)) / sw.windows_total) : 0;
 </script>
 
-<p class="md intro">{S.tables_intro}</p>
+<p class="md intro">{S.runs_intro}</p>
 
 {#if $error && !$answer}
 	<section class="card" data-testid="case-tables-error">
@@ -218,7 +218,7 @@
 			<div class="row sp g12 sep">
 				<p class="md fg2" aria-live="polite" data-testid="case-tables-scope">
 					{#if scopeError}{scopeError}{:else if !scope}{S.loading}{:else if !scope.pages}{S.tables_estimate_none}{:else}{fmt(
-							S.tables_scope_facts,
+							S.runs_scope_facts,
 							{ documents: scope.documents, pages: scope.pages, windows: scope.windows }
 						)}{/if}
 				</p>
@@ -242,7 +242,7 @@
 
 <FormDialog
 	bind:open={confirmOpen}
-	title={S.tables_confirm_title}
+	title={S.runs_confirm_title}
 	{S}
 	submit={start}
 	submitText={startText}
@@ -250,14 +250,14 @@
 >
 	{#if scope}
 		<p class="md">
-			{fmt(S.tables_confirm_scope, {
+			{fmt(S.runs_confirm_scope, {
 				title: chosen?.title ?? '',
 				label: scope.label ?? '',
 				documents: scope.documents,
 				pages: scope.pages
 			})}
 		</p>
-		<p class="md bb">{fmt(S.tables_confirm_price, { usd: usd(scope.estimate_usd) })}</p>
+		<p class="md bb">{fmt(S.runs_confirm_price, { usd: usd(scope.estimate_usd) })}</p>
 	{/if}
 </FormDialog>
 
