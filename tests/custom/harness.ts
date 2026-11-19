@@ -25,7 +25,10 @@ import ToolStatusHarness from './ToolStatusHarness.svelte';
 if (location.search === '?tool-status') mount(ToolStatusHarness, { target: document.querySelector('#app')! });
 
 import CaseHarness from './CaseHarness.svelte';
-if (location.search.startsWith('?case')) mount(CaseHarness, { target: document.querySelector('#app')! });
+import CasePageHarness from './CasePageHarness.svelte';
+if (location.search.startsWith('?casepage=')) mount(CasePageHarness, { target: document.querySelector('#app')! });
+else if (location.search.startsWith('?case') && location.search !== '?cases-link')
+	mount(CaseHarness, { target: document.querySelector('#app')! });
 
 import CasesLink from '../../src/lib/components/custom/CasesLink.svelte';
 if (location.search === '?cases-link') mount(CasesLink, { target: document.querySelector('#app')! });

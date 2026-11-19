@@ -18,6 +18,7 @@
 		'list',
 		'lock',
 		'ok',
+		'pause',
 		'pen',
 		'plus',
 		'q',

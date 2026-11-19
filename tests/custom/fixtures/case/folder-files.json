@@ -1,0 +1,44 @@
+{
+ "files": [
+  {
+   "id": "owui-file-01",
+   "name": "Претензия от 05.02.2025.pdf",
+   "size": 845221,
+   "readable": true,
+   "adding": false,
+   "kind": "pdf"
+  },
+  {
+   "id": "owui-file-02",
+   "name": "Фото накладной.jpg",
+   "size": 2311040,
+   "readable": true,
+   "adding": false,
+   "kind": "photo"
+  },
+  {
+   "id": "owui-file-03",
+   "name": "Архив переписки.zip",
+   "size": 15400112,
+   "readable": true,
+   "adding": true,
+   "kind": "zip"
+  },
+  {
+   "id": "owui-file-04",
+   "name": "Расчёт неустойки.xlsx",
+   "size": 40211,
+   "readable": true,
+   "adding": false,
+   "kind": null
+  },
+  {
+   "id": "owui-file-05",
+   "name": null,
+   "size": null,
+   "readable": false,
+   "adding": false,
+   "kind": null
+  }
+ ]
+}

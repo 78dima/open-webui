@@ -1,16 +1,27 @@
 <script lang="ts">
 	// ai-dvokat: пункт «Дела» в левой панели чата — ведёт на страницы «Дел» (/case). Виден, когда включён
-	// выключатель дела (`custom_ui.case === true`). Вид — как у соседних пунктов панели (это часть чата, не «Г»).
-	import { config } from '$lib/stores';
+	// выключатель дела (`custom_ui.case === true`) и сервис подтвердил, что «Дела» открыты этому юристу (группа
+	// выпуска; `caseAccess` — один вопрос за сеанс, без ответа пункта нет, чат не ждёт). Вид — как у соседних пунктов
+	// панели (это часть чата, не «Г»).
+	import { config, user } from '$lib/stores';
+	import { caseAccess } from '$lib/custom/case/access';
 	import ru from '$lib/custom/locales/ru-RU.json';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
 
 	/** rail — свёрнутая панель (значок с подсказкой), full — развёрнутая (значок и слово). */
 	export let variant: 'rail' | 'full' = 'full';
+
+	let allowed = false;
+	$: enabled = $config?.custom_ui?.case === true;
+	$: if (enabled && $user) {
+		void caseAccess($config?.custom_ui).then((yes) => (allowed = yes));
+	} else {
+		allowed = false;
+	}
 </script>
 
-{#if $config?.custom_ui?.case === true}
+{#if enabled && allowed}
 	{#if variant === 'rail'}
 		<div>
 			<Tooltip content={ru.case_page.sidebar} placement="right">

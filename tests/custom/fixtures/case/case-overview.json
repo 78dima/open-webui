@@ -1,0 +1,655 @@
+{
+ "overview": {
+  "status": "ok",
+  "message": null,
+  "case": {
+   "id": "94ec5e8c-ad61-446e-aa5c-bf915775063f",
+   "folder_id": "ccfd097b-11c7-498d-a1e7-bf4ed19a30ff",
+   "title": "ООО «Северный ветер» к АО",
+   "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff",
+   "engine_note": "Текст сканов распознан моделью (google/gemini-3.5-flash-lite), сверки движком распознавания нет: цифры, даты и фамилии в цитатах с таких листов юрист сверяет по изображению листа; пометку об этом у ссылки ставит сервис.",
+   "version": 6
+  },
+  "volumes": [
+   {
+    "id": 4,
+    "label": "4",
+    "label_source": "lawyer",
+    "status": "inventory_ready",
+    "stage": "опись готова",
+    "files": [
+     {
+      "id": 10,
+      "filename": "ecase-kad.pdf",
+      "input_kind": "volume",
+      "input_fact": {
+       "pages": 150,
+       "photo": false,
+       "layer_all": false,
+       "image_pages": 150,
+       "layer_pages": 0
+      },
+      "pages": 150,
+      "pages_indexed": 150,
+      "status": "indexed",
+      "volume_order": 1,
+      "suggest": null,
+      "block_reason": null
+     },
+     {
+      "id": 9,
+      "filename": "ecase-kad.pdf",
+      "input_kind": "volume",
+      "input_fact": {
+       "pages": 59,
+       "photo": false,
+       "layer_all": false,
+       "image_pages": 59,
+       "layer_pages": 0
+      },
+      "pages": 59,
+      "pages_indexed": 59,
+      "status": "indexed",
+      "volume_order": 2,
+      "suggest": null,
+      "block_reason": null
+     }
+    ],
+    "pages": 209,
+    "range": {
+     "first": "1",
+     "last": "210"
+    },
+    "gaps": [],
+    "duplicates": [],
+    "disagreements": [],
+    "shortfalls": [
+     {
+      "after": "115",
+      "before": "119",
+      "missing": [
+       "116",
+       "117",
+       "118"
+      ],
+      "page_ids": [
+       745
+      ],
+      "at_least": 2,
+      "text": "между л. 115 и л. 119 1 страница с неустановленным номером: не хватает не меньше 2 листов"
+     },
+     {
+      "after": "183",
+      "before": "187",
+      "missing": [
+       "184",
+       "185",
+       "186"
+      ],
+      "page_ids": [
+       602,
+       603
+      ],
+      "at_least": 1,
+      "text": "между л. 183 и л. 187 2 страницы с неустановленным номером: не хватает не меньше 1 листа"
+     }
+    ],
+    "unresolved": [
+     {
+      "after": "120",
+      "before": "122",
+      "missing": [
+       "121"
+      ],
+      "page_ids": [
+       748
+      ]
+     },
+     {
+      "after": "146",
+      "before": "148",
+      "missing": [
+       "147"
+      ],
+      "page_ids": [
+       774
+      ]
+     },
+     {
+      "after": "170",
+      "before": "172",
+      "missing": [
+       "171"
+      ],
+      "page_ids": [
+       589
+      ]
+     },
+     {
+      "after": "203",
+      "before": "205",
+      "missing": [
+       "204"
+      ],
+      "page_ids": [
+       622
+      ]
+     }
+    ],
+    "court_inventory": {
+     "n_court": 23,
+     "n_model": 21,
+     "diffs": [
+      "внутренняя опись тома: «Исковое заявление о взыскании задолженности», л. 116-117 — в томе нет листа с номером 116",
+      "внутренняя опись тома: «Исковое заявление о взыскании задолженности», л. 118-120 — на месте л. 118 стоит страница т. 4, файл «tom-2-chast-1.pdf», стр. 117, её номер не установлен; документ описи дела начинается на ней",
+      "внутренняя опись тома: «Счёт на оплату», л. 121-122 — на месте л. 121 стоит страница т. 4, файл «tom-2-chast-1.pdf», стр. 120, её номер не установлен; документ описи дела начинается на ней",
+      "внутренняя опись тома: «Заключение эксперта», л. 186 — в томе нет листа с номером 186"
+     ]
+    }
+   }
+  ],
+  "files_without_volume": [],
+  "size": {
+   "pages": 209,
+   "tokens": 124119,
+   "documents": 22
+  },
+  "index_coverage": {
+   "indexed": 209,
+   "total": 209,
+   "pending_volumes": []
+  },
+  "check_sheets": [
+   {
+    "page_id": null,
+    "volume_id": 4,
+    "label": "т. 4",
+    "reason": "в томе чёрно-белые 43 страницы из 209: номера этих листов сведены по порядку страниц; лист, чей номер порядок не подтвердил, помечен отдельно",
+    "code": "volume_bw",
+    "url": null
+   },
+   {
+    "page_id": 630,
+    "volume_id": 4,
+    "label": "т. 4, л.д. 1, 197–198",
+    "reason": "номер листа прочитан одной моделью — сверьте по изображению",
+    "code": "number_single",
+    "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/630",
+    "page_ids": [
+     630,
+     614,
+     616
+    ],
+    "sheets": [
+     {
+      "page_id": 630,
+      "label": "т. 4, л.д. 1",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/630"
+     },
+     {
+      "page_id": 614,
+      "label": "т. 4, л.д. 197",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/614"
+     },
+     {
+      "page_id": 616,
+      "label": "т. 4, л.д. 198",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/616"
+     }
+    ]
+   },
+   {
+    "page_id": 641,
+    "volume_id": 4,
+    "label": "т. 4, л.д. 12, 15, 17, 46, 49, 52, 54, 69, 72–73, 80, 93, 175–176, 178, 180, 182, 207",
+    "reason": "на листе есть текст, который одно из распознаваний не переписало (часто — текст на фотографиях и снимках экрана): принятый текст листа заметно короче другого — сверьте по изображению листа",
+    "code": "text_short",
+    "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/641",
+    "page_ids": [
+     641,
+     644,
+     646,
+     675,
+     680,
+     686,
+     693,
+     701,
+     710,
+     720,
+     731,
+     743,
+     756,
+     770,
+     785,
+     801,
+     818,
+     836
+    ],
+    "sheets": [
+     {
+      "page_id": 641,
+      "label": "т. 4, л.д. 12",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/641"
+     },
+     {
+      "page_id": 644,
+      "label": "т. 4, л.д. 15",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/644"
+     },
+     {
+      "page_id": 646,
+      "label": "т. 4, л.д. 17",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/646"
+     },
+     {
+      "page_id": 675,
+      "label": "т. 4, л.д. 46",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/675"
+     },
+     {
+      "page_id": 680,
+      "label": "т. 4, л.д. 49",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/680"
+     },
+     {
+      "page_id": 686,
+      "label": "т. 4, л.д. 52",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/686"
+     },
+     {
+      "page_id": 693,
+      "label": "т. 4, л.д. 54",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/693"
+     },
+     {
+      "page_id": 701,
+      "label": "т. 4, л.д. 69",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/701"
+     },
+     {
+      "page_id": 710,
+      "label": "т. 4, л.д. 72",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/710"
+     },
+     {
+      "page_id": 720,
+      "label": "т. 4, л.д. 73",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/720"
+     },
+     {
+      "page_id": 731,
+      "label": "т. 4, л.д. 80",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/731"
+     },
+     {
+      "page_id": 743,
+      "label": "т. 4, л.д. 93",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/743"
+     },
+     {
+      "page_id": 756,
+      "label": "т. 4, л.д. 175",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/756"
+     },
+     {
+      "page_id": 770,
+      "label": "т. 4, л.д. 176",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/770"
+     },
+     {
+      "page_id": 785,
+      "label": "т. 4, л.д. 178",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/785"
+     },
+     {
+      "page_id": 801,
+      "label": "т. 4, л.д. 180",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/801"
+     },
+     {
+      "page_id": 818,
+      "label": "т. 4, л.д. 182",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/818"
+     },
+     {
+      "page_id": 836,
+      "label": "т. 4, л.д. 207",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/836"
+     }
+    ]
+   },
+   {
+    "page_id": 645,
+    "volume_id": 4,
+    "label": "т. 4, л.д. 16",
+    "reason": "числа на листе прочитаны по-разному: «066328» / «698105» — сверьте с изображением листа",
+    "code": "text_disagree",
+    "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/645",
+    "sheets": [
+     {
+      "page_id": 645,
+      "label": "т. 4, л.д. 16",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/645"
+     }
+    ],
+    "parts": {
+     "pairs": [
+      [
+       "066328",
+       "698105"
+      ]
+     ],
+     "values": "«066328» / «698105»"
+    }
+   },
+   {
+    "page_id": 745,
+    "volume_id": 4,
+    "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 117",
+    "reason": "между л. 115 и л. 119 1 страница с неустановленным номером: не хватает не меньше 2 листов; по внутренней описи тома здесь: «Исковое заявление о взыскании задолженности» (л. 116-117); «Исковое заявление о взыскании задолженности» (л. 118-120)",
+    "code": "gap_min",
+    "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/745",
+    "sheets": [
+     {
+      "page_id": 745,
+      "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 117",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/745"
+     }
+    ],
+    "parts": {
+     "main": "между л. 115 и л. 119 1 страница с неустановленным номером: не хватает не меньше 2 листов",
+     "inventory": "по внутренней описи тома здесь: «Исковое заявление о взыскании задолженности» (л. 116-117); «Исковое заявление о взыскании задолженности» (л. 118-120)"
+    }
+   },
+   {
+    "page_id": 746,
+    "volume_id": 4,
+    "label": "т. 4, л.д. 119",
+    "reason": "номер листа — сверьте по изображению (порядок страниц его не подтвердил, скан чёрно-белый или номер не в правом верхнем углу)",
+    "code": "number_check",
+    "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/746",
+    "sheets": [
+     {
+      "page_id": 746,
+      "label": "т. 4, л.д. 119",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/746"
+     }
+    ]
+   },
+   {
+    "page_id": 748,
+    "volume_id": 4,
+    "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 120",
+    "reason": "номер листа не установлен (прочитано «55», «32», «56»), между л. 120 и л. 122",
+    "code": "number_unresolved",
+    "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/748",
+    "sheets": [
+     {
+      "page_id": 748,
+      "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 120",
+      "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/748"
+     }
+    ],
+    "parts": {
+     "reads": [
+      "55",
+      "32",
+      "56"
+     ],
+     "place": "между л. 120 и л. 122"
+    }
+   }
+  ],
+  "documents": [],
+  "e_case": [],
+  "passport": {
+   "courts_named_in_documents": {
+    "values": [
+     {
+      "value": "Арбитражный суд города Москвы",
+      "documents": 2,
+      "ref": "т. 4, л.д. 148"
+     },
+     {
+      "value": "Арбитражный суд города Москвы",
+      "documents": 2,
+      "ref": "т. 4, л.д. 161"
+     },
+     {
+      "value": "Арбитражный суд Московской области",
+      "documents": 1,
+      "ref": "т. 4, л.д. 149"
+     }
+    ]
+   },
+   "case_numbers_named_in_documents": {
+    "values": [
+     {
+      "value": "А42-668824/3518",
+      "documents": 13,
+      "ref": "т. 4, л.д. 2",
+      "handwritten": 2,
+      "records": 13
+     },
+     {
+      "value": "10089963635720501",
+      "documents": 3,
+      "ref": "т. 4, файл «tom-2-chast-1.pdf», стр. 1",
+      "handwritten": 1,
+      "records": 3
+     },
+     {
+      "value": "А58-487943/4204",
+      "documents": 2,
+      "ref": "т. 4, л.д. 146"
+     },
+     {
+      "value": "А22-103366/0708",
+      "documents": 1
+     }
+    ]
+   },
+   "parties_named_in_documents": {
+    "values": [
+     {
+      "value": "Воронцова К. Л.",
+      "documents": 13,
+      "ref": "т. 4, л.д. 1",
+      "handwritten": 1,
+      "records": 13,
+      "roles": [
+       "генеральный директор истца"
+      ],
+      "roles_more": 10
+     },
+     {
+      "value": "АНО «Центр оценки»",
+      "documents": 10,
+      "ref": "т. 4, л.д. 2",
+      "roles": [
+       "ответчик"
+      ],
+      "roles_more": 9
+     },
+     {
+      "value": "Гусева Мария Олеговна",
+      "documents": 9,
+      "ref": "т. 4, л.д. 2",
+      "roles": [
+       "представитель ответчика"
+      ],
+      "roles_more": 9
+     }
+    ],
+    "more": 83
+   },
+   "stage": {
+    "values": [
+     {
+      "value": "Генеральный директор истца Карпов И. С. подписал исковое заявление и приложил.",
+      "ref": "т. 4, л.д. 198"
+     }
+    ]
+   },
+   "subject": {
+    "values": [
+     {
+      "value": "Генеральный директор истца Карпов И. С. подписал исковое заявление и приложил доверенность представителя. Свидетель.",
+      "ref": "т. 4, л.д. 210"
+     }
+    ]
+   },
+   "claims": {
+    "values": [
+     {
+      "value": "Суд определил назначить по делу судебную товароведческую экспертизу, проведение поручить АНО «Центр оценки». Согласно товарной накладной груз принят кладовщиком.",
+      "ref": "т. 4, л.д. 210"
+     }
+    ]
+   },
+   "key_dates": {
+    "values": [
+     {
+      "value": "Согласно товарной накладной груз принят кладовщиком ответчика без замечаний по количеству и качеству. Представитель ответчика заявил ходатайство об отложении разбирательства для подготовки отзыва.",
+      "ref": "т. 4, л.д. 2"
+     },
+     {
+      "value": "Эксперт пришёл к выводу, что стоимость поставленного товара соответствует рыночной на дату поставки. Стороны подписали дополнительное.",
+      "ref": "т. 4, л.д. 2"
+     },
+     {
+      "value": "Ответчик оплатил товар частично, остаток задолженности не погашен до настоящего времени. Претензия направлена ответчику заказным письмом, ответа на неё в установленный.",
+      "ref": "т. 4, л.д. 149"
+     }
+    ],
+    "more": 2
+   },
+   "key_amounts": {
+    "values": [
+     {
+      "value": "В платёжном поручении в назначении платежа указан номер счёта и ссылка на договор поставки. Генеральный директор истца Карпов И. С.",
+      "ref": "т. 4, файл «tom-2-chast-1.pdf», стр. 146"
+     }
+    ]
+   }
+  },
+  "page": 0,
+  "next_page": null,
+  "end": true
+ },
+ "check_total": 31,
+ "rights": {
+  "read": true,
+  "write": true,
+  "owner": true
+ },
+ "spent": {
+  "processing": "0.09",
+  "work": "0.07"
+ },
+ "estimate": {
+  "usd": "0.07",
+  "pages": 209
+ },
+ "version": 6,
+ "paused": null,
+ "files": {
+  "9": {
+   "estimate_usd": "0.02",
+   "uploaded_by": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+   "created_at": "2025-10-13T10:11:31.767539+00:00",
+   "pages": 59,
+   "pages_done": 59,
+   "pages_indexed": 59,
+   "status": "indexed",
+   "input_kind": "volume",
+   "input_fact": {
+    "pages": 59,
+    "photo": false,
+    "layer_all": false,
+    "image_pages": 59,
+    "layer_pages": 0
+   },
+   "suggest": null,
+   "filename": "ecase-kad.pdf",
+   "member_path": null,
+   "block_reason": null,
+   "image": false
+  },
+  "10": {
+   "estimate_usd": "0.05",
+   "uploaded_by": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+   "created_at": "2025-10-13T10:11:37.565451+00:00",
+   "pages": 150,
+   "pages_done": 150,
+   "pages_indexed": 150,
+   "status": "indexed",
+   "input_kind": "volume",
+   "input_fact": {
+    "pages": 150,
+    "photo": false,
+    "layer_all": false,
+    "image_pages": 150,
+    "layer_pages": 0
+   },
+   "suggest": null,
+   "filename": "ecase-kad.pdf",
+   "member_path": null,
+   "block_reason": null,
+   "image": false
+  }
+ },
+ "volumes_extra": {
+  "4": {
+   "label_source": "lawyer",
+   "label_page_id": 629,
+   "label_page_no": 1,
+   "label_filename": "ecase-kad.pdf",
+   "label_sheet": "т. 4, файл «tom-2-chast-1.pdf», стр. 1",
+   "label_checked": true
+  }
+ },
+ "page_nos": {},
+ "uploads": [],
+ "user_id": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+ "counts": {
+  "volumes": 1,
+  "check": 31,
+  "documents": 22,
+  "copies": 5,
+  "amounts": 43,
+  "facts": 155,
+  "deadlines": 2,
+  "tables": 5
+ },
+ "deadlines_next": [
+  {
+   "id": 1,
+   "title": "Апелляционная жалоба на решение от 12.11.2026",
+   "state": "draft",
+   "start_date": "2025-03-13",
+   "end_date": "2026-12-11",
+   "confirmed_name": null,
+   "confirmed_at": null,
+   "basis": {
+    "page_id": 640,
+    "label": "т. 4, л.д. 151",
+    "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/640?v=1501&hl=120-232"
+   }
+  },
+  {
+   "id": 2,
+   "title": "Отзыв на апелляционную жалобу",
+   "state": "confirmed",
+   "start_date": null,
+   "end_date": "2027-01-20",
+   "confirmed_name": "Лебедева Анна Викторовна",
+   "confirmed_at": "2026-11-02T10:15:00+00:00",
+   "basis": {
+    "page_id": 655,
+    "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 46",
+    "url": "/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/655"
+   }
+  }
+ ]
+}

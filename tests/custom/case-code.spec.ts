@@ -19,17 +19,18 @@ test('данные сервиса попадают в разметку толь�
 });
 
 test('каждое слово страницы — ключ строк сервиса; снимок строк для проверок совпадает с файлом строк', () => {
-	const used = usedStringKeys();
-	expect(used.length).toBeGreaterThan(40);
-	expect(used.filter((k) => !(k in strings))).toEqual([]);
-	expect(Object.keys(strings).filter((k) => !used.includes(k))).toEqual([]);
+	const used = usedStringKeys(Object.keys(strings));
+	expect(used.direct.length).toBeGreaterThan(40);
+	expect(used.direct.filter((k) => !(k in strings))).toEqual([]);
+	expect(Object.keys(strings).filter((k) => !used.all.includes(k))).toEqual([]);
 	// рядом лежит рабочая копия сервиса (или задан CASE_PAGE_STRINGS) — снимок сверяется с настоящим файлом строк
 	const source =
 		process.env.CASE_PAGE_STRINGS ??
 		here('../../../ai-dvokat-case-ui/tools/src/legal_tools/case/texts/PAGE_STRINGS.json');
 	test.skip(!existsSync(source), 'нет файла строк сервиса: CASE_PAGE_STRINGS=<путь к PAGE_STRINGS.json>');
 	const real = JSON.parse(read(source));
-	expect(Object.fromEntries(used.map((k) => [k, real[k]]))).toEqual(strings);
+	const full = usedStringKeys(Object.keys(real));
+	expect(Object.fromEntries(full.all.map((k) => [k, real[k]]))).toEqual(strings);
 });
 
 test('русские слова в компонентах — только в комментариях: фраз для юриста в коде нет', () => {
@@ -65,7 +66,7 @@ test('стили «Г» не выходят за корневой класс и 
 	const css = read(here('../../src/lib/custom/case/case.css')).replace(/\/\*[\s\S]*?\*\//g, '');
 	const selectors = [...css.matchAll(/(^|\})\s*([^{}@]+)\{/g)].flatMap((m) => m[2].split(',').map((s) => s.trim()));
 	expect(selectors.length).toBeGreaterThan(200);
-	expect(selectors.filter((s) => s && !/^(html(\.dark)? )?\.cg\b/.test(s))).toEqual([]);
+	expect(selectors.filter((s) => s && !/^((html(\.dark)? )?\.cg\b|:where\(\.cg\) )/.test(s))).toEqual([]);
 });
 
 test('значки: имена компонента Icon и символы спрайта совпадают', () => {

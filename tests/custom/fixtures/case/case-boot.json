@@ -1,0 +1,23 @@
+{
+ "folder_id": "ccfd097b-11c7-498d-a1e7-bf4ed19a30ff",
+ "title": "Северный ветер — поставка",
+ "has_case": true,
+ "can_write": true,
+ "is_owner": true,
+ "user_id": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+ "sections": [
+  "volumes",
+  "check",
+  "inventory",
+  "passport",
+  "chronology",
+  "deadlines",
+  "copies",
+  "whatsnew",
+  "tables"
+ ],
+ "stage": 3,
+ "part_size": 16777216,
+ "max_file_mb": 2000,
+ "case_id": "94ec5e8c-ad61-446e-aa5c-bf915775063f"
+}

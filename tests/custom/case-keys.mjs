@@ -1,5 +1,5 @@
 // ai-dvokat: какие ключи строк сервиса (PAGE_STRINGS legal-tools) читает код страниц «Дел» в форке.
-// Обращение к строке в коде — только `S.ключ` или таблица ключей с пометкой `key:` (ACCESS в MyCases.svelte).
+// Обращение к строке в коде — `S.ключ`; ключ, выбираемый по данным, записан в коде строкой в кавычках.
 // Этим списком пользуются проверка (case-code.spec.ts) и сборка снимка строк для проверок (case-strings-sync.mjs).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -24,14 +24,23 @@ export function caseCodeFiles(extensions = ['.svelte', '.ts', '.css']) {
 	return out.sort();
 }
 
-/** @returns {string[]} */
-export function usedStringKeys() {
+/**
+ * Ключи строк, которые читает код. Прямое обращение — `S.ключ`; ключ, выбираемый по данным (пункт меню, слово
+ * состояния, причина паузы), записан в коде строкой в кавычках и узнаётся по перечню известных ключей `known`
+ * (файл строк сервиса или снимок для проверок).
+ * @param {string[]} [known]
+ * @returns {{direct: string[], all: string[]}}
+ */
+export function usedStringKeys(known = []) {
 	/** @type {Set<string>} */
-	const keys = new Set();
+	const direct = new Set();
+	/** @type {Set<string>} */
+	const quoted = new Set();
+	const universe = new Set(known);
 	for (const file of caseCodeFiles(['.svelte', '.ts'])) {
 		const text = readFileSync(file, 'utf8');
-		for (const m of text.matchAll(/(?<![\w.$])S\.([a-z][a-z0-9_]*)/g)) keys.add(m[1]);
-		for (const m of text.matchAll(/\bkey: '([a-z][a-z0-9_]*)'/g)) keys.add(m[1]);
+		for (const m of text.matchAll(/(?<![\w.$])S\.([a-z][a-z0-9_]*)/g)) direct.add(m[1]);
+		for (const m of text.matchAll(/'([a-z][a-z0-9_]*)'/g)) if (universe.has(m[1])) quoted.add(m[1]);
 	}
-	return [...keys].sort();
+	return { direct: [...direct].sort(), all: [...new Set([...direct, ...quoted])].sort() };
 }

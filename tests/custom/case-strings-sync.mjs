@@ -12,8 +12,9 @@ if (!source) {
 	process.exit(2);
 }
 const all = JSON.parse(readFileSync(source, 'utf8'));
-const keys = usedStringKeys();
-const missing = keys.filter((k) => !(k in all));
+const used = usedStringKeys(Object.keys(all));
+const keys = used.all;
+const missing = used.direct.filter((k) => !(k in all));
 if (missing.length) {
 	console.error('в PAGE_STRINGS нет ключей: ' + missing.join(', '));
 	process.exit(1);
