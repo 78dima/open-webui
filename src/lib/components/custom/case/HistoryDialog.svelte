@@ -64,14 +64,11 @@
 			caseToast(errorText(S, err), true);
 		}
 	}
-	// значения словами готовит сервис (том, файл, опись); у записей карты дела сервис отдаёт сами значения —
-	// слова для них здесь, тем же правилом, что на прежней странице
-	const mapped = (e: Edit) =>
-		e.field_text == null &&
-		e.before_text == null &&
-		e.after_text == null &&
-		!!e.entity &&
-		!!e.field;
+	// значения словами готовит сервис (том, файл, опись, лист); у записей карты дела (паспорт, хронология, суммы,
+	// сроки) сервис отдаёт сами значения, а названия поля у него нет — слова для них здесь, тем же правилом, что на
+	// прежней странице (`sections/mapcore.js`)
+	const MAP_ENTITIES = new Set(['passport', 'fact', 'amount', 'deadline']);
+	const mapped = (e: Edit) => MAP_ENTITIES.has(e.entity ?? '') && !!e.field && !e.field_text;
 	const fieldOf = (e: Edit) =>
 		mapped(e) ? editField(e.entity!, e.field!, e.entity_id, S) : (e.field_text ?? '');
 	const line = (e: Edit) =>

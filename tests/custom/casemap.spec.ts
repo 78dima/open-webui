@@ -81,7 +81,7 @@ test.describe('«Паспорт», 1280', () => {
 	test('«Править» поле: значения с новой строки; «История» — слова по значениям записи; откат перечитывает паспорт', async ({ page }) => {
 		const EDITS = {
 			edits: [
-				{ id: 7, entity: 'passport', entity_id: 'stage', field: 'value', who: 'вы', at: '2025-12-07T09:41:00Z', before: [{ value: 'первая инстанция' }], after: [{ value: 'апелляция' }, { value: 'кассация' }], can_revert: true },
+				{ id: 7, entity: 'passport', entity_id: 'stage', field: 'value', field_text: '', before_text: '', after_text: '', who: 'вы', at: '2025-12-07T09:41:00Z', before: [{ value: 'первая инстанция' }], after: [{ value: 'апелляция' }, { value: 'кассация' }], can_revert: true },
 				{ id: 6, entity: 'passport', entity_id: 'stage', field: 'value', who: 'модель', at: '2025-12-01T10:00:00Z', before: [], after: [{ value: 'первая инстанция' }] }
 			]
 		};
@@ -263,7 +263,7 @@ test.describe('«Хронология», 1280', () => {
 	});
 
 	test('правка записи: все поля уходят как на прежней странице; «Убрать»; «История»; «только чтение»', async ({ page }) => {
-		const { calls } = await openSection(page, { section: 'chronology', routes: { 'facts**': fixture('facts'), 'facts/*': ok, 'edits?**': { edits: [{ id: 1, entity: 'fact', entity_id: 168, field: 'status', who: 'вы', at: '2025-12-07T09:41:00Z', before: 'claimed', after: 'established' }, { id: 2, entity: 'fact', entity_id: 168, field: 'hidden', who: 'вы', at: '2025-12-07T09:40:00Z', before: false, after: true }] } } });
+		const { calls } = await openSection(page, { section: 'chronology', routes: { 'facts**': fixture('facts'), 'facts/*': ok, 'edits?**': { edits: [{ id: 1, entity: 'fact', entity_id: 168, field: 'status', field_text: '', before_text: 'claimed', after_text: 'established', who: 'вы', at: '2025-12-07T09:41:00Z', before: 'claimed', after: 'established' }, { id: 2, entity: 'fact', entity_id: 168, field: 'hidden', who: 'вы', at: '2025-12-07T09:40:00Z', before: false, after: true }] } } });
 		const row = page.getByTestId('case-fact').first();
 		await row.getByRole('button', { name: S.map_edit }).click();
 		const dlg = dialog(page);

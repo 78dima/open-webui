@@ -74,7 +74,8 @@ async function settle(what, timeout = 420000) {
 		const d = await tools('');
 		const filesNow = Object.values(d.files ?? {});
 		const busyFiles = filesNow.filter((f) => ['queued', 'splitting', 'reading'].includes(f.status)).length;
-		const busyVolumes = (d.overview.volumes ?? []).filter((v) => v.status !== 'inventory_ready').length;
+		// том без файлов (из него убрали последний файл) остаётся пустым и «принятым» — ждать у него нечего
+		const busyVolumes = (d.overview.volumes ?? []).filter((v) => (v.files ?? []).length && v.status !== 'inventory_ready').length;
 		const busyUploads = (d.uploads ?? []).filter((u) => ['received', 'intake', 'receiving'].includes(u.phase)).length;
 		const idx = d.overview.index_coverage ?? {};
 		last = `файлов в работе ${busyFiles}, томов без описи ${busyVolumes}, загрузок ${busyUploads}, распознано ${idx.indexed} из ${idx.total}`;
@@ -137,7 +138,7 @@ await step('загрузка, начатая на прежней страниц�
 	const big = join(files, 'Том 8 (большой).pdf');
 	const old = await context.newPage();
 	await old.goto(base + OLD);
-	await old.waitForSelector('#sec-volumes');
+	await old.waitForSelector('#sec-volumes .volume'); // обзор пришёл: очередь прежней страницы строится по томам обзора
 	await context.route('**/uploads/*/parts/2', (route) => route.abort('internetdisconnected'));
 	// у прежней страницы поле выбора файла в разметку не вставлено: файл выбирается через её кнопку «Выбрать файлы»
 	const chooser = old.waitForEvent('filechooser');
@@ -332,8 +333,10 @@ await step('опись', async () => {
 	const oldRows = await old.locator('#sec-inventory tbody tr').count();
 	const oldFirst = (await old.locator('#sec-inventory tbody tr').first().locator('td[data-th]').nth(1).textContent()).replace(/\s+/g, ' ').trim();
 	await old.close();
-	const newFirst = (await rows.first().locator('.b').first().textContent()).trim();
-	ok(oldRows === (await rows.count()) && oldFirst.startsWith(newFirst), `опись на прежней странице — те же ${oldRows} строк, первая — «${newFirst.slice(0, 40)}»`);
+	const now = (await tools('/documents?page=0')).documents;
+	const newFirst = (await rows.first().textContent()).replace(/\s+/g, ' ').trim();
+	ok(oldRows === (await rows.count()) && oldRows === now.length && oldFirst.includes(now[0].title ?? '—') && newFirst.includes(now[0].title ?? '—'),
+		`опись на прежней странице — те же ${oldRows} строк, первая — «${(now[0].title ?? '—').slice(0, 40)}»`);
 	await shot(page, 'live-sec-inventory-1280');
 });
 
@@ -389,7 +392,7 @@ await step('паспорт', async () => {
 	await stage.getByRole('button', { name: S.map_history, exact: true }).click();
 	const hist = await historyRows(page);
 	await dlg(page).getByRole('button', { name: S.revert }).first().click();
-	ok(hist.length >= 1 && hist[0].includes('апелляция') && (await toast(page, S.revert_done)) && (await stage.getByText('апелляция', { exact: true }).waitFor({ state: 'detached', timeout: 30000 }).then(() => true, () => false)),
+	ok(hist.length >= 1 && hist[0].includes(S.map_pf_instance) && hist[0].includes('стало «апелляция»') && (await toast(page, S.revert_done)) && (await stage.getByText('апелляция', { exact: true }).waitFor({ state: 'detached', timeout: 30000 }).then(() => true, () => false)),
 		`паспорт: история поля — «${(hist[0] ?? '').slice(0, 80)}»; откат вернул прежнее значение`);
 	const party = page.getByTestId('case-party');
 	if (await party.count()) ok((await party.count()) <= 4 || (await page.getByRole('searchbox').count()) === 0, `участников показано ${await party.count()} (первые четыре и «Показать ещё»)`);
