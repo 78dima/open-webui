@@ -158,10 +158,12 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 		const name = (await r.locator('.b').first().textContent()).trim();
 		if (name.startsWith('Фото:')) await r.getByRole('textbox').fill('3');
 		else await r.getByRole('radio', { name: VOLUMES.includes(name) ? 'том дела' : 'электронное дело' }).check();
+		// номер тома юрист называет сам: большой том 7 собран из листов тома 1, и без номера сервис может счесть «Том 1.pdf» его частью
+		if (name === 'Том 1.pdf') await r.getByRole('textbox').fill('1');
 		if (name === 'Том 2.pdf') await r.getByRole('textbox').fill('2');
 	}
 	const photoRow = await texts(rows.filter({ hasText: 'Фото:' }).locator('.b'));
-	ok(n === 8 && photoRow[0] === 'Фото: 8 шт.', `к загрузке: ${n} строк — 7 PDF по строке и «${photoRow[0]}» одной строкой; указано, что это, тому 2 и фото — номер тома`);
+	ok(n === 8 && photoRow[0] === 'Фото: 8 шт.', `к загрузке: ${n} строк — 7 PDF по строке и «${photoRow[0]}» одной строкой; указано, что это, томам 1 и 2 и фото — номер тома`);
 	await shot(page, 'live-case-upload-queue-1280');
 	await page.getByTestId('case-upload-start').click();
 	await page.waitForFunction(() => {

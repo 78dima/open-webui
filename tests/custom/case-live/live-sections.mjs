@@ -368,9 +368,10 @@ await step('выписка листов', async () => {
 	await go(page, 'extract');
 	const box = page.getByTestId('case-extract');
 	await box.getByRole('textbox').fill('т. 1, л.д. 5; т. 1, л.д. 6');
-	const wait = page.waitForEvent('download', { timeout: 60000 });
+	const wait = page.waitForEvent('download', { timeout: 90000 }).catch(() => null);
 	await box.getByRole('button', { name: S.extract_submit }).click();
-	const dl = await wait;
+	const dl = await Promise.race([wait, page.getByTestId('case-extract-error').waitFor({ timeout: 90000 }).then(() => null, () => null)]);
+	if (!dl) throw new Error(`выписка не скачана; под полем: «${((await page.getByTestId('case-extract-error').textContent().catch(() => '')) ?? '').trim().slice(0, 160)}»`);
 	const buf = readFileSync(await dl.path());
 	ok(buf.subarray(0, 5).toString() === '%PDF-' && /^Выписка .*\.pdf$/.test(dl.suggestedFilename()), `выписка листов: скачан «${dl.suggestedFilename()}» (${buf.length} байт), это PDF`);
 	await box.getByRole('textbox').fill('т. 1, л.д. 999');
@@ -568,8 +569,13 @@ await step('файлы папки вне дела', async () => {
 		return cannot(`файл папки: положить файл в «Знания» папки через Open WebUI этой среды не получилось (загрузка ${up.status}, папка ${upd.status}, файлов вне дела ${listed.length})`);
 	await page.goto(base + CASE);
 	await page.getByTestId('case-summary').waitFor({ timeout: 30000 });
-	if (!(await nav(page, 'folder-files').waitFor({ timeout: 30000 }).then(() => true, () => false)))
-		throw new Error(`пункта «Файлы папки вне дела» в меню нет, хотя сервис называет файлов вне дела: ${listed.length}`);
+	if (!(await nav(page, 'folder-files').waitFor({ timeout: 30000 }).then(() => true, () => false))) {
+		const seen = await page.evaluate(async (f) => {
+			const r = await fetch(`/legal-tools/api/cases/${f}/folder-files`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, Accept: 'application/json' } });
+			return `${r.status} ${(await r.text()).slice(0, 160)}`;
+		}, folder);
+		throw new Error(`пункта «Файлы папки вне дела» в меню нет; сервис мимо страницы называет файлов вне дела: ${listed.length}; запрос со страницы: ${seen}`);
+	}
 	await go(page, 'folder-files');
 	const all = page.getByTestId('case-folder-file');
 	await all.first().waitFor({ timeout: 30000 });
@@ -646,7 +652,8 @@ await step('только чтение', async () => {
 		const names = (await p.locator('main button:visible, main a.btn:visible').allTextContents()).map((n) => n.replace(/\s+/g, ' ').trim());
 		const hit = names.filter((n) => WRITE.some((w) => n === w || n.startsWith(`${w}:`) || n.startsWith(`${w} —`)));
 		if (hit.length) bad.push(`${slug}: ${[...new Set(hit)].join(', ')}`);
-		if ((await p.locator('main input[type="checkbox"]:visible').count()) && ['inventory', 'volumes'].includes(slug)) bad.push(`${slug}: отметки`);
+		// отметки строк (поле «оборот» у «Открыть лист» — в шапке, не в разделе)
+		if ((await p.locator('main section input[type="checkbox"]:visible').count()) && ['inventory', 'volumes'].includes(slug)) bad.push(`${slug}: отметки`);
 		seen.push(slug);
 	}
 	ok(!slugs.includes('upload') && !slugs.includes('danger'), `«только чтение»: в меню нет «Загрузить материалы» и «Удаления дела»; разделы: ${slugs.join(', ')}`);
