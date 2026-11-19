@@ -63,8 +63,9 @@ async function open(page: Page, scene: Scene = {}) {
 
 const root = (page: Page) => page.getByTestId('my-cases');
 const ready = (page: Page) => expect(root(page)).toHaveAttribute('data-phase', 'ready');
-const rows = (page: Page) => page.locator('[data-testid="case-row"]:visible');
-const folders = (page: Page) => page.locator('[data-testid="case-folder"]:visible');
+// «видимые» — фильтром, а не приставкой в строке отбора: Tailwind читает исходники и принял бы её за свой класс
+const rows = (page: Page) => page.getByTestId('case-row').filter({ visible: true });
+const folders = (page: Page) => page.getByTestId('case-folder').filter({ visible: true });
 const noSideScroll = async (page: Page) =>
 	expect(
 		await page.evaluate(() => {

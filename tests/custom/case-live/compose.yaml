@@ -1,0 +1,87 @@
+# ai-dvokat: живая проверка страниц «Дел» — своя среда, стенд не трогается (run.sh). Настоящие Open WebUI (образ форка,
+# фронтенд — сборка этой рабочей копии), legal-tools ветки с Postgres, Redis и MinIO и Caddy с правилами сервера
+# (deploy/caddy/Caddyfile ai-dvokat): страница ходит к сервису по /legal-tools/* того же адреса — как на сервере.
+# Платных вызовов нет: модели и К+ не подключены. Наружу — один порт на 127.0.0.1.
+name: ${LIVE_NAME:?}
+networks:
+  live:
+    ipam:
+      config: [{subnet: "${LIVE_SUBNET:?}"}]
+x-tools-env: &tools-env
+  LEGAL_TOOLS_DATABASE_URL: postgresql://tools:live-db-pass@pg:5432/legal_tools
+  LEGAL_TOOLS_REDIS_URL: redis://redis:6379/1
+  LEGAL_TOOLS_S3_ENDPOINT: http://minio:9000
+  LEGAL_TOOLS_S3_ACCESS_KEY: live-minio
+  LEGAL_TOOLS_S3_SECRET_KEY: live-minio-secret
+  LEGAL_TOOLS_OWUI_URL: http://openwebui:8080
+  LEGAL_TOOLS_WEBUI_SECRET_KEY: live-secret-case-ui-0123456789abcdef
+  LEGAL_TOOLS_DELEGATION_SECRET: live-delegation-secret-0123456789abcdef
+  LEGAL_TOOLS_DOWNLOAD_SECRET: live-download-secret-0123456789abcdef
+  LEGAL_TOOLS_LITELLM_URL: http://127.0.0.1:9/v1          # моделей нет: проверка их не зовёт
+  LEGAL_TOOLS_CLAMAV_HOST: 127.0.0.1
+  LEGAL_TOOLS_KPLUS_BASE_URL: http://127.0.0.1:9
+  LEGAL_TOOLS_OPENROUTER_URL: http://127.0.0.1:9/api/v1
+  LEGAL_TOOLS_OPENROUTER_API_KEY: sk-or-live-not-a-key
+  LEGAL_TOOLS_PUBLIC_URL: http://legal-tools-api:8000
+  LEGAL_TOOLS_RECEIPT_PAGE_BASE: /legal-tools
+  LEGAL_TOOLS_CASE_RELEASE: "on"
+  LEGAL_TOOLS_CASE_RELEASE_GROUPS: ${LIVE_RELEASE_GROUP:-}
+  LEGAL_TOOLS_CASE_ALLOWED_ORIGINS: http://127.0.0.1:${LIVE_PORT:?}
+  LEGAL_TOOLS_CASE_STAGE: "3"
+  LEGAL_TOOLS_CASE_MIN_FREE_GB: "1"
+  LEGAL_TOOLS_CASE_EVENTS_SECRET: live-events-secret-0123456789
+  LEGAL_TOOLS_CASE_TEXTS_DRAFTS_OK: "true"
+services:
+  pg:
+    image: pgvector/pgvector:pg17
+    networks: [live]
+    environment: {POSTGRES_PASSWORD: live-pg-super}
+    volumes: ["./pg-init.sql:/docker-entrypoint-initdb.d/10-legal-tools.sql:ro"]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U postgres -d legal_tools"], interval: 2s, timeout: 3s, retries: 60}
+  redis:
+    image: redis:7-alpine
+    networks: [live]
+  minio:
+    image: ${LIVE_MINIO_IMAGE:?}
+    networks: [live]
+    command: ["server", "/data"]
+    environment: {MINIO_ROOT_USER: live-minio, MINIO_ROOT_PASSWORD: live-minio-secret}
+  tools:
+    image: ${LIVE_TOOLS_IMAGE:?}
+    networks:
+      live: {aliases: [legal-tools-api]}
+    command: ["api"]
+    environment: *tools-env
+    depends_on: {pg: {condition: service_healthy}}
+  owui:
+    image: ${LIVE_OWUI_IMAGE:?}
+    networks:
+      live: {aliases: [openwebui]}
+    environment:
+      WEBUI_SECRET_KEY: live-secret-case-ui-0123456789abcdef
+      WEBUI_ADMIN_EMAIL: admin@live.example.com
+      WEBUI_ADMIN_PASSWORD: live-admin-pass-1
+      WEBUI_ADMIN_NAME: Администратор
+      WEBUI_URL: http://127.0.0.1:${LIVE_PORT:?}
+      ENABLE_PERSISTENT_CONFIG: "false"
+      ENABLE_OPENAI_API: "false"
+      ENABLE_OLLAMA_API: "false"
+      RAG_EMBEDDING_ENGINE: openai
+      RAG_OPENAI_API_BASE_URL: http://none/v1
+      RAG_OPENAI_API_KEY: none
+      BYPASS_EMBEDDING_AND_RETRIEVAL: "true"
+      HF_HUB_OFFLINE: "1"
+      OFFLINE_MODE: "true"
+      ENABLE_VERSION_UPDATE_CHECK: "false"
+      ENABLE_SIGNUP: "false"
+      DEFAULT_USER_ROLE: pending
+      DEFAULT_LOCALE: ru-RU
+      USER_PERMISSIONS_FEATURES_FOLDERS: "true"
+      USER_PERMISSIONS_FOLDERS_ALLOW_SHARING: "true"
+      CUSTOM_UI: '{"case":true,"brand":{"name":"Ai - dvokat","suffix":false,"about":true,"community":false}}'
+    volumes: ["${LIVE_BUILD:?}:/app/build"]
+  caddy:
+    image: caddy:2-alpine
+    networks: [live]
+    volumes: ["${LIVE_CADDYFILE:?}:/etc/caddy/Caddyfile:ro"]
+    ports: ["127.0.0.1:${LIVE_PORT:?}:80"]
