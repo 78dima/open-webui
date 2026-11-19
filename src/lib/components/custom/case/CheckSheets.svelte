@@ -14,7 +14,7 @@
 	const ROWS_SHOWN = 5; // строк группы до «Показать ещё»
 	const CHIPS_SHOWN = 12; // листов перечня до «ещё N»
 
-	const { data } = state;
+	const { data, stale } = state;
 	$: rows = $data?.overview.check_sheets ?? [];
 	$: total = Math.max($data?.check_total ?? 0, rows.length);
 	$: volumes = $data?.overview.volumes ?? [];
@@ -60,8 +60,24 @@
 	{/if}
 </div>
 
-{#if !rows.length}
-	<section class="card">
+{#if !$data}
+	<!-- обзор ещё не пришёл: «Замечаний нет» говорить рано -->
+	<section class="card" data-testid="case-check-wait">
+		{#if $stale}
+			<div class="col g12 as">
+				<span class="pill s"
+					><Icon name="al" />{$stale.kind === 'network'
+						? S.overview_state_offline
+						: fmt(S.section_error, { detail: $stale.message })}</span
+				>
+				<button type="button" class="btn big" on:click={() => state.refresh()}>{S.retry}</button>
+			</div>
+		{:else}
+			<p class="mut" role="status">{S.loading}</p>
+		{/if}
+	</section>
+{:else if !rows.length}
+	<section class="card" data-testid="case-check-none">
 		<div class="row"><span class="pill"><Icon name="ok" />{S.check_empty}</span></div>
 	</section>
 {:else}

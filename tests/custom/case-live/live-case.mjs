@@ -306,7 +306,8 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 	ok((await sideScroll(page)) === 0 && new URL(page.url()).pathname === `${CASE}/check`, '360 px: раздел выбран в меню вверху, «Проверьте листы» без прокрутки вбок');
 	await page.evaluate(() => localStorage.setItem('theme', 'dark'));
 	await page.reload();
-	await page.getByTestId('case-check').waitFor();
+	await page.getByTestId('case-check-group').first().waitFor();
+	ok((await page.getByTestId('case-check-row').count()) > 0, '360 px, тёмная тема: раздел открыт заново по своему адресу, замечания на месте');
 	await shot(page, 'live-case-check-360-dark');
 	await page.setViewportSize({ width: 1280, height: 1000 });
 	await page.goto(base + CASE);

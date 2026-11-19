@@ -413,6 +413,28 @@ test.describe('«Проверьте листы», 1280', () => {
 		await expect(groups.locator('h3')).toHaveText([S.check_group_other]);
 	});
 
+	test('пока обзор не пришёл — «Загрузка…», а не «Замечаний нет»; обзор не пришёл — ошибка и «Повторить»', async ({ page }) => {
+		let mode: 'hold' | 'fail' | 'ok' = 'hold';
+		const held: (() => void)[] = [];
+		await open(page, {
+			section: 'check',
+			overview: async (r) => {
+				if (mode === 'hold') await new Promise<void>((done) => held.push(done));
+				if (mode === 'fail') return r.fulfill({ status: 503, json: { detail: 'сервис занят' } });
+				return r.fulfill({ json: fixture('case-overview') });
+			}
+		});
+		await expect(page.getByTestId('case-check-wait')).toHaveText(S.loading);
+		await expect(page.getByTestId('case-check-none')).toHaveCount(0);
+		mode = 'fail';
+		held.splice(0).forEach((done) => done());
+		await expect(page.getByTestId('case-check-wait').getByRole('button', { name: S.retry })).toBeVisible();
+		await expect(page.getByTestId('case-check-none')).toHaveCount(0);
+		mode = 'ok';
+		await page.getByTestId('case-check-wait').getByRole('button', { name: S.retry }).click();
+		await expect(page.getByTestId('case-check-group').first()).toBeVisible();
+	});
+
 	test('замечаний нет', async ({ page }) => {
 		const d = fixture('case-overview');
 		await open(page, { section: 'check', data: () => ({ ...d, check_total: 0, overview: { ...d.overview, check_sheets: [] } }) });
@@ -517,6 +539,7 @@ test.describe('«Загрузить материалы», 1280', () => {
 			S.upload_status_intake, S.upload_status_received, 'не принят: архив больше пределов распаковки — разделите его на части', S.upload_status_done_nofile_g
 		]);
 		await expect(page.getByTestId('case-uploads')).toContainText('Оценка распознавания принятых файлов: около 1,84 USD за 669 страниц.');
+		await expect(page.getByTestId('case-upload-estimate')).toContainText(S.upload_estimate_hint);
 		await expect(page.getByTestId('case-uploads').getByRole('link', { name: S.upload_goes_to_volumes_link })).toHaveAttribute('href', /s=volumes$/);
 
 		await page.getByTestId('case-pick-files').setInputFiles(['1.jpg', '2.jpg', '3.jpg'].map((name) => ({ name, mimeType: 'image/jpeg', buffer: Buffer.alloc(1000) })));
@@ -549,6 +572,14 @@ test.describe('«Загрузить материалы», 1280', () => {
 		await expect(items.filter({ hasText: '3.jpg' })).toContainText(S.upload_done);
 		await expect(items.filter({ hasText: '3.jpg' }).getByRole('button')).toHaveCount(0);
 		await expect.poll(() => log.filter((l) => l === 'GET /1.jpg').length).toBe(1); // продолжение спросило, что уже передано
+	});
+
+	test('оценки ещё нет: пояснение к ней («Она появляется…») без самой оценки не показывается', async ({ page }) => {
+		const d = processing();
+		await open(page, { section: 'upload', data: () => ({ ...d, estimate: { usd: null, pages: 0 } }) });
+		await expect(page.getByTestId('case-uploads')).toBeVisible();
+		await expect(page.getByTestId('case-upload-estimate')).toHaveCount(0);
+		await expect(page.getByTestId('case-uploads')).not.toContainText(S.upload_estimate_hint);
 	});
 
 	test('продолжение после перезагрузки страницы: тот же файл досылает недостающие части; отмена незавершённой', async ({ page }) => {

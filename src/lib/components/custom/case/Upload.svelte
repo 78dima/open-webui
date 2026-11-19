@@ -352,12 +352,13 @@
 					>{S.upload_goes_to_volumes_link}</a
 				>{volumesLink.after}
 			</p>
-			<p class="sm mut">
-				{#if estimate?.usd != null}{fmt(S.upload_estimate, {
-						usd: money(estimate.usd),
-						pages: estimate.pages
-					})}{' '}{/if}{S.upload_estimate_hint}
-			</p>
+			<!-- пояснение «Она появляется…» — продолжение фразы об оценке: без оценки не показывается -->
+			{#if estimate?.usd != null}
+				<p class="sm mut" data-testid="case-upload-estimate">
+					{fmt(S.upload_estimate, { usd: money(estimate.usd), pages: estimate.pages })}
+					{S.upload_estimate_hint}
+				</p>
+			{/if}
 		</div>
 	</section>
 {/if}
