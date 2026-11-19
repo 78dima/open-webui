@@ -9,6 +9,7 @@
 #   flock /tmp/ai-dvokat-docker-build.lock docker build -t legal-assistant/legal-tools:case-ui-g <ai-dvokat>/tools/
 #   LIVE_NAME=<проект> LIVE_SUBNET=<свободная /24> tests/custom/case-live/run.sh [каталог для снимков]
 # LIVE_KEEP=1 — оставить среду (убрать: docker compose -p $LIVE_NAME down -v). Код выхода 0 — все проверки OK.
+# LIVE_REDIRECT=true — прогон с включённой переадресацией прежних адресов (нужен LIVE_TOOLS_OLD_IMAGE).
 # LIVE_OWUI_BUILD=image — проверять фронтенд самого образа чата (LIVE_OWUI_IMAGE=<образ слоя deploy/ui-layer/build.sh>),
 # а не сборку рабочей копии, подключённую поверх образа.
 # LIVE_ENV_ONLY=<файл состояния> — поднять среду и выйти, не запуская сценариев (её ведёт платная проверка
@@ -134,6 +135,12 @@ OLD=0
 if [ -n "${LIVE_TOOLS_OLD_IMAGE:-}" ] && docker image inspect "$LIVE_TOOLS_OLD_IMAGE" >/dev/null 2>&1; then
   "${COMPOSE[@]}" --profile old up -d --pull never --no-recreate tools-old >/dev/null 2>&1 && OLD=1
 fi
+# LIVE_REDIRECT=true — весь прогон идёт с включённой переадресацией прежних адресов (как после выкладки): прежние
+# страницы сценарии тогда берут у сервиса прежнего образа рядом (/legal-tools-old), без него сверять не с чем
+if [ "${LIVE_REDIRECT:-false}" = true ]; then
+  [ "$OLD" = 1 ] || { echo "FAIL LIVE_REDIRECT=true: нужен образ прежнего сервиса (LIVE_TOOLS_OLD_IMAGE) — с его страницами идёт сверка"; exit 1; }
+  export LIVE_OLD_BASE=/legal-tools-old
+fi
 python3 -I "$HERE/setup.py" cases "$BASE" "$WORK/state.json"
 if [ -n "${LIVE_ENV_ONLY:-}" ]; then
   # только среда, без сценариев (платная проверка live-paid.mjs ведёт её сама): состояние — в названный файл, рядом —
@@ -154,7 +161,7 @@ if [ "${LIVE_SHEET:-1}" = 1 ] && [ -f "$WORK/case.json" ]; then
      ${OUT:+--out "$OUT"}) || rc=1
 fi
 # переадресация прежних адресов на новые страницы и время открытия прежних и новых страниц (сдача 5) — на том же
-# деле; сценарий сам включает переадресацию и возвращает её выключенной; пропуск: LIVE_REDIRECT_CHECK=0
+# деле; сценарий сам включает и выключает переадресацию и возвращает её в исходное состояние; пропуск: LIVE_REDIRECT_CHECK=0
 if [ "${LIVE_REDIRECT_CHECK:-1}" = 1 ] && [ -f "$WORK/case.json" ]; then
   (cd "$HERE/.." && node case-live/live-redirect.mjs --state "$WORK/state.json" --case "$WORK/case.json" \
      --compose "docker compose -p $LIVE_NAME -f $HERE/compose.yaml" ${OUT:+--out "$OUT"}) || rc=1

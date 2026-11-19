@@ -23,6 +23,11 @@ if (out) mkdirSync(out, { recursive: true });
 const base = state.base;
 const NEW_CASE = `/case/${folder}`;
 const OLD_CASE = `/legal-tools/case/${folder}`;
+// прежние страницы сервиса: по своему адресу, а при включённой переадресации — у сервиса прежнего образа рядом
+const OLD_BASE = process.env.LIVE_OLD_BASE || '/legal-tools';
+// среда может быть запущена уже с включённой переадресацией (общий прогон на образах): сценарий проверяет оба
+// состояния и возвращает то, с которым начал
+const START_ON = process.env.LIVE_REDIRECT === 'true';
 let fails = 0;
 const ok = (cond, what) => {
 	console.log(`${cond ? 'OK  ' : 'FAIL'} ${what}`);
@@ -104,13 +109,13 @@ async function signedContext(options = {}) {
 // ================================================================ время открытия: прежние и новые страницы
 // готовая страница — когда на ней есть данные дела: сводка обзора (новая) и тома дела (прежняя); список папок с делами
 const PAGES = [
-	['«Мои дела», прежняя', '/legal-tools/case/', 'main#app table tbody tr'],
+	['«Мои дела», прежняя', `${OLD_BASE}/case/`, 'main#app table tbody tr'],
 	[
 		'«Мои дела», новая',
 		'/case',
 		'[data-testid="my-cases"][data-phase="ready"] [data-testid="case-folder"]'
 	],
-	['дело, прежняя', OLD_CASE, '#sec-volumes .volume'],
+	['дело, прежняя', `${OLD_BASE}/case/${folder}`, '#sec-volumes .volume'],
 	[
 		'дело, новая',
 		NEW_CASE,
@@ -164,7 +169,7 @@ const context = await signedContext({ permissions: [] });
 const page = await context.newPage();
 const newCase = () => page.waitForSelector('[data-testid="case-summary"]', { timeout: 60000 });
 await step('переадресация включена', async () => {
-	await redirect(true);
+	if (!START_ON) await redirect(true);
 	// старая ссылка на «Мои дела»
 	await page.goto(base + '/legal-tools/case/');
 	await page.waitForSelector('[data-testid="my-cases"][data-phase="ready"]', { timeout: 60000 });
@@ -292,6 +297,12 @@ await step('переадресация выключена', async () => {
 		new URL(page.url()).pathname === NEW_CASE,
 		'новая страница дела открывается и при выключенной переадресации'
 	);
+	if (START_ON) {
+		// среда шла с включённой переадресацией — она возвращается, дальше прогон идёт с ней
+		await redirect(true);
+		const again = await api('GET', OLD_CASE, owner.token);
+		ok(again.status === 302, 'переадресация снова включена — как была при запуске среды');
+	}
 });
 
 await browser.close();

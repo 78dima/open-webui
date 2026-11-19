@@ -7,6 +7,7 @@ import {
 	checkGroups,
 	checkVolumes,
 	filesState,
+	pauseOf,
 	gotoVolumes,
 	inVolume,
 	mb,
@@ -233,6 +234,25 @@ describe('обработка и состояние сводки', () => {
 			])
 		).toMatchObject({ key: 'volume_state_reading', vars: { n: 15, m: 30 } });
 		expect(filesState([{ status: 'queued' }]).key).toBe('volume_state_queued');
+		// строка говорит о целом: один заблокированный файл не делает «не обработанной» всю группу
+		expect(filesState([{ status: 'indexed' }, { status: 'blocked' }]).key).toBe(
+			'ecase_state_ready'
+		);
+		expect(
+			filesState([{ status: 'reading', pages: 4, pages_indexed: 1 }, { status: 'failed' }]).key
+		).toBe('volume_state_reading');
+		expect(filesState([{ status: 'blocked' }, { status: 'failed' }])).toMatchObject({
+			tone: 'stop',
+			key: 'status_failed'
+		});
+		expect(
+			pauseOf({ paused: { reason: 'daily', since: '2026-11-20T10:00:00Z', until: null } })
+		).toEqual({
+			self: true,
+			key: 'paused_daily',
+			since: '2026-11-20T10:00:00Z'
+		});
+		expect(pauseOf({ paused: null })).toBeNull();
 	});
 });
 

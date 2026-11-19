@@ -160,10 +160,12 @@ test.describe('компьютер, 1280', () => {
 		await arbitrage.click();
 		await expect(arbitrage).toHaveAttribute('aria-pressed', 'true');
 		await expect(rows(page).locator('.title')).toHaveText(['А40-123456/2025']);
-		await expect(folders(page).locator('.title')).toHaveText(['2025']);
+		// сама папка-раздел входит в свой отбор (у неё может быть своё дело) — вместе с тем, что внутри неё
+		await expect(folders(page)).toHaveCount(2);
+		expect((await folders(page).locator('.title').allTextContents()).map((t) => t.trim()).sort()).toEqual(['2025', 'Арбитраж']);
 		await year.click();
 		await expect(rows(page)).toHaveCount(1);
-		await expect(folders(page)).toHaveCount(0);
+		await expect(folders(page).locator('.title')).toHaveText(['2025']);
 		await expect(page.locator('a:visible', { hasText: S.create_folder_in_chat })).toHaveCount(1);
 		await year.click(); // повторное нажатие снимает отбор
 		await expect(rows(page)).toHaveCount(4);
@@ -433,7 +435,7 @@ test.describe('телефон, 360', () => {
 			await expect(section.locator('option')).toHaveText([S.my_cases_sections_all, 'Арбитраж', 'Арбитраж / 2025']);
 			await section.selectOption({ label: 'Арбитраж' });
 			await expect(lines).toHaveCount(1);
-			await expect(folders(page).locator('.title')).toHaveText(['2025']);
+			await expect(folders(page)).toHaveCount(2); // раздел «Арбитраж» сам и папка «2025» внутри него
 			await section.selectOption({ label: S.my_cases_sections_all });
 			await pills.nth(2).click();
 			await expect(lines).toHaveCount(2);
@@ -487,13 +489,15 @@ test.describe('телефон, 360', () => {
 test('пункт «Дела» в левой панели чата: выключатель включён и сервис подтвердил доступ; сервис не ответил — пункта нет', async ({
 	page
 }) => {
-	let answer: 'yes' | 'no' | 'down' | 'html' = 'yes';
+	let answer: 'yes' | 'no' | 'down' | 'html' | '404' | '401' | '503' = 'yes';
 	const asked: Record<string, string>[] = [];
 	await page.addInitScript(() => localStorage.setItem('token', 'session-token'));
 	await page.route('**/legal-tools/api/cases/access', (r) => {
 		asked.push(r.request().headers());
 		if (answer === 'down') return r.abort('internetdisconnected');
 		if (answer === 'html') return r.fulfill({ contentType: 'text/html', body: '<!doctype html><html></html>' });
+		// отказы сервиса — как на всех путях дела: вне группы выпуска — 404, токен не принят — 401, чат не отвечает — 503
+		if (/^\d+$/.test(answer)) return r.fulfill({ status: Number(answer), json: { detail: 'Не найдено' } });
 		return r.fulfill({ json: { case: answer === 'yes' } });
 	});
 	const open = async (config: unknown, user: unknown = { id: 'u-1', role: 'user' }) => {
@@ -522,7 +526,7 @@ test('пункт «Дела» в левой панели чата: выключ�
 	await expect(link).toHaveCount(1);
 	expect(asked).toHaveLength(1);
 	// вне группы выпуска, сервис не ответил, по пути сервиса ответил не он, нет входа — пункта нет
-	for (const next of ['no', 'down', 'html'] as const) {
+	for (const next of ['no', 'down', 'html', '404', '401', '503'] as const) {
 		answer = next;
 		await open({ custom_ui: { case: true } });
 		await page.waitForTimeout(300);

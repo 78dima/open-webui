@@ -290,6 +290,14 @@ export const pollDelay = (data: CaseData | null, localRunning = false): number =
 
 /** Паузы, которые проходят сами (опись § 2.3); остальные ждут администратора. */
 const PAUSE_SELF = new Set(['daily', 'fuse', 'rate', 'marks', 'limiter']);
+/** Пауза обработки для показа: проходит ли сама, ключ фразы причины, с какого времени. Одна на «Обзор» и на разделы,
+ *  где юрист ждёт обработки («Загрузить материалы», «Тома», «Таблицы и проходы»). */
+export function pauseOf(
+	data: Pick<CaseData, 'paused'> | null | undefined
+): null | { self: boolean; key: string; since: string | null } {
+	const p = data?.paused;
+	return p ? { self: PAUSE_SELF.has(p.reason), key: pauseKey(p.reason), since: p.since } : null;
+}
 const PAUSE_KEYS: Record<string, string> = {
 	manual: 'paused_manual',
 	budget: 'paused_budget',
@@ -340,7 +348,7 @@ export function summary(data: CaseData): Summary {
 		kind: !some ? 'empty' : busy ? 'processing' : 'ready',
 		indexed: ic.indexed,
 		total: ic.total,
-		paused: p ? { self: PAUSE_SELF.has(p.reason), key: pauseKey(p.reason), since: p.since } : null,
+		paused: pauseOf(data),
 		volumes: volumes.length,
 		documents: ov.size?.documents ?? 0,
 		checks: Math.max(data.check_total ?? 0, (ov.check_sheets ?? []).length)
@@ -361,8 +369,15 @@ export function volumeState(v: Volume): State {
 	return { tone: 'info', key: 'volume_state_queued' };
 }
 
-/** Состояние группы файлов (электронное дело): после обработки — «прочитано». */
-export function filesState(files: FileFacts[]): State {
+/** Файл не обработан и сам не обработается (заблокирован антивирусом, отказ приёма). */
+export const fileStuck = (f: FileFacts): boolean => f.status === 'blocked' || f.status === 'failed';
+
+/** Состояние группы файлов (электронное дело): после обработки — «прочитано». Строка говорит о целом: один
+ *  заблокированный файл не делает «не обработанной» всю группу — такие файлы называются счётом рядом (как у файлов
+ *  без тома); «не обработан» — только когда не обработан ни один. */
+export function filesState(all: FileFacts[]): State {
+	const live = all.filter((f) => !fileStuck(f));
+	const files = live.length ? live : all;
 	if (files.length && files.every((f) => f.status === 'indexed'))
 		return { tone: 'plain', key: 'ecase_state_ready' };
 	const reading = files.filter((f) => f.status === 'reading');

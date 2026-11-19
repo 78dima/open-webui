@@ -46,7 +46,8 @@ test.describe('«Паспорт», 1280', () => {
 		// роль клиента задаёт юрист; пустое поле — «не заполнено»
 		const role = about.locator('[data-field="client_role"]');
 		await expect(role).toContainText(S.map_passport_client_hint);
-		await expect(role.getByRole('button')).toHaveText([S.client_role_set]);
+		// «Править» у пустой роли нет (его заменяет «Указать роль»), «История» есть — иначе очистку не откатить
+		await expect(role.getByRole('button')).toHaveText([S.map_history, S.client_role_set]);
 		await expect(about.locator('[data-field="instance"]')).toContainText(S.map_field_empty);
 		await expect(page.locator('[data-field="key_amounts"]').getByRole('link', { name: S.passport_all_amounts })).toHaveAttribute('href', /amounts$/);
 		await expect(page.getByTestId('case-map-state')).toHaveText(['Документов без записей хронологии: 1 из 22. Записи извлечены моделью при загрузке — полнота не гарантирована.']);

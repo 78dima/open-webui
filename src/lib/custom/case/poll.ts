@@ -17,8 +17,9 @@ export type PollerOptions = {
 };
 
 export type Poller = {
-	/** Спросить сейчас (и по возвращении вкладки); после ответа ставится следующий срок. */
-	refresh: () => Promise<void>;
+	/** Спросить сейчас (и по возвращении вкладки); после ответа ставится следующий срок. `fresh` — нужен ответ,
+	 *  собранный после этого вызова (действие юриста): идущий запрос дожидается, следом идёт ещё один. */
+	refresh: (fresh?: boolean) => Promise<void>;
 	/** Остановить: срок снят, идущий запрос прерван. */
 	stop: () => void;
 	readonly running: boolean;
@@ -45,7 +46,17 @@ export function createPoller(options: PollerOptions): Poller {
 		}, ms);
 	};
 
-	const refresh = (): Promise<void> => {
+	let again: Promise<void> | null = null;
+	/** `fresh` — после действия юриста: ответ запроса, который уже шёл, мог быть собран до действия, поэтому следом
+	 *  ставится ещё один (один на всех просивших), а не ждётся следующий опрос. */
+	const refresh = (fresh = false): Promise<void> => {
+		if (current && fresh) {
+			again ??= current.then(() => {
+				again = null;
+				return stopped ? undefined : refresh();
+			});
+			return again;
+		}
 		if (current) return current;
 		stopped = false;
 		if (timer !== null) clearTimer(timer);

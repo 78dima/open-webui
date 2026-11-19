@@ -3,7 +3,8 @@
 	// выключатель дела (`custom_ui.case === true`) и сервис подтвердил, что «Дела» открыты этому юристу (группа
 	// выпуска; `caseAccess` — один вопрос за сеанс, без ответа пункта нет, чат не ждёт). Вид — как у соседних пунктов
 	// панели (это часть чата, не «Г»).
-	import { config, user } from '$lib/stores';
+	import { goto } from '$app/navigation';
+	import { chatId, config, mobile, showSidebar, user } from '$lib/stores';
 	import { caseAccess } from '$lib/custom/case/access';
 	import ru from '$lib/custom/locales/ru-RU.json';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
@@ -19,6 +20,19 @@
 	} else {
 		allowed = false;
 	}
+	// Как у соседних пунктов панели (`itemClickHandler` в Sidebar.svelte): переход не меняет состояние панели —
+	// свёрнутая остаётся свёрнутой (нажатие не доходит до полосы, которая разворачивает панель), а на телефоне
+	// панель после перехода закрыта, чтобы не лежать поверх страницы (ревью 20.11).
+	const leave = () => {
+		chatId.set('');
+		if ($mobile) showSidebar.set(false);
+	};
+	const railClick = (e: MouseEvent) => {
+		e.stopImmediatePropagation();
+		e.preventDefault();
+		void goto('/case');
+		leave();
+	};
 </script>
 
 {#if enabled && allowed}
@@ -31,6 +45,7 @@
 					draggable="false"
 					aria-label={ru.case_page.sidebar}
 					data-testid="custom-cases-link"
+					on:click={railClick}
 				>
 					<div
 						class="self-center flex size-[calc(30px*var(--app-text-scale,1))] items-center justify-center rounded-lg transition group-hover:bg-gray-100 dark:group-hover:bg-gray-900"
@@ -49,6 +64,7 @@
 				draggable="false"
 				aria-label={ru.case_page.sidebar}
 				data-testid="custom-cases-link"
+				on:click={leave}
 			>
 				<div class="self-center flex size-4 shrink-0 items-center justify-center">
 					<Folder className="size-4" strokeWidth="1.5" />

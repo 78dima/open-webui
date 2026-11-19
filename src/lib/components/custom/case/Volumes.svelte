@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PauseNote from './PauseNote.svelte';
 	import SheetRef from './SheetRef.svelte';
 	// ai-dvokat: «Тома» (макет K-volumes; опись § 2.5): карточка тома — состояние, откуда номер, замечания по нумерации,
 	// сверка с внутренней описью (сворачивается), файлы с «Действиями»; файлы без тома с подсказкой «продолжение» и
@@ -27,7 +28,8 @@
 		volumeLabel,
 		volumesSorted,
 		volumeTitle,
-		type FileMode
+		type FileMode,
+		reasonText
 	} from '$lib/custom/case/sections';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
@@ -145,7 +147,7 @@
 	async function submit() {
 		if (!win) return;
 		if (win.kind === 'label') {
-			if (!labelValue.trim()) throw new Error(S.volume_not_set_hint);
+			if (!labelValue.trim()) throw new Error(S.volume_number_needed); // понятный отказ про номер, а не «том не установлен»
 			await state.api.request('PATCH', casePath(state, `/volumes/${win.volume.id}`), {
 				label: labelValue
 			});
@@ -183,6 +185,7 @@
 	] as const;
 </script>
 
+<PauseNote {state} {S} />
 {#if !$data}
 	<section class="card" data-testid="case-volumes-wait">
 		{#if $stale}
@@ -190,7 +193,7 @@
 				<span class="pill s"
 					><Icon name="al" />{$stale.kind === 'network'
 						? S.overview_state_offline
-						: fmt(S.section_error, { detail: $stale.message })}</span
+						: fmt(S.section_error, { detail: reasonText(S, $stale) })}</span
 				>
 				<button type="button" class="btn big" on:click={() => state.refresh()}>{S.retry}</button>
 			</div>

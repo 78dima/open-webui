@@ -1,4 +1,5 @@
 <script lang="ts">
+	import StaleNote from './StaleNote.svelte';
 	// ai-dvokat: «Копии и расхождения» (макет K-copies; опись § 2.11): пары документов описи со сходным текстом двумя
 	// блоками — копии (по описи совпал реквизит) и похожие документы того же образца; пара свёрнута, по раскрытию —
 	// расхождения с местом на листах обеих копий (ссылки открывают лист в новой вкладке и подсвечивают место);
@@ -7,7 +8,7 @@
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { createLoader } from '$lib/custom/case/loader';
-	import { casePath, sheetHref } from '$lib/custom/case/sections';
+	import { casePath, sheetHref, reasonText } from '$lib/custom/case/sections';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import Icon from './Icon.svelte';
 
@@ -84,10 +85,13 @@
 	<p>{S.copies_hint}</p>
 </div>
 
+{#if $error && $answer}<StaleNote {S} error={$error} retry={() => loader.refresh(true)} />{/if}
 {#if $error && !$answer}
 	<section class="card" data-testid="case-copies-error">
 		<div class="col g12 as">
-			<span class="pill s"><Icon name="al" />{fmt(S.section_error, { detail: $error })}</span>
+			<span class="pill s"
+				><Icon name="al" />{fmt(S.section_error, { detail: reasonText(S, $error) })}</span
+			>
 			<button type="button" class="btn big" on:click={() => loader.refresh(true)}>{S.retry}</button>
 		</div>
 	</section>

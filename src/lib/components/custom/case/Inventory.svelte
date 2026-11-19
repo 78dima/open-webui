@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	// ai-dvokat: «Опись» (макет K-inventory, окна K-dialogs; опись § 2.7): документы дела с листами — порциями сервиса,
 	// отбор по тому, выгрузка в Word и Excel, правка строки («Изменить» с «Историей» внутри), «Разделить»,
 	// «Объединить отмеченные: N». Ручки `GET …/documents?page=&volume=`, `PATCH …/documents/<id>`,
@@ -16,7 +17,8 @@
 		sheetHref,
 		volumesSorted,
 		volumeTitle,
-		type Doc
+		type Doc,
+		reasonText
 	} from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
@@ -34,15 +36,30 @@
 	$: volumes = volumesSorted($data?.overview.volumes ?? []);
 
 	let volume = ''; // отбор: номер записи тома или пусто — все тома
-	let docs: Doc[] = [];
-	let total = 0;
-	let nextPage = 0;
-	let end = true;
-	let loaded = false;
+	// опись, отбор по тому и отмеченные строки живут, пока открыта страница дела (уход в другой раздел их не сбрасывает)
+	const kept = state.keep('inventory', {
+		volume: '',
+		docs: [] as Doc[],
+		total: 0,
+		nextPage: 0,
+		end: true,
+		loaded: false,
+		selected: new Map<number, Doc>(),
+		version: undefined as number | undefined
+	});
+	let docs: Doc[] = kept.docs;
+	let total = kept.total;
+	let nextPage = kept.nextPage;
+	let end = kept.end;
+	let loaded = kept.loaded;
 	let loading = false;
 	let error = '';
-	let selected = new Map<number, Doc>();
+	let selected = kept.selected;
 	let seq = 0;
+	volume = kept.volume;
+	onDestroy(() =>
+		Object.assign(kept, { volume, docs, total, nextPage, end, loaded, selected, version })
+	);
 
 	async function load(reset: boolean) {
 		const mine = ++seq;
@@ -56,7 +73,9 @@
 				end: boolean;
 			}>(casePath(state, `/documents${query({ page: String(nextPage), volume })}`));
 			if (mine !== seq) return;
-			docs = reset ? d.documents : [...docs, ...d.documents];
+			// порция не повторяет уже показанное: состав описи мог сдвинуться между порциями
+			const seen = new Set(reset ? [] : docs.map((x) => x.id));
+			docs = reset ? d.documents : [...docs, ...d.documents.filter((x) => !seen.has(x.id))];
 			if (reset) selected = new Map();
 			total = Math.max(d.total ?? 0, docs.length);
 			end = d.end;
@@ -65,19 +84,22 @@
 			loaded = true;
 		} catch (e) {
 			if (mine !== seq) return;
-			error = (e as Error).message;
+			error = reasonText(S, e);
 			if (loaded) caseToast(errorText(S, e), true);
 		} finally {
 			if (mine === seq) loading = false;
 		}
 	}
 	// версия дела сменилась (состав или опись) — опись с начала; пока открыто окно правки — подождать
-	let version: number | undefined;
+	let version: number | undefined = kept.version;
 	let started = false;
 	$: if ($data && !started) {
 		started = true;
-		version = $data.version;
-		void load(true);
+		// вернулись в раздел, а дело не менялось — опись та же, что была (с отбором, порциями и отметками)
+		if (!(kept.loaded && kept.version === $data.version)) {
+			version = $data.version;
+			void load(true);
+		}
 	}
 	$: if ($data && started && $data.version !== version && !winOpen && !historyOpen) {
 		version = $data.version;
@@ -349,9 +371,9 @@
 					<span class="row g4">
 						{#if canWrite}
 							<button type="button" class="btn t" on:click={() => edit(d)}>{S.doc_edit}</button>
-							{#if d.sheets > 1}
-								<button type="button" class="btn t" on:click={() => split(d)}>{S.doc_split}</button>
-							{/if}
+							<!-- «Разделить» — у каждого документа, как на прежней странице: счёт `sheets` — листы без оборотов, а
+							     делится документ по страницам внутри него (лист и его оборот — две страницы); делить нечем — так и сказано -->
+							<button type="button" class="btn t" on:click={() => split(d)}>{S.doc_split}</button>
 						{:else}
 							<button type="button" class="btn t" on:click={() => history(d.id)}>{S.history}</button
 							>

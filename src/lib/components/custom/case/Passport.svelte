@@ -1,4 +1,5 @@
 <script lang="ts">
+	import StaleNote from './StaleNote.svelte';
 	// ai-dvokat: «Паспорт» дела (макет K-passport, окно K-dialogs; опись § 2.8): указатель — каждая запись ведёт на
 	// лист. Блоки «О деле», «Участники, названные в документах» (первые четыре и «Показать ещё», роли — «ещё N», поиск
 	// по написанию), «Ключевые даты», «Ключевые суммы»; цитата записи — под «Цитата»; «Править» поле, «История» и
@@ -15,7 +16,7 @@
 		stateLines,
 		type MapState
 	} from '$lib/custom/case/mapcore';
-	import { casePath } from '$lib/custom/case/sections';
+	import { casePath, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import FormDialog from './FormDialog.svelte';
 	import HistoryDialog from './HistoryDialog.svelte';
@@ -165,10 +166,13 @@
 	</div>
 </div>
 
+{#if $error && $answer}<StaleNote {S} error={$error} retry={() => loader.refresh(true)} />{/if}
 {#if $error && !$answer}
 	<section class="card" data-testid="case-passport-error">
 		<div class="col g12 as">
-			<span class="pill s"><Icon name="al" />{fmt(S.section_error, { detail: $error })}</span>
+			<span class="pill s"
+				><Icon name="al" />{fmt(S.section_error, { detail: reasonText(S, $error) })}</span
+			>
 			<button type="button" class="btn big" on:click={() => loader.refresh(true)}>{S.retry}</button>
 		</div>
 	</section>
@@ -182,16 +186,18 @@
 				<div class="kv grow">
 					<dt class="col g4">
 						<span class="b fname">{passportName(S, f.key)}</span>
-						{#if !(f.lawyer_only && !f.items.length)}
-							<span class="row g4">
-								{#if canWrite}<button type="button" class="btn t" on:click={() => edit(f)}
-										>{S.map_edit}</button
-									>{/if}
-								<button type="button" class="btn t" on:click={() => history(f.key)}
-									>{S.map_history}</button
-								>
-							</span>
-						{/if}
+						<!-- у пустого поля, которое задаёт юрист («Роль клиента»), вместо «Править» — кнопка «Указать роль» в
+						     значении; «История» остаётся: иначе очистку поля со страницы не откатить -->
+						<span class="row g4">
+							{#if canWrite && !(f.lawyer_only && !f.items.length)}<button
+									type="button"
+									class="btn t"
+									on:click={() => edit(f)}>{S.map_edit}</button
+								>{/if}
+							<button type="button" class="btn t" on:click={() => history(f.key)}
+								>{S.map_history}</button
+							>
+						</span>
 					</dt>
 					<dd class="col g8">
 						{#if !f.items.length}

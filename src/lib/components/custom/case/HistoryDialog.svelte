@@ -5,7 +5,7 @@
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { when } from '$lib/custom/case/casepage';
 	import { editField, editValue } from '$lib/custom/case/mapcore';
-	import { casePath, errorText, query } from '$lib/custom/case/sections';
+	import { casePath, errorText, query, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
@@ -51,7 +51,7 @@
 			);
 			if (mine === asked) edits = d?.edits ?? [];
 		} catch (e) {
-			if (mine === asked) error = (e as Error).message;
+			if (mine === asked) error = reasonText(S, e);
 		}
 	}
 	async function revert(e: Edit) {
@@ -86,7 +86,10 @@
 
 <FormDialog bind:open title={S.history_title} {S} testid="case-history">
 	{#if error}
-		<span class="sm b c-stop" role="alert">{error}</span>
+		<div class="row g12">
+			<span class="sm b c-stop grow" role="alert">{fmt(S.section_error, { detail: error })}</span>
+			<button type="button" class="btn s" on:click={load}>{S.retry}</button>
+		</div>
 	{:else if edits === null}
 		<p class="mut" role="status">{S.loading}</p>
 	{:else if !edits.length}

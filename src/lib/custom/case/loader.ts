@@ -6,8 +6,8 @@ import { get, writable, type Readable } from 'svelte/store';
 
 export type Loader<T> = {
 	data: Readable<T | null>;
-	/** Фраза ошибки последнего запроса; при следующем удачном — пусто. */
-	error: Readable<string>;
+	/** Отказ последнего запроса (сам объект ошибки — причину словами называет `reasonText`); при удачном — null. */
+	error: Readable<unknown>;
 	/** Перечитать: `force` — сразу, не глядя на промежуток и на открытое окно. */
 	refresh: (force?: boolean) => Promise<void>;
 	/** Заменить данные ответом действия (правка вернула новое состояние раздела). */
@@ -23,7 +23,7 @@ export function createLoader<T>(
 	const gap = options.gap ?? 0;
 	const now = options.now ?? (() => Date.now());
 	const data = writable<T | null>(null);
-	const error = writable('');
+	const error = writable<unknown>(null);
 	let json = '';
 	let busy = false;
 	let held = false;
@@ -48,9 +48,9 @@ export function createLoader<T>(
 				json = next;
 				data.set(value);
 			}
-			error.set('');
+			error.set(null);
 		} catch (e) {
-			if (!stopped) error.set((e as { message?: string } | null)?.message ?? '');
+			if (!stopped) error.set(e ?? new Error());
 		} finally {
 			busy = false;
 			if (again && !stopped) {

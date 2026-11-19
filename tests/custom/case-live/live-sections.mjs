@@ -21,7 +21,9 @@ const out = arg('out');
 if (out) mkdirSync(out, { recursive: true });
 const base = state.base;
 const CASE = `/case/${folder}`;
-const OLD = `/legal-tools/case/${folder}`;
+// прежние страницы сервиса: по своему адресу, а при включённой переадресации — у сервиса прежнего образа рядом
+const OLD_BASE = process.env.LIVE_OLD_BASE || '/legal-tools';
+const OLD = `${OLD_BASE}/case/${folder}`;
 let fails = 0;
 let skipped = 0;
 const ok = (cond, what) => {

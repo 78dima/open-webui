@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { reasonText } from '$lib/custom/case/sections';
 	// ai-dvokat: «Обзор» дела (макеты K-overview, K-status, K-marks): шапка из паспорта, состояние и ход обработки,
 	// три плитки, ближайшие сроки, состав дела, пометка о распознавании. Денег в обзоре нет (решение владельца).
 	// Данные — ответ обзора сервиса (его переспрашивает общий макет дела) и раздел паспорта; слова — строки сервиса.
@@ -7,6 +8,7 @@
 	import {
 		ecaseFiles,
 		filesState,
+		fileStuck,
 		sectionOpen,
 		since,
 		summary,
@@ -145,7 +147,7 @@
 				<span class="pill s"
 					><Icon name="al" />{$stale.kind === 'network'
 						? S.overview_state_offline
-						: fmt(S.section_error, { detail: $stale.message })}</span
+						: fmt(S.section_error, { detail: reasonText(S, $stale) })}</span
 				>
 				<button type="button" class="btn big" on:click={() => state.refresh()}>{S.retry}</button>
 			</div>
@@ -160,7 +162,7 @@
 				<span class="pill s"
 					><Icon name="al" />{$stale.kind === 'network'
 						? S.overview_state_offline
-						: fmt(S.section_error, { detail: $stale.message })}</span
+						: fmt(S.section_error, { detail: reasonText(S, $stale) })}</span
 				>
 				<h2 class="big">{S.overview_offline_title}</h2>
 				<p class="md soft">{S.overview_offline_text}</p>
@@ -368,7 +370,9 @@
 							>{count(ecase.length, S.files_forms)} · {count(
 								ecase.reduce((a, f) => a + (f.pages ?? 0), 0),
 								S.pages_forms
-							)}</span
+							)}{ecase.some(fileStuck)
+								? `; ${count(ecase.filter(fileStuck).length, S.overview_comp_blocked_forms)}`
+								: ''}</span
 						>
 						<a class="ref sm end" href={hrefOf('volumes')}>{S.overview_to_volumes}</a>
 					</div>

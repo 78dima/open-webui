@@ -25,8 +25,11 @@
 		error = '';
 		busy = false;
 	}
+	let form: HTMLFormElement;
 	async function onSubmit() {
 		if (!submit || busy) return;
+		// обязательные поля проверяет браузер (как на прежней странице): пустая форма запросом не уходит
+		if (form && !form.reportValidity()) return;
 		busy = true;
 		error = '';
 		try {
@@ -42,7 +45,13 @@
 
 <Dialog bind:open title={danger ? '' : title} labelledby="{testid}-title">
 	{#if open}
-		<form class="col g14" on:submit|preventDefault={onSubmit} data-testid={testid} novalidate>
+		<form
+			class="col g14"
+			bind:this={form}
+			on:submit|preventDefault={onSubmit}
+			data-testid={testid}
+			novalidate
+		>
 			{#if danger}
 				<!-- необратимое действие: значок и вопрос рядом (макет K-danger) -->
 				<div class="row g12 nw as">

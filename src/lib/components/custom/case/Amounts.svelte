@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { useHead } from '$lib/custom/case/head';
+	import StaleNote from './StaleNote.svelte';
 	// ai-dvokat: «Суммы» (макет K-amounts; опись § 2.8, подраздел паспорта): суммы карточек документов таблицей — как
 	// написано, числом, что это, лист, цитата под «Цитата»; «показать убранные»; правка, «Убрать» / «Вернуть»,
 	// история и откат. Ручки `GET …/amounts?hidden=`, `PATCH …/amounts/<id>`. Перечитывается вместе с обзором, не чаще
@@ -7,7 +9,7 @@
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { createLoader } from '$lib/custom/case/loader';
 	import { quoteMore, rub, stateLines, type MapState } from '$lib/custom/case/mapcore';
-	import { casePath, errorText, query } from '$lib/custom/case/sections';
+	import { casePath, errorText, query, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
@@ -43,6 +45,16 @@
 		{ gap: 20000 }
 	);
 	const { data: answer, error } = loader;
+	// «Обновить» — в шапке раздела, как у паспорта и сроков (на прежней странице суммы перечитывало «Обновить» паспорта)
+	const setHead = useHead();
+	$: setHead([
+		{
+			id: 'refresh',
+			text: S.map_refresh,
+			run: () => void loader.refresh(true),
+			testid: 'case-map-refresh'
+		}
+	]);
 	$: ($data, void loader.refresh());
 	onDestroy(() => loader.stop());
 	$: rows = $answer?.amounts ?? [];
@@ -95,10 +107,13 @@
 	<p>{S.map_amounts_hint}</p>
 </div>
 
+{#if $error && $answer}<StaleNote {S} error={$error} retry={() => loader.refresh(true)} />{/if}
 {#if $error && !$answer}
 	<section class="card" data-testid="case-amounts-error">
 		<div class="col g12 as">
-			<span class="pill s"><Icon name="al" />{fmt(S.section_error, { detail: $error })}</span>
+			<span class="pill s"
+				><Icon name="al" />{fmt(S.section_error, { detail: reasonText(S, $error) })}</span
+			>
 			<button type="button" class="btn big" on:click={() => loader.refresh(true)}>{S.retry}</button>
 		</div>
 	</section>

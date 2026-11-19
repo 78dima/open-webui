@@ -28,8 +28,14 @@ export type CaseState = {
 	api: CaseApi;
 	folderId: string;
 	start: () => Promise<void>;
-	/** Спросить обзор сейчас («Повторить сейчас», после действия, при возвращении на вкладку). */
+	/** Спросить обзор сейчас («Повторить сейчас», после действия): ответ будет собран после вызова — если запрос уже
+	 *  шёл, следом идёт ещё один (иначе счётчики меню и сводка отставали бы на один опрос). */
 	refresh: () => Promise<void>;
+	/** Пересчитать файлы папки вне дела (после добавления файла в дело пункт меню и число меняются сразу). */
+	reloadFolderFiles: () => Promise<void>;
+	/** Выбранное в разделе, пока открыта страница дела: отбор и отметки описи, фильтр хронологии, набор и тома таблиц
+	 *  (на прежней странице всё жило на одной странице; здесь раздел при уходе снимается, а выбранное остаётся). */
+	keep: <T extends object>(key: string, initial: T) => T;
 	createCase: () => Promise<void>;
 	stop: () => void;
 };
@@ -41,6 +47,7 @@ export function createCaseState(api: CaseApi, folderId: string): CaseState {
 	const data = writable<CaseData | null>(null);
 	const stale = writable<Failure | null>(null);
 	const folderFiles = writable(0);
+	const kept = new Map<string, object>();
 	let stopped = false;
 
 	const uploads = createUploads({
@@ -61,7 +68,18 @@ export function createCaseState(api: CaseApi, folderId: string): CaseState {
 				uploads.nudge(next.uploads ?? []);
 			} catch (error) {
 				if ((error as Error)?.name === 'AbortError' || stopped) return;
-				stale.set(failure(error));
+				const f = failure(error);
+				if (f.kind === 'not_found') {
+					// дело удалили или доступ сняли, пока страница открыта: «Не найдено» вместо прежних данных на экране
+					// (как прежняя страница); опрос прекращается
+					bootError.set(f);
+					boot.set(undefined); // меню разделов и шапка дела уходят вместе с данными — как при «Не найдено» с порога
+					data.set(null);
+					stale.set(null);
+					queueMicrotask(() => poller.stop());
+					return;
+				}
+				stale.set(f);
 				throw error;
 			}
 		},
@@ -69,7 +87,13 @@ export function createCaseState(api: CaseApi, folderId: string): CaseState {
 	});
 
 	const onVisible = () => {
-		if (typeof document !== 'undefined' && !document.hidden && get(boot)?.has_case)
+		// дела больше нет (обзор ответил «Не найдено») — спрашивать нечего, пока страницу не откроют заново
+		if (
+			typeof document !== 'undefined' &&
+			!document.hidden &&
+			get(boot)?.has_case &&
+			!get(bootError)
+		)
 			void poller.refresh();
 	};
 
@@ -107,7 +131,12 @@ export function createCaseState(api: CaseApi, folderId: string): CaseState {
 		api,
 		folderId,
 		start,
-		refresh: () => poller.refresh(),
+		refresh: () => poller.refresh(true),
+		reloadFolderFiles: loadFolderFiles,
+		keep<T extends object>(key: string, initial: T): T {
+			if (!kept.has(key)) kept.set(key, initial);
+			return kept.get(key) as T;
+		},
 		async createCase() {
 			await api.post(path());
 			await start();

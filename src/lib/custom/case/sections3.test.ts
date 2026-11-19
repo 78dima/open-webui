@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { get } from 'svelte/store';
 import { fileName } from './api';
 import { createLoader } from './loader';
+import { fmt } from './strings';
 import {
 	dateNote,
 	dateParts,
@@ -18,6 +19,7 @@ import {
 import {
 	blockKey,
 	docNotes,
+	errorText,
 	factText,
 	fileFacts,
 	fileLine,
@@ -25,6 +27,7 @@ import {
 	labelSource,
 	numberingChecks,
 	query,
+	reasonText,
 	suggestText
 } from './sections';
 import {
@@ -330,10 +333,22 @@ describe('перечитывание раздела', () => {
 		fail = true;
 		t = 90000;
 		await loader.refresh();
-		expect([get(loader.error), get(loader.data)]).toEqual(['сбой сервиса', { n: 1 }]); // прежние данные остаются
+		// прежние данные остаются, а отказ назван словами: фраза сервиса, без неё — что случилось (пустой причины нет)
+		expect([reasonText(S, get(loader.error)), get(loader.data)]).toEqual([
+			'сбой сервиса',
+			{ n: 1 }
+		]);
+		expect(reasonText(S, { kind: 'network', status: 0, message: '' })).toBe(S.error_no_link);
+		expect(reasonText(S, { kind: 'other', status: 502, message: '' })).toBe(
+			fmt(S.error_status, { status: 502 })
+		);
+		expect(reasonText(S, new Error(''))).toBe(S.error_no_answer);
+		expect(errorText(S, { kind: 'network', status: 0, message: '' })).toBe(
+			fmt(S.error_generic, { detail: S.error_no_link })
+		);
 		fail = false;
 		await loader.refresh(true);
-		expect([get(loader.error), get(loader.data)]).toEqual(['', { n: 2 }]);
+		expect([get(loader.error), get(loader.data)]).toEqual([null, { n: 2 }]);
 		loader.set({ n: 3 });
 		expect(get(loader.data)).toEqual({ n: 3 });
 		loader.stop();

@@ -185,10 +185,15 @@ describe('ядро загрузки частями', () => {
 		]);
 		expect(planRows([file('one.jpg', 1)], id)[0].batch).toBeNull();
 	});
+	it('«такой файл уже есть» — для одного файла; у архива остаётся прежняя фраза с «или архив пуст»', () => {
+		expect(serverTextKey('done_nofile', 'Том 3.pdf')).toBe('upload_status_done_nofile_g');
+		expect(serverTextKey('done_nofile', 'Архив.ZIP')).toBe('upload_status_done_nofile');
+		expect(serverTextKey('intake', 'Архив.zip')).toBe('upload_status_intake');
+	});
 	it('слова этапа приёма — по этапу сервера', () => {
 		expect(
-			['received', 'intake', 'failed', 'intake_failed', 'done_nofile', 'странный'].map(
-				serverTextKey
+			['received', 'intake', 'failed', 'intake_failed', 'done_nofile', 'странный'].map((x) =>
+				serverTextKey(x)
 			)
 		).toEqual([
 			'upload_status_received',

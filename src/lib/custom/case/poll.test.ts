@@ -58,6 +58,33 @@ describe('переспрашивание страницы дела', () => {
 		await settle();
 		expect([runs, c.pending()]).toEqual([1, [5000]]);
 	});
+	it('после действия нужен свежий ответ: запрос уже шёл — следом идёт ещё один, один на всех просивших', async () => {
+		const c = clock();
+		const waits: (() => void)[] = [];
+		let runs = 0;
+		const p = createPoller({
+			run: () =>
+				new Promise<void>((resolve) => {
+					runs++;
+					waits.push(resolve);
+				}),
+			delay: () => 30000,
+			...c
+		});
+		const first = p.refresh();
+		const fresh = p.refresh(true); // действие юриста, пока идёт прежний запрос
+		expect(p.refresh(true)).toBe(fresh);
+		expect(fresh).not.toBe(first);
+		let done = false;
+		void fresh.then(() => (done = true));
+		waits[0]();
+		await settle();
+		expect([runs, done]).toEqual([2, false]); // следом пошёл второй запрос, срок не ждали
+		waits[1]();
+		await settle();
+		expect([runs, done, c.pending()]).toEqual([2, true, [30000]]);
+		expect(p.refresh(true)).not.toBe(fresh); // запросов нет — обычный запрос
+	});
 	it('одновременно идёт один запрос; «стоп» снимает срок и прерывает запрос', async () => {
 		const c = clock();
 		let release = () => {};

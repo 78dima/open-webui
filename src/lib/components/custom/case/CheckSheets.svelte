@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { reasonText } from '$lib/custom/case/sections';
 	// ai-dvokat: «Проверьте листы» (макет K-check; опись § 2.6): замечания группами по виду, группа сворачивается,
 	// длинный перечень — под «Показать ещё», выбор тома. Отметки «проверено» нет — второй этап. Свёрнутое, раскрытое и
 	// выбранный том — состояние компонента: обновление обзора его не сбрасывает.
@@ -68,7 +69,7 @@
 				<span class="pill s"
 					><Icon name="al" />{$stale.kind === 'network'
 						? S.overview_state_offline
-						: fmt(S.section_error, { detail: $stale.message })}</span
+						: fmt(S.section_error, { detail: reasonText(S, $stale) })}</span
 				>
 				<button type="button" class="btn big" on:click={() => state.refresh()}>{S.retry}</button>
 			</div>

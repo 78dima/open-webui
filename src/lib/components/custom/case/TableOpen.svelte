@@ -11,7 +11,7 @@
 	import { saveBlob } from '$lib/custom/case/loader';
 	import { inVolume, volumeOf } from '$lib/custom/case/casepage';
 	import { day } from '$lib/custom/case/mycases';
-	import { casePath, errorText, sheetHref } from '$lib/custom/case/sections';
+	import { casePath, errorText, sheetHref, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import {
 		canCheck,
@@ -100,12 +100,15 @@
 		try {
 			const d = await state.api.get<View>(path(`?page=${page}`));
 			view = d;
-			if (d.kind === 'table') rows = [...rows, ...(d.rows ?? [])];
-			else findings = [...findings, ...(d.findings ?? [])];
+			// порция не повторяет уже показанное (состав мог сдвинуться между порциями): повтор ключа ломал бы список
+			if (d.kind === 'table') {
+				const seen = new Set(page ? rows.map((r) => r.document_id) : []);
+				rows = [...(page ? rows : []), ...(d.rows ?? []).filter((r) => !seen.has(r.document_id))];
+			} else findings = [...(page ? findings : []), ...(d.findings ?? [])]; // у находок ключ — место в списке
 			error = '';
 		} catch (e) {
 			if (view) caseToast(errorText(S, e), true);
-			else error = (e as Error).message;
+			else error = reasonText(S, e);
 		} finally {
 			busy = false;
 		}
@@ -147,6 +150,8 @@
 		estimate: unknown;
 		note: string;
 		warn: boolean;
+		/** Заголовок своего окна подтверждения: дочитывание и перечитывание — не «Запустить проход?». */
+		title: string;
 		/** У какого пояснения стоит кнопка: остаток прохода, изменившееся дело, прежняя версия чтения. */
 		where: 'rest' | 'stale' | 'reader';
 	};
@@ -157,9 +162,12 @@
 			out.push({
 				text: S.tables_catch_up,
 				query: '',
-				estimate: 0,
+				// цены этого действия сервис не отдаёт: она неизвестна (а не ноль) — перед платным действием своё окно
+				// с честной строкой «оценки нет» (решение владельца: цена неизвестна — подтверждение нужно)
+				estimate: null,
 				note: '',
 				warn: false,
+				title: S.runs_confirm_catch_up_title,
 				where: 'stale'
 			});
 		if (!s.stale && s.reader_stale)
@@ -168,7 +176,7 @@
 					? fmt(S.runs_reread_usd, { usd: usd(s.reread.estimate_usd) })
 					: S.tables_reread,
 				query: '',
-				estimate: s.reread ? s.reread.estimate_usd : 0,
+				estimate: s.reread ? s.reread.estimate_usd : null,
 				note: s.reread
 					? fmt(S.runs_confirm_rest, {
 							title: title(s),
@@ -177,6 +185,7 @@
 						})
 					: '',
 				warn: false,
+				title: S.runs_confirm_reread_title,
 				where: 'reader'
 			});
 		if (!s.stale && s.rest) {
@@ -193,6 +202,7 @@
 					pages: s.rest.pages
 				}),
 				warn: raise,
+				title: S.runs_confirm_resume_title,
 				where: 'rest'
 			});
 		}
@@ -443,7 +453,7 @@
 												>
 											{/if}
 										</div>
-										{#if a.quote && opened.has(`${key}:${n}`)}<p class="q sm">{a.quote}</p>{/if}
+										{#if a.quote && opened.has(`${key}:${n}`)}<p class="q pw sm">{a.quote}</p>{/if}
 										{#if a.numbers_unconfirmed}
 											<span class="pill w t box"
 												><Icon name="al" />{S.tables_numbers_unconfirmed}</span
@@ -506,7 +516,7 @@
 							<SheetRef label={f.label || S.tables_col_sheet} href={place(f)} />
 							{#if f.document}<span class="mut aw">· {f.document}</span>{/if}
 						</div>
-						<p class="q">{f.quote}</p>
+						<p class="q pw">{f.quote}</p>
 						{#if f.also?.length}
 							<p class="sm mut">
 								{S.tables_also_copies}
@@ -548,7 +558,7 @@
 
 <FormDialog
 	bind:open={confirmOpen}
-	title={S.runs_confirm_title}
+	title={pending?.title ?? S.runs_confirm_title}
 	{S}
 	submit={() => (pending ? catchUp(pending) : undefined)}
 	submitText={pending?.text ?? ''}
@@ -559,7 +569,11 @@
 		{#if sw?.rest?.raise_to_usd != null && pending.warn}<p class="sm fg2">
 				{restText(sw.rest, S)}
 			</p>{/if}
-		<p class="md bb">{fmt(S.runs_confirm_price, { usd: usd(pending.estimate) })}</p>
+		<p class="md bb" data-testid="case-table-confirm-price">
+			{pending.estimate == null || !Number.isFinite(Number(pending.estimate))
+				? S.runs_confirm_no_price
+				: fmt(S.runs_confirm_price, { usd: usd(pending.estimate) })}
+		</p>
 	{/if}
 </FormDialog>
 
@@ -580,6 +594,19 @@
 </FormDialog>
 
 <style>
+	/* длинное действие («Дочитать таблицу по изменившимся листам») на узком экране переносится по словам: кнопка в
+	   одну строку раздвигала страницу вбок (ревью 20.11) */
+	@media (max-width: 720px) {
+		.act :global(.btn) {
+			max-width: 100%;
+			height: auto;
+			padding-top: 10px;
+			padding-bottom: 10px;
+			white-space: normal;
+			text-align: center;
+		}
+	}
+
 	.act {
 		align-items: center;
 	}

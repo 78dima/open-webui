@@ -28,19 +28,15 @@
 		);
 		(field ?? dialog).focus();
 	}
-	// нажатие на затемнение (сам <dialog>, не его содержимое) закрывает окно
-	const backdrop = (ev: MouseEvent) => {
-		if (ev.target === dialog) open = false;
-	};
+	// Нажатие на затемнение окно НЕ закрывает (как на прежней странице): закрывают «Отмена», Esc и удачное
+	// сохранение. Иначе введённое терялось от промаха и от протяжки мыши из поля за край окна (ревью 20.11).
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
 <dialog
 	bind:this={dialog}
 	tabindex="-1"
 	aria-labelledby={labelledby}
 	on:close={() => (open = false)}
-	on:click={backdrop}
 >
 	<div class="dlg">
 		{#if title}<h2 id={labelledby}>{title}</h2>{/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorText, reasonText } from '$lib/custom/case/sections';
 	// ai-dvokat: страница дела (вариант «Г»): каркас — меню разделов, шапка, «Открыть лист», «В чат дела» — и выбранный
 	// раздел (макеты K-overview, K-menu-phone и разделов). Один экземпляр на всё время, пока открыто дело: раздел
 	// меняется (у каждого свой адрес), а обзор, его переспрашивание и идущие загрузки остаются. Состав меню — по
@@ -108,7 +109,7 @@
 			await state.createCase();
 			caseToast(S.case_created);
 		} catch (error) {
-			caseToast(fmt(S.error_generic, { detail: (error as CaseApiError)?.message ?? '' }), true);
+			caseToast(errorText(S, error), true);
 		} finally {
 			creating = false;
 		}
@@ -205,7 +206,7 @@
 							? S.login_needed
 							: $bootError.kind === 'network'
 								? S.my_cases_error_network_title
-								: fmt(S.section_error, { detail: $bootError.message })}
+								: fmt(S.section_error, { detail: reasonText(S, $bootError) })}
 						testid="case-boot-error"
 					>
 						<button type="button" class="btn big p act" on:click={() => state.start()}

@@ -209,7 +209,8 @@ test.describe('«Тома», 1280', () => {
 		await dlg.getByRole('button', { name: S.close }).click();
 		mode = 'fail';
 		await v.getByRole('button', { name: S.history }).first().click();
-		await expect(dlg.getByRole('alert')).toHaveText('сбой сервиса');
+		await expect(dlg.getByRole('alert')).toHaveText('Не получилось: сбой сервиса');
+		await expect(dlg.getByRole('button', { name: S.retry })).toHaveCount(1);
 	});
 
 	test('«только чтение»: ни одной кнопки записи — только «История»', async ({ page }) => {

@@ -73,7 +73,10 @@ await api('POST', `/api/v1/folders/${folder}/access/update`, owner.token, {
 // то же дело — для проверки остальных разделов (live-sections.mjs)
 writeFileSync(join(dirname(arg('state')), 'case.json'), JSON.stringify({ folder }));
 const CASE = `/case/${folder}`;
-const OLD = `/legal-tools/case/${folder}`;
+// прежние страницы сервиса: по своему адресу, а при включённой переадресации — у сервиса прежнего образа рядом
+const OLD_BASE = process.env.LIVE_OLD_BASE || '/legal-tools';
+const OLD = `${OLD_BASE}/case/${folder}`;
+const SHEETS = `/legal-tools/case/${folder}`; // лист — страница сервиса ветки
 const overviewApi = async (token = owner.token) => (await api('GET', `/legal-tools/api/cases/${folder}`, token)).data;
 
 const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined });
@@ -319,7 +322,7 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 	await form.locator('select[name="t"]').selectOption('1');
 	await form.locator('input[name="l"]').fill('л.д. 5');
 	await form.getByRole('button', { name: 'Открыть' }).click();
-	await page.waitForURL((url) => url.pathname.startsWith(`${OLD}/`), { timeout: 30000 });
+	await page.waitForURL((url) => url.pathname.startsWith(`${SHEETS}/`), { timeout: 30000 });
 	await page.waitForSelector('body[data-page="sheet"], body[data-page="ref"], main');
 	ok(/\/p\/\d+|\/ref/.test(new URL(page.url()).pathname), `«Открыть лист»: «т. 1, л.д. 5» → ${new URL(page.url()).pathname.replace(folder, '<папка>')}${new URL(page.url()).search} («${(await page.title()).slice(0, 50)}»)`);
 

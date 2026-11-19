@@ -5,7 +5,7 @@
 	import { onMount } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { size } from '$lib/custom/case/casepage';
-	import { casePath, errorText } from '$lib/custom/case/sections';
+	import { casePath, errorText, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import Icon from './Icon.svelte';
@@ -33,7 +33,7 @@
 			files = d?.files ?? [];
 			error = '';
 		} catch (e) {
-			error = (e as Error).message;
+			error = reasonText(S, e);
 		}
 	}
 	onMount(() => void load());
@@ -46,6 +46,7 @@
 			});
 			caseToast(S.folder_file_added);
 			await load();
+			void state.reloadFolderFiles(); // пункт меню и его число — сразу (последний файл ушёл в дело — пункта нет)
 			void state.refresh();
 		} catch (e) {
 			caseToast(errorText(S, e), true);

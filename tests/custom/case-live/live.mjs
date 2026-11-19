@@ -13,6 +13,8 @@ const state = JSON.parse(readFileSync(arg('state'), 'utf8'));
 const out = arg('out');
 if (out) mkdirSync(out, { recursive: true });
 const base = state.base;
+// прежние страницы сервиса: по своему адресу, а при включённой переадресации — у сервиса прежнего образа рядом
+const OLD_BASE = process.env.LIVE_OLD_BASE || '/legal-tools';
 let fails = 0;
 const ok = (cond, what) => {
 	console.log(`${cond ? 'OK  ' : 'FAIL'} ${what}`);
@@ -161,12 +163,12 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 	const open = visible(page, 'case-row').filter({ hasText: 'Гусева М. О. — раздел имущества' }).getByRole('link', { name: 'Открыть дело' });
 	ok((await open.getAttribute('href')) === `/case/${guseva}`, '«Открыть дело» ведёт на страницу дела форка');
 	// прежняя страница дела сервиса жива по своему адресу
-	const oldCase = await page.goto(`${base}/legal-tools/case/${guseva}`);
+	const oldCase = await page.goto(`${base}${OLD_BASE}/case/${guseva}`);
 	await page.waitForSelector('body[data-page="case"]');
 	ok(oldCase.status() === 200 && (await page.title()).includes('Гусева'), `прежняя страница дела /legal-tools/case/<папка> работает: «${await page.title()}»`);
 
 	// прежняя страница «Мои дела» сервиса жива (старый адрес)
-	const old = await page.goto(base + '/legal-tools/case/');
+	const old = await page.goto(`${base}${OLD_BASE}/case/`);
 	await page.waitForSelector('table');
 	ok(old.status() === 200 && (await page.locator('h1').textContent()) === 'Мои дела' && (await page.locator('tbody tr').count()) === 8,
 		'прежняя страница /legal-tools/case/ работает как была (8 папок таблицей)');
@@ -212,8 +214,8 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 	page.on('response', (r) => r.url().endsWith('/legal-tools/api/cases/access') && asked.push(r.status()));
 	await page.locator('#sidebar-new-chat-button').filter({ visible: true }).first().waitFor({ timeout: 30000 });
 	await page.waitForTimeout(1500);
-	ok((await visible(page, 'custom-cases-link').count()) === 0 && asked.length >= 1 && asked.every((x) => x === 200),
-		`юрист вне группы: чат открыт, пункта «Дела» в панели нет (сервис ответил «нет», запросов: ${asked.length})`);
+	ok((await visible(page, 'custom-cases-link').count()) === 0 && asked.length >= 1 && asked.every((x) => x === 404),
+		`юрист вне группы: чат открыт, пункта «Дела» в панели нет (сервис ответил 404, как на всех путях дела; запросов: ${asked.length})`);
 	await context.close();
 }
 

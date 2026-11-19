@@ -4,7 +4,7 @@
 	// фразой под полем, а не всплывающим сообщением. Поведение — прежний `sections/whatsnew.js` (`extractForm`).
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { saveBlob } from '$lib/custom/case/loader';
-	import { casePath } from '$lib/custom/case/sections';
+	import { casePath, reasonText } from '$lib/custom/case/sections';
 	import Icon from './Icon.svelte';
 
 	export let state: CaseState;
@@ -31,7 +31,7 @@
 			const file = await state.api.download(casePath(state, `/extract.pdf?${q}`));
 			saveBlob(file.blob, file.name || 'extract.pdf');
 		} catch (e) {
-			error = (e as Error).message || S.error_network;
+			error = reasonText(S, e);
 		} finally {
 			busy = false;
 		}

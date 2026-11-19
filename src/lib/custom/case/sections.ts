@@ -27,9 +27,18 @@ export function query(fields: Record<string, unknown>): string {
 	const text = q.toString();
 	return text ? `?${text}` : '';
 }
-/** «Не получилось: {фраза сервера}» — строка ошибки формы и всплывающего сообщения. */
+/** Причина отказа словами: фраза сервиса; её нет (обрыв связи, ответ не от сервиса — 502 прокси, не JSON) — что
+ *  случилось. Пустой причины не бывает: «Не получилось:» без слов и вечная «Загрузка…» — находка ревью 20.11. */
+export function reasonText(S: Strings, e: unknown): string {
+	const x = e as { message?: string; kind?: string; status?: number } | null;
+	if (typeof e === 'string' && e) return e;
+	if (x?.message) return x.message;
+	if (x?.kind === 'network' || x?.status === 0) return S.error_no_link;
+	return x?.status ? fmt(S.error_status, { status: x.status }) : S.error_no_answer;
+}
+/** «Не получилось: {причина}» — строка ошибки формы и всплывающего сообщения. */
 export const errorText = (S: Strings, e: unknown): string =>
-	fmt(S.error_generic, { detail: (e as { message?: string } | null)?.message ?? '' });
+	fmt(S.error_generic, { detail: reasonText(S, e) });
 
 // ---- файлы и тома ----
 

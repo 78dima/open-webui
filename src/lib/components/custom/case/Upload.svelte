@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PauseNote from './PauseNote.svelte';
+	import { errorText } from '$lib/custom/case/sections';
 	// ai-dvokat: «Загрузить материалы» (макет K-upload; опись § 2.4). Вид — «Г», поведение — прежней страницы без
 	// потерь: его держит движок `uploads.ts` (части, два файла одновременно, повтор, пауза, продолжение после закрытия
 	// страницы), он живёт в общем макете дела и не останавливается при переходе между разделами.
@@ -65,7 +67,7 @@
 		try {
 			await uploads.cancelServer(id);
 		} catch (error) {
-			caseToast(fmt(S.error_generic, { detail: (error as CaseApiError)?.message ?? '' }), true);
+			caseToast(errorText(S, error), true);
 		}
 	}
 
@@ -95,6 +97,7 @@
 	$: volumesLink = link(S.upload_goes_to_volumes, 'volumes');
 </script>
 
+<PauseNote {state} {S} />
 <section
 	class="card dash g12 drop"
 	class:over
@@ -301,7 +304,7 @@
 						<span class="sm b c-stop aw" role="alert"
 							>{u.assembleFailed
 								? S.upload_complete_failed
-								: fmt(S.upload_failed, { detail: u.error })}</span
+								: fmt(S.upload_failed, { detail: u.error || S.error_no_answer })}</span
 						>
 					{:else if u.state === 'paused'}
 						<span class="sm soft">{fmt(S.upload_paused_g, progress(u))}</span>
@@ -341,7 +344,7 @@
 				<span class="pill box" class:s={bad} class:i={!bad && u.phase !== 'done_nofile'}>
 					{#if bad}<Icon name="al" />{:else if u.phase !== 'done_nofile'}<Icon
 							name="clock"
-						/>{/if}{fmt(S[serverTextKey(u.phase)], { error: u.error || '' })}</span
+						/>{/if}{fmt(S[serverTextKey(u.phase, u.filename)], { error: u.error || '' })}</span
 				>
 			</div>
 		{/each}

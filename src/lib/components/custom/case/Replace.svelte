@@ -1,4 +1,5 @@
 <script lang="ts">
+	import StaleNote from './StaleNote.svelte';
 	// ai-dvokat: «Замена тома» (макет K-replace; опись § 2.12): чем повторно загруженный файл тома отличается от
 	// прежнего — плитки счёта, листы добавленные, не найденные, изменённые, не сверенные; «Заменить файл тома» со
 	// своим окном подтверждения (право записи). Ручки `GET …/deltas`, `POST …/deltas/<id>/replace`. Перечитывается
@@ -7,7 +8,7 @@
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { splitLabel, when } from '$lib/custom/case/casepage';
 	import { createLoader } from '$lib/custom/case/loader';
-	import { casePath, sheetHref } from '$lib/custom/case/sections';
+	import { casePath, sheetHref, reasonText } from '$lib/custom/case/sections';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
@@ -128,10 +129,13 @@
 
 <p class="md lead">{S.replace_hint}</p>
 
+{#if $error && $answer}<StaleNote {S} error={$error} retry={() => loader.refresh(true)} />{/if}
 {#if $error && !$answer}
 	<section class="card" data-testid="case-replace-error">
 		<div class="col g12 as">
-			<span class="pill s"><Icon name="al" />{fmt(S.section_error, { detail: $error })}</span>
+			<span class="pill s"
+				><Icon name="al" />{fmt(S.section_error, { detail: reasonText(S, $error) })}</span
+			>
 			<button type="button" class="btn big" on:click={() => loader.refresh(true)}>{S.retry}</button>
 		</div>
 	</section>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import StaleNote from './StaleNote.svelte';
 	// ai-dvokat: «Сроки» (макет K-deadlines; опись § 2.10): срок — черновик, пока юрист его не подтвердил; основание —
 	// лист и цитата, расчёт и норма — как записаны. «Подтвердить» / «Снять подтверждение», «Править», «Убрать» /
 	// «Вернуть», «Добавить срок», история и откат. Ручки `GET …/deadlines?hidden=true`, `PATCH …/deadlines/<id>`
@@ -10,7 +11,7 @@
 	import { useHead } from '$lib/custom/case/head';
 	import { createLoader } from '$lib/custom/case/loader';
 	import { day, deadlineDates, quoteMore } from '$lib/custom/case/mapcore';
-	import { casePath, errorText } from '$lib/custom/case/sections';
+	import { casePath, errorText, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
@@ -55,8 +56,10 @@
 	$: rows = $answer?.deadlines ?? [];
 	$: canWrite = !!$answer?.can_write;
 
-	const patch = async (id: number, body: unknown) =>
+	const patch = async (id: number, body: unknown) => {
 		loader.set(await state.api.request<Answer>('PATCH', casePath(state, `/deadlines/${id}`), body));
+		void state.refresh(); // счётчик «Сроки» в меню и «Ближайшие сроки» обзора — сразу, не со следующим опросом
+	};
 	const act = (id: number, body: unknown) =>
 		patch(id, body).catch((e) => caseToast(errorText(S, e), true));
 	const edition = (x: Deadline) =>
@@ -132,10 +135,13 @@
 	<p class="grow">{S.map_deadlines_hint}</p>
 </div>
 
+{#if $error && $answer}<StaleNote {S} error={$error} retry={() => loader.refresh(true)} />{/if}
 {#if $error && !$answer}
 	<section class="card" data-testid="case-deadlines-error">
 		<div class="col g12 as">
-			<span class="pill s"><Icon name="al" />{fmt(S.section_error, { detail: $error })}</span>
+			<span class="pill s"
+				><Icon name="al" />{fmt(S.section_error, { detail: reasonText(S, $error) })}</span
+			>
 			<button type="button" class="btn big" on:click={() => loader.refresh(true)}>{S.retry}</button>
 		</div>
 	</section>
@@ -242,14 +248,31 @@
 	testid="case-deadline-dialog"
 >
 	<label class="lbl"
-		>{S.map_d_title}<input class="in" type="text" maxlength="300" bind:value={form.title} /></label
+		>{S.map_d_title}<input
+			class="in"
+			type="text"
+			maxlength="300"
+			required
+			bind:value={form.title}
+		/></label
 	>
 	{#if win?.kind === 'add'}
 		<label class="lbl"
-			>{S.map_d_ref}<input class="in" type="text" maxlength="200" bind:value={form.ref} /></label
+			>{S.map_d_ref}<input
+				class="in"
+				type="text"
+				maxlength="200"
+				required
+				bind:value={form.ref}
+			/></label
 		>
 		<label class="lbl"
-			>{S.map_d_quote}<textarea class="in" rows="3" maxlength="2000" bind:value={form.quote}
+			>{S.map_d_quote}<textarea
+				class="in"
+				rows="3"
+				maxlength="2000"
+				required
+				bind:value={form.quote}
 			></textarea></label
 		>
 	{/if}
@@ -263,13 +286,13 @@
 	</div>
 	{#if win?.kind === 'add'}
 		<label class="lbl"
-			>{S.map_d_calc}<input
+			>{S.map_d_calc}<textarea
 				class="in"
-				type="text"
+				rows="2"
 				maxlength="2000"
 				placeholder={S.deadline_calc_placeholder}
 				bind:value={form.calc}
-			/></label
+			></textarea></label
 		>
 	{/if}
 </FormDialog>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import StaleNote from './StaleNote.svelte';
 	// ai-dvokat: «Хронология» (макет K-chronology; опись § 2.9): события дела с датой слева, статусом и линией —
 	// чтение модели; цитата — дословный текст листа под «Цитата». Фильтр в одну строку (линия, слова, лицо), период и
 	// убранные — по кнопке; порции сервиса под «Показать ещё»; правка, «Убрать» / «Вернуть», история и откат.
@@ -19,7 +20,7 @@
 		statusWord,
 		type MapState
 	} from '$lib/custom/case/mapcore';
-	import { casePath, errorText, query } from '$lib/custom/case/sections';
+	import { casePath, errorText, query, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
@@ -76,15 +77,21 @@
 
 	const { data } = state;
 	// поля формы и запрос, который сейчас показан: запрос меняется по «Найти» и по выбору линии
-	let form: Query = {
-		chronology: '',
-		person: '',
-		words: '',
-		date_from: '',
-		date_to: '',
-		hidden: false
-	};
-	let asked: Query = { ...form };
+	// отбор живёт, пока открыта страница дела (уход в другой раздел его не сбрасывает)
+	const kept = state.keep('chronology', {
+		form: {
+			chronology: '',
+			person: '',
+			words: '',
+			date_from: '',
+			date_to: '',
+			hidden: false
+		} as Query,
+		asked: null as Query | null
+	});
+	let form: Query = { ...kept.form };
+	let asked: Query = { ...(kept.asked ?? form) };
+	onDestroy(() => Object.assign(kept, { form: { ...form }, asked: { ...asked } }));
 	let extra: Fact[] = []; // следующие порции той же выборки
 	let nextPage: number | null = null;
 	const loader = createLoader(
@@ -118,7 +125,9 @@
 			const d = await state.api.get<Answer>(
 				casePath(state, `/facts${query({ ...asked, page: String(nextPage) })}`)
 			);
-			extra = [...extra, ...d.facts];
+			// порция не повторяет уже показанное: состав выборки мог сдвинуться между порциями (правка, новые записи)
+			const seen = new Set(rows.map((f) => f.id));
+			extra = [...extra, ...d.facts.filter((f) => !seen.has(f.id))];
 			nextPage = d.next_page ?? null;
 		} catch (e) {
 			caseToast(errorText(S, e), true);
@@ -128,6 +137,16 @@
 	}
 
 	let filterOpen = false;
+	// период и «с убранными» действуют на выборку — пока они заданы (в форме или в показанном запросе), блок с ними
+	// раскрыт: свёрнутый блок с действующим отбором не оставлял признака (ревью 20.11)
+	$: periodSet = !!(
+		form.date_from ||
+		form.date_to ||
+		form.hidden ||
+		asked.date_from ||
+		asked.date_to ||
+		asked.hidden
+	);
 	let opened = new Set<number>();
 	const flip = (id: number) => {
 		const next = new Set(opened);
@@ -248,13 +267,13 @@
 		<button
 			type="button"
 			class="btn s"
-			aria-expanded={filterOpen}
+			aria-expanded={filterOpen || periodSet}
 			on:click={() => (filterOpen = !filterOpen)}
-			>{S.map_filter_more}<Icon name={filterOpen ? 'u' : 'd'} /></button
+			>{S.map_filter_more}<Icon name={filterOpen || periodSet ? 'u' : 'd'} /></button
 		>
 		<button type="submit" class="btn s p">{S.map_find}</button>
 	</div>
-	{#if filterOpen}
+	{#if filterOpen || periodSet}
 		<div class="row g12 ae" data-testid="case-facts-period">
 			<label class="lbl"
 				>{S.map_filter_from}<input class="in s" type="date" bind:value={form.date_from} /></label
@@ -269,10 +288,13 @@
 	{/if}
 </form>
 
+{#if $error && $answer}<StaleNote {S} error={$error} retry={() => loader.refresh(true)} />{/if}
 {#if $error && !$answer}
 	<section class="card" data-testid="case-facts-error">
 		<div class="col g12 as">
-			<span class="pill s"><Icon name="al" />{fmt(S.section_error, { detail: $error })}</span>
+			<span class="pill s"
+				><Icon name="al" />{fmt(S.section_error, { detail: reasonText(S, $error) })}</span
+			>
 			<button type="button" class="btn big" on:click={() => loader.refresh(true)}>{S.retry}</button>
 		</div>
 	</section>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PauseNote from './PauseNote.svelte';
+	import StaleNote from './StaleNote.svelte';
 	// ai-dvokat: «Таблицы и проходы» (макет K-tables; опись § 2.13): перечень проходов дела и запуск набора со
 	// страницы — набор, охват (всё дело или тома), факты охвата и цена на кнопке; окно подтверждения — только если
 	// цена больше 1 USD (решение владельца). Ручки `GET …/tables`, `GET …/tables/scope?preset=&volumes=`,
@@ -8,7 +10,7 @@
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { when, money } from '$lib/custom/case/casepage';
 	import { createLoader } from '$lib/custom/case/loader';
-	import { casePath, errorText } from '$lib/custom/case/sections';
+	import { casePath, errorText, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import {
 		coverage,
@@ -60,15 +62,21 @@
 		.filter((x): x is string => !!x);
 	$: spent = $data?.spent;
 
-	let preset = '';
-	let volumes: string[] = [];
+	// набор и тома выбора живут, пока открыта страница дела (уход в другой раздел их не сбрасывает)
+	const kept = state.keep('tables', { preset: '', volumes: [] as string[] });
+	let preset = kept.preset;
+	let volumes: string[] = kept.volumes;
+	onDestroy(() => Object.assign(kept, { preset, volumes }));
 	$: if (presets.length && !presets.some((p) => p.name === preset)) preset = presets[0].name;
 	$: volumes = volumes.filter((v) => volumeLabels.includes(v));
 	$: chosen = presets.find((p) => p.name === preset);
 
 	// факты охвата и оценка цены до запуска
+	// Пока оценка нового выбора не пришла, прежней цены на кнопке нет и кнопка не нажимается: запрос ушёл бы с новым
+	// выбором под прежней ценой и без окна. Оценка не пришла вовсе — цена неизвестна, перед запуском своё окно.
 	let scope: Scope | null = null;
 	let scopeError = '';
+	let estimating = false;
 	let seq = 0;
 	let asked = '';
 	$: if (canWrite && preset && asked !== `${preset}|${volumes.join(',')}`)
@@ -76,13 +84,18 @@
 	async function estimate(p: string, v: string[]) {
 		asked = `${p}|${v.join(',')}`;
 		const mine = ++seq;
+		[scope, scopeError, estimating] = [null, '', true];
 		try {
 			const f = await state.api.get<Scope>(casePath(state, `/tables/scope${scopeQuery(p, v)}`));
 			if (mine === seq) [scope, scopeError] = [f, ''];
 		} catch (e) {
-			if (mine === seq) [scope, scopeError] = [null, (e as Error).message];
+			if (mine === seq) [scope, scopeError] = [null, reasonText(S, e)];
+		} finally {
+			if (mine === seq) estimating = false;
 		}
 	}
+	/** Цена запуска известна (оценка пришла и это число) — иначе перед запуском подтверждение. */
+	$: priced = !!scope && scope.estimate_usd != null && Number.isFinite(Number(scope.estimate_usd));
 	const toggleVolume = (label: string, on: boolean) =>
 		(volumes = on ? [...volumes, label] : volumes.filter((v) => v !== label));
 
@@ -99,8 +112,9 @@
 		void state.refresh();
 	}
 	async function press() {
-		if (starting) return;
-		if (scope?.pages && needsConfirm(scope.estimate_usd)) {
+		if (starting || estimating) return;
+		// оценки нет (не пришла или не число) либо она больше 1 USD — своё окно; читать нечего — платить не за что
+		if (!scope || (scope.pages && needsConfirm(scope.estimate_usd))) {
 			confirmOpen = true;
 			return;
 		}
@@ -113,9 +127,10 @@
 			starting = false;
 		}
 	}
-	$: startText = scope?.pages
-		? fmt(S.runs_start_usd, { usd: usd(scope.estimate_usd) })
-		: S.tables_start;
+	$: startText =
+		scope?.pages && priced
+			? fmt(S.runs_start_usd, { usd: usd(scope.estimate_usd) })
+			: S.tables_start;
 	/** Готовый проход на нынешнем составе дела и нынешней версии чтения — им и пользуются: его название — ссылка,
 	 *  «Открыть» у него главная (макет K-tables); у идущих, неполных и устаревших — обычная. */
 	const current = (sw: Sweep) => sw.status === 'done' && !sw.stale && !sw.reader_stale;
@@ -123,12 +138,16 @@
 		sw.windows_total ? Math.round((100 * (sw.windows_done ?? 0)) / sw.windows_total) : 0;
 </script>
 
+<PauseNote {state} {S} />
 <p class="md intro">{S.runs_intro}</p>
 
+{#if $error && $answer}<StaleNote {S} error={$error} retry={() => loader.refresh(true)} />{/if}
 {#if $error && !$answer}
 	<section class="card" data-testid="case-tables-error">
 		<div class="col g12 as">
-			<span class="pill s"><Icon name="al" />{fmt(S.section_error, { detail: $error })}</span>
+			<span class="pill s"
+				><Icon name="al" />{fmt(S.section_error, { detail: reasonText(S, $error) })}</span
+			>
 			<button type="button" class="btn big" on:click={() => loader.refresh(true)}>{S.retry}</button>
 		</div>
 	</section>
@@ -237,7 +256,7 @@
 				<button
 					type="button"
 					class="btn big p"
-					disabled={starting}
+					disabled={starting || estimating}
 					on:click={press}
 					data-testid="case-tables-start">{startText}</button
 				>
@@ -257,10 +276,14 @@
 	title={S.runs_confirm_title}
 	{S}
 	submit={start}
-	submitText={startText}
+	submitText={scope?.pages && priced ? startText : S.runs_start_no_price}
 	testid="case-tables-confirm"
 >
-	{#if scope}
+	{#if !scope || !priced}
+		<!-- цена неизвестна: оценка не пришла — об этом сказано прямо -->
+		<p class="md">{chosen?.title ?? ''}</p>
+		<p class="md bb" data-testid="case-tables-confirm-price">{S.runs_confirm_no_price}</p>
+	{:else}
 		<p class="md">
 			{fmt(S.runs_confirm_scope, {
 				title: chosen?.title ?? '',

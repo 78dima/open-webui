@@ -147,7 +147,9 @@ export function applyFilter(
 	return folders.filter((f) => {
 		if (filter.scope === 'own' && f.shared) return false;
 		if (filter.scope === 'shared' && !f.shared) return false;
-		if (filter.section && !isAncestor(filter.section, f.id, parents)) return false;
+		// сама папка-раздел входит в свой отбор: у неё может быть своё дело (ревью 20.11 — она пропадала из списка)
+		if (filter.section && f.id !== filter.section && !isAncestor(filter.section, f.id, parents))
+			return false;
 		if (query && !fold(f.title).includes(query)) return false;
 		return true;
 	});

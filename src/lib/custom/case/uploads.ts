@@ -120,8 +120,12 @@ export const SERVER_TEXT: Record<string, string> = {
 	received: 'upload_status_received',
 	done_nofile: 'upload_status_done_nofile_g'
 };
-export const serverTextKey = (phase: string): string =>
-	SERVER_TEXT[phase] ?? 'upload_status_received';
+/** `filename` — имя принятого файла: у архива «новых файлов нет» значит и «архив пуст», поэтому для него остаётся
+ *  прежняя фраза («…такой файл уже есть в деле или архив пуст»); новая редакция верна только для одного файла. */
+export const serverTextKey = (phase: string, filename = ''): string =>
+	phase === 'done_nofile' && /\.zip$/i.test(filename)
+		? 'upload_status_done_nofile'
+		: (SERVER_TEXT[phase] ?? 'upload_status_received');
 export const serverFailed = (phase: string): boolean =>
 	phase === 'failed' || phase === 'intake_failed';
 

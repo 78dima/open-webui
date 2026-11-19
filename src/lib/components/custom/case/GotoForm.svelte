@@ -42,7 +42,6 @@
 			class="in {variant === 'bar' ? 's' : ''} sheet"
 			type="text"
 			name="l"
-			inputmode="numeric"
 			maxlength="32"
 			autocomplete="off"
 			enterkeyhint="go"

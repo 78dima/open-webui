@@ -41,8 +41,9 @@ test.describe('«Опись», 1280', () => {
 		await expect(rows.nth(4).locator('.pill')).toHaveText(S.inventory_date_unchecked);
 		await expect(rows.nth(5).locator('.pill')).toHaveText(S.inventory_uncovered);
 		await expect(rows.nth(6).locator('.pill')).toHaveText('пересекается с документом «Счёт на оплату»');
-		// документ из одного листа не делится
-		await expect(rows.nth(0).getByRole('button')).toHaveText([S.doc_edit]);
+		// «Разделить» — у каждого документа, как на прежней странице: делится ли он, решают страницы внутри него
+		// (лист с оборотом — две страницы при одном листе в счёте), а не счёт листов
+		await expect(rows.nth(0).getByRole('button')).toHaveText([S.doc_edit, S.doc_split]);
 		await expect(rows.nth(1).getByRole('button')).toHaveText([S.doc_edit, S.doc_split]);
 		await expect(page.getByTestId('case-inventory')).toContainText('показано 8 из 22');
 		await page.getByTestId('case-inventory-more').click();

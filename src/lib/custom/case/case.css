@@ -222,6 +222,8 @@ html.dark .cg{
 :where(.cg) .kv{display:grid;grid-template-columns:190px minmax(0,1fr);gap:6px 16px}
 :where(.cg) .kv>dt{color:var(--muted);font-size:13.5px}:where(.cg) .kv>dd{margin:0}
 :where(.cg) .q{padding:2px 0 2px 12px;border-left:3px solid var(--line);font-size:14px;color:var(--fg2)}
+/* цитата таблицы и находки — с переносами строк листа, как на прежней странице (в разметке — без пробелов вокруг текста) */
+:where(.cg) .q.pw{white-space:pre-wrap;overflow-wrap:anywhere}
 :where(.cg) .ref{font-weight:500;color:var(--link)}
 :where(.cg) .fn{font-size:12.5px;font-weight:400;color:var(--muted)}
 :where(.cg) .chipl{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:1px solid var(--btn-line);border-radius:999px;background:var(--card);font-size:14px;font-weight:500;color:var(--link)}
