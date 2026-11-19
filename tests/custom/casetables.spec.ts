@@ -167,7 +167,9 @@ test.describe('открытая таблица, 1280', () => {
 		await expect(cell).toContainText('Лебедева А. В., 14.11.2026 — сверено с оригиналом');
 		expect(calls.filter((c) => c.method === 'PUT').at(-1)!.body).toMatchObject({ checked: true, note: 'сверено с оригиналом' });
 		refuse = true;
-		await box.uncheck();
+		// нажатие, а не uncheck(): страница сама возвращает отметку при отказе сервиса, а uncheck() требует, чтобы после
+		// нажатия отметка была снята, — под нагрузкой отказ приходил раньше его проверки, и тест падал (19.11, 2 из 40)
+		await box.click();
 		await expect(page.getByText(/Не получилось: /)).toBeVisible();
 		await expect(box).toBeChecked();
 		// «копий не найдено» отметить можно, пустую ячейку кода без права — нет
