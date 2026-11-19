@@ -43,8 +43,10 @@ test('русские слова в компонентах — только в к
 	const found = caseCodeFiles(['.svelte', '.ts'])
 		.map((f) => [short(f), stripped(read(f)).match(/[А-Яа-яЁё][А-Яа-яЁё ]*/g) ?? []] as const)
 		.filter(([, words]) => words.length)
-		// единственное исключение — нормализация «ё» в поиске по названию
+		// не фразы: нормализация «ё» в поиске по названию; разбор подписи листа сервиса («т. 4, файл «…», стр. 120») и
+		// единицы размера файла — они и на прежней странице записаны в коде (constraints.md § 3)
 		.map(([f, words]) => [f, words.filter((w) => !(f.endsWith('mycases.ts') && ['ё', 'е'].includes(w)))] as const)
+		.map(([f, words]) => [f, words.filter((w) => !(f.endsWith('casepage.ts') && ['файл ', 'стр', 'т', 'КБ', 'МБ'].includes(w)))] as const)
 		.filter(([, words]) => words.length);
 	expect(found).toEqual([]);
 });

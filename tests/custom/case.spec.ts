@@ -484,15 +484,52 @@ test.describe('телефон, 360', () => {
 	});
 });
 
-test('пункт «Дела» в левой панели чата виден только при включённом выключателе', async ({ page }) => {
-	await page.goto('/?cases-link');
-	await page.waitForFunction(() => typeof (window as any).setConfig === 'function');
+test('пункт «Дела» в левой панели чата: выключатель включён и сервис подтвердил доступ; сервис не ответил — пункта нет', async ({
+	page
+}) => {
+	let answer: 'yes' | 'no' | 'down' | 'html' = 'yes';
+	const asked: Record<string, string>[] = [];
+	await page.addInitScript(() => localStorage.setItem('token', 'session-token'));
+	await page.route('**/legal-tools/api/cases/access', (r) => {
+		asked.push(r.request().headers());
+		if (answer === 'down') return r.abort('internetdisconnected');
+		if (answer === 'html') return r.fulfill({ contentType: 'text/html', body: '<!doctype html><html></html>' });
+		return r.fulfill({ json: { case: answer === 'yes' } });
+	});
+	const open = async (config: unknown, user: unknown = { id: 'u-1', role: 'user' }) => {
+		await page.goto('/?cases-link');
+		await page.waitForFunction(() => typeof (window as any).setConfig === 'function');
+		await page.evaluate(([c, u]) => {
+			(window as any).setUser(u);
+			(window as any).setConfig(c);
+		}, [config, user]);
+	};
 	const link = page.getByTestId('custom-cases-link');
+	// выключатель снят или не строгое true — сервис даже не спрашивается
 	for (const config of [undefined, {}, { custom_ui: {} }, { custom_ui: { case: 'true' } }, { custom_ui: { case: false } }]) {
-		await page.evaluate((value) => (window as any).setConfig(value), config);
+		await open(config);
+		await page.waitForTimeout(100);
 		await expect(link).toHaveCount(0);
 	}
-	await page.evaluate(() => (window as any).setConfig({ custom_ui: { case: true } }));
+	expect(asked).toEqual([]);
+	await open({ custom_ui: { case: true } });
 	await expect(link).toHaveText('Дела');
 	await expect(link).toHaveAttribute('href', '/case');
+	expect(asked).toHaveLength(1);
+	expect(asked[0].authorization).toBe('Bearer session-token');
+	// один вопрос за сеанс: повторное появление панели сервис не спрашивает
+	await page.evaluate(() => (window as any).setConfig({ custom_ui: { case: true, brand: {} } }));
+	await expect(link).toHaveCount(1);
+	expect(asked).toHaveLength(1);
+	// вне группы выпуска, сервис не ответил, по пути сервиса ответил не он, нет входа — пункта нет
+	for (const next of ['no', 'down', 'html'] as const) {
+		answer = next;
+		await open({ custom_ui: { case: true } });
+		await page.waitForTimeout(300);
+		await expect(link).toHaveCount(0);
+	}
+	answer = 'yes';
+	await open({ custom_ui: { case: true } }, null);
+	await page.waitForTimeout(200);
+	await expect(link).toHaveCount(0);
 });
