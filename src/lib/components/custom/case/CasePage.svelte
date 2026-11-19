@@ -18,6 +18,7 @@
 	import { caseToast } from '$lib/custom/case/toast';
 	import CaseNav from './CaseNav.svelte';
 	import CheckSheets from './CheckSheets.svelte';
+	import Copies from './Copies.svelte';
 	import Dialog from './Dialog.svelte';
 	import GotoForm from './GotoForm.svelte';
 	import Icon from './Icon.svelte';
@@ -237,6 +238,8 @@
 					<Volumes {state} {S} {hrefOf} />
 				{:else if section === 'inventory'}
 					<Inventory {state} {S} />
+				{:else if section === 'copies'}
+					<Copies {state} {S} />
 				{:else if section === 'replace'}
 					<Replace {state} {S} />
 				{:else if section === 'extract'}

@@ -194,6 +194,9 @@ const CASE_SCENES = {
 	} },
 	replace: { data: () => fixture('case-overview'), section: 'replace', routes: { deltas: 'deltas' } },
 	extract: { data: () => fixture('case-overview'), section: 'extract' },
+	copies: { data: () => fixture('case-overview'), section: 'copies', routes: { copies: 'copies' }, after: async (page) => {
+		await page.getByTestId('case-copy').first().getByRole('button').first().click();
+	} },
 	inventory: { data: () => fixture('case-overview'), section: 'inventory', routes: { 'documents?**': 'case-documents-marks' }, after: async (page, width) => {
 		if (width > 720) for (const n of [3, 4]) await page.getByTestId('case-doc').nth(n).getByRole('checkbox').check();
 	} }
@@ -298,7 +301,8 @@ const CASE_PAIRS = [
 	...trio('K-volumes', 'volumes', 2060, 3200),
 	...trio('K-replace', 'replace', 1720, 2900),
 	...trio('K-extract', 'extract', 1020, 1300),
-	...trio('K-inventory', 'inventory', 1460, 3100)
+	...trio('K-inventory', 'inventory', 1460, 3100),
+	...trio('K-copies', 'copies', 1380, 2300)
 ];
 const STATUS = ['status-empty', 'status-ready', 'status-paused', 'status-stopped', 'status-offline', 'status-readonly', 'no-case'];
 const set = arg('set', 'all');

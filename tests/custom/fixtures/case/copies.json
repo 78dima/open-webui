@@ -1,0 +1,485 @@
+{
+ "copies": [
+  {
+   "id": 3,
+   "similarity": 0.94,
+   "a": {
+    "document_id": 74,
+    "title": "Счёт на оплату",
+    "doc_type": "счёт",
+    "date": "07.04.2025",
+    "label": "т. 4, л.д. 145",
+    "page_id": 772
+   },
+   "b": {
+    "document_id": 78,
+    "title": "Счёт на оплату",
+    "doc_type": "счёт",
+    "date": "11.01.2025",
+    "label": "т. 4, л.д. 157",
+    "page_id": 575
+   },
+   "requisites": {
+    "date": "differ",
+    "number": "unknown"
+   },
+   "other_document": true,
+   "order": false,
+   "same_document": false,
+   "counts": {
+    "numeric": 9,
+    "unknown": 0,
+    "confirmed": 8,
+    "maybe_ocr": 0,
+    "numeric_unconfirmed": 1
+   },
+   "more": 0,
+   "single_reading": 0,
+   "only_a": [],
+   "only_b": [],
+   "differences": [
+    {
+     "kind": "text",
+     "numeric": true,
+     "confirmed": false,
+     "shown": true,
+     "a": {
+      "page_id": 772,
+      "label": "т. 4, л.д. 145",
+      "start": 35,
+      "end": 45,
+      "text": "Согласно"
+     },
+     "b": {
+      "page_id": 575,
+      "label": "т. 4, л.д. 157",
+      "start": 25,
+      "end": 53,
+      "text": "Эксперт пришёл к выводу"
+     }
+    },
+    {
+     "kind": "text",
+     "numeric": true,
+     "confirmed": true,
+     "shown": true,
+     "a": {
+      "page_id": 772,
+      "label": "т. 4, л.д. 145",
+      "start": 449,
+      "end": 487,
+      "text": "Претензия направлена ответчику"
+     },
+     "b": {
+      "page_id": 575,
+      "label": "т. 4, л.д. 157",
+      "start": 459,
+      "end": 498,
+      "text": "В судебном заседании представитель"
+     }
+    },
+    {
+     "kind": "text",
+     "numeric": true,
+     "confirmed": true,
+     "shown": true,
+     "a": {
+      "page_id": 772,
+      "label": "т. 4, л.д. 145",
+      "start": 582,
+      "end": 584,
+      "text": "14"
+     },
+     "b": {
+      "page_id": 575,
+      "label": "т. 4, л.д. 157",
+      "start": 593,
+      "end": 595,
+      "text": "10"
+     }
+    },
+    {
+     "kind": "text",
+     "numeric": true,
+     "confirmed": true,
+     "shown": true,
+     "a": {
+      "page_id": 772,
+      "label": "т. 4, л.д. 145",
+      "start": 759,
+      "end": 797,
+      "text": "Претензия направлена ответчику"
+     },
+     "b": {
+      "page_id": 575,
+      "label": "т. 4, л.д. 157",
+      "start": 771,
+      "end": 810,
+      "text": "В судебном заседании представитель"
+     }
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "similarity": 0.871,
+   "a": {
+    "document_id": 74,
+    "title": "Счёт на оплату",
+    "doc_type": "счёт",
+    "date": "07.04.2025",
+    "label": "т. 4, л.д. 145",
+    "page_id": 772
+   },
+   "b": {
+    "document_id": 85,
+    "title": "Счёт на оплату",
+    "doc_type": "счёт",
+    "date": "15.11.2025",
+    "label": "т. 4, л.д. 187",
+    "page_id": 604
+   },
+   "requisites": {
+    "date": "differ",
+    "number": "unknown"
+   },
+   "other_document": true,
+   "order": false,
+   "same_document": false,
+   "counts": {
+    "numeric": 9,
+    "unknown": 0,
+    "confirmed": 17,
+    "maybe_ocr": 3,
+    "numeric_unconfirmed": 1
+   },
+   "more": 0,
+   "single_reading": 0,
+   "only_a": [],
+   "only_b": [],
+   "differences": [
+    {
+     "kind": "text",
+     "numeric": true,
+     "confirmed": false,
+     "shown": true,
+     "a": {
+      "page_id": 772,
+      "label": "т. 4, л.д. 145",
+      "start": 35,
+      "end": 45,
+      "text": "Согласно"
+     },
+     "b": {
+      "page_id": 604,
+      "label": "т. 4, л.д. 187",
+      "start": 33,
+      "end": 49,
+      "text": "Стороны подписал"
+     }
+    },
+    {
+     "kind": "text",
+     "numeric": false,
+     "confirmed": false,
+     "shown": false,
+     "a": {
+      "page_id": 772,
+      "label": "т. 4, л.д. 145",
+      "start": 85,
+      "end": 89,
+      "text": "Гене"
+     },
+     "b": {
+      "page_id": 604,
+      "label": "т. 4, л.д. 187",
+      "start": 89,
+      "end": 93,
+      "text": "Стор"
+     }
+    },
+    {
+     "kind": "only_b",
+     "numeric": false,
+     "confirmed": true,
+     "shown": true,
+     "a": {
+      "page_id": 772,
+      "label": "т. 4, л.д. 145",
+      "start": 126,
+      "end": 126,
+      "text": ""
+     },
+     "b": {
+      "page_id": 604,
+      "label": "т. 4, л.д. 187",
+      "start": 132,
+      "end": 159,
+      "text": "Стороны подписали"
+     }
+    },
+    {
+     "kind": "text",
+     "numeric": true,
+     "confirmed": true,
+     "shown": true,
+     "a": {
+      "page_id": 772,
+      "label": "т. 4, л.д. 145",
+      "start": 449,
+      "end": 487,
+      "text": "Претензия направлена ответчику"
+     },
+     "b": {
+      "page_id": 604,
+      "label": "т. 4, л.д. 187",
+      "start": 481,
+      "end": 518,
+      "text": "В судебном заседании представитель"
+     }
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "similarity": 0.961,
+   "a": {
+    "document_id": 75,
+    "title": "Определение о принятии искового заявления",
+    "doc_type": "определение",
+    "date": null,
+    "label": "т. 4, л.д. 146–148",
+    "page_id": 773
+   },
+   "b": {
+    "document_id": 79,
+    "title": "Определение о принятии искового заявления",
+    "doc_type": "определение",
+    "date": null,
+    "label": "т. 4, л.д. 158–160",
+    "page_id": 576
+   },
+   "requisites": {
+    "date": "unknown",
+    "number": "unknown"
+   },
+   "other_document": false,
+   "order": false,
+   "same_document": false,
+   "counts": {
+    "numeric": 8,
+    "unknown": 0,
+    "confirmed": 8,
+    "maybe_ocr": 2,
+    "numeric_unconfirmed": 1
+   },
+   "more": 0,
+   "single_reading": 0,
+   "only_a": [],
+   "only_b": [],
+   "differences": [
+    {
+     "kind": "only_a",
+     "numeric": false,
+     "confirmed": false,
+     "shown": false,
+     "a": {
+      "page_id": 773,
+      "label": "т. 4, л.д. 146",
+      "start": 246,
+      "end": 397,
+      "text": "Согласно товарной накладной груз принят кладовщиком ответчика без замечаний по количеству и качеству. Представитель ответчика заявил ходатайство об."
+     },
+     "b": {
+      "page_id": 576,
+      "label": "т. 4, л.д. 158",
+      "start": 233,
+      "end": 233,
+      "text": ""
+     }
+    },
+    {
+     "kind": "only_b",
+     "numeric": true,
+     "confirmed": false,
+     "shown": true,
+     "a": {
+      "page_id": 773,
+      "label": "т. 4, л.д. 146",
+      "start": 2145,
+      "end": 2145,
+      "text": ""
+     },
+     "b": {
+      "page_id": 576,
+      "label": "т. 4, л.д. 158",
+      "start": 2010,
+      "end": 2268,
+      "text": "В судебном заседании представитель истца поддержал требования в полном объёме и просил приобщить акт сверки. Суд определил назначить по делу судебную товароведческую экспертизу, проведение поручить АНО «Центр оценки». Согласно товарной накладной груз принят."
+     }
+    },
+    {
+     "kind": "text",
+     "numeric": false,
+     "confirmed": false,
+     "shown": false,
+     "a": {
+      "page_id": 774,
+      "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 146",
+      "start": 752,
+      "end": 760,
+      "text": "Суд опре"
+     },
+     "b": {
+      "page_id": 577,
+      "label": "т. 4, л.д. 159",
+      "start": 752,
+      "end": 760,
+      "text": "В платёж"
+     }
+    },
+    {
+     "kind": "text",
+     "numeric": true,
+     "confirmed": true,
+     "shown": true,
+     "a": {
+      "page_id": 774,
+      "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 146",
+      "start": 2104,
+      "end": 2143,
+      "text": "Истец ООО «Северный ветер» поставил"
+     },
+     "b": {
+      "page_id": 577,
+      "label": "т. 4, л.д. 159",
+      "start": 2106,
+      "end": 2146,
+      "text": "Генеральный директор истца Карпов И. С"
+     }
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "similarity": 0.953,
+   "a": {
+    "document_id": 76,
+    "title": "Счёт на оплату",
+    "doc_type": "счёт",
+    "date": "15 дог 2026 дого",
+    "label": "т. 4, л.д. 149–151",
+    "page_id": 776
+   },
+   "b": {
+    "document_id": 80,
+    "title": "Счёт на оплату",
+    "doc_type": "счёт",
+    "date": "15 дог 2026 дого",
+    "label": "т. 4, л.д. 161–163",
+    "page_id": 579
+   },
+   "requisites": {
+    "date": "same",
+    "number": "differ"
+   },
+   "other_document": true,
+   "order": false,
+   "same_document": false,
+   "counts": {
+    "numeric": 13,
+    "unknown": 0,
+    "confirmed": 7,
+    "maybe_ocr": 5,
+    "numeric_unconfirmed": 7
+   },
+   "more": 0,
+   "single_reading": 0,
+   "only_a": [],
+   "only_b": [],
+   "differences": [
+    {
+     "kind": "text",
+     "numeric": true,
+     "confirmed": true,
+     "shown": true,
+     "a": {
+      "page_id": 776,
+      "label": "т. 4, л.д. 149",
+      "start": 22,
+      "end": 31,
+      "text": "Стороны"
+     },
+     "b": {
+      "page_id": 579,
+      "label": "т. 4, л.д. 161",
+      "start": 22,
+      "end": 31,
+      "text": "Генеральн"
+     }
+    },
+    {
+     "kind": "text",
+     "numeric": false,
+     "confirmed": false,
+     "shown": false,
+     "a": {
+      "page_id": 776,
+      "label": "т. 4, л.д. 149",
+      "start": 1734,
+      "end": 1739,
+      "text": "Экспе"
+     },
+     "b": {
+      "page_id": 579,
+      "label": "т. 4, л.д. 161",
+      "start": 1734,
+      "end": 1737,
+      "text": "Пре"
+     }
+    },
+    {
+     "kind": "only_a",
+     "numeric": false,
+     "confirmed": false,
+     "shown": false,
+     "a": {
+      "page_id": 776,
+      "label": "т. 4, л.д. 149",
+      "start": 1800,
+      "end": 1803,
+      "text": "Сто"
+     },
+     "b": {
+      "page_id": 579,
+      "label": "т. 4, л.д. 161",
+      "start": 1797,
+      "end": 1797,
+      "text": ""
+     }
+    },
+    {
+     "kind": "only_a",
+     "numeric": true,
+     "confirmed": false,
+     "shown": true,
+     "a": {
+      "page_id": 777,
+      "label": "т. 4, л.д. 150",
+      "start": 8,
+      "end": 11,
+      "text": "150"
+     },
+     "b": {
+      "page_id": 580,
+      "label": "т. 4, л.д. 162",
+      "start": 0,
+      "end": 0,
+      "text": ""
+     }
+    }
+   ]
+  }
+ ],
+ "total": 5
+}
