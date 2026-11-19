@@ -7,6 +7,11 @@ import { F, S, dialog, fixture, noSideScroll, openSection, refresh, writes } fro
 const ok = (r: any) => r.fulfill({ json: {} });
 const fmt = (t: string, v: Record<string, unknown>) =>
 	t.replace(/\{(\w+)\}/g, (m, k) => (v[k] != null ? String(v[k]) : m));
+// FIX_SHOTS=<каталог> — снимки исправленных мест для просмотра глазами
+const snap = async (page: any, name: string) => {
+	if (process.env.FIX_SHOTS)
+		await page.screenshot({ path: `${process.env.FIX_SHOTS}/${name}.png` });
+};
 const nav = (page: any, slug: string) =>
 	page.locator(`nav.nav [data-testid="case-nav-${slug}"]`).first();
 
@@ -36,6 +41,7 @@ test.describe('ревью 20.11', () => {
 		mode = 'down';
 		await error.getByRole('button', { name: S.retry }).click();
 		await expect(error).toContainText(fmt(S.section_error, { detail: S.error_no_link }));
+		await snap(page, 'section-error');
 		mode = 'ok';
 		await error.getByRole('button', { name: S.retry }).click();
 		await expect(page.getByTestId('case-amounts')).toBeVisible();
@@ -48,6 +54,7 @@ test.describe('ревью 20.11', () => {
 			new RegExp(fmt(S.section_stale, { detail: S.error_no_link }).slice(0, 40))
 		);
 		await expect(page.getByTestId('case-amounts')).toBeVisible();
+		await snap(page, 'stale-note');
 		mode = 'ok';
 		await stale.getByRole('button', { name: S.retry }).click();
 		await expect(stale).toHaveCount(0);
@@ -299,6 +306,7 @@ test.describe('ревью 20.11', () => {
 		await start.click();
 		const dlg = dialog(page);
 		await expect(dlg.getByTestId('case-tables-confirm-price')).toHaveText(S.runs_confirm_no_price);
+		await snap(page, 'confirm-no-price');
 		expect(writes(kit.calls)).toEqual([]);
 		await dlg.getByRole('button', { name: S.cancel }).click();
 		expect(writes(kit.calls)).toEqual([]);
@@ -414,6 +422,7 @@ test.describe('ревью 20.11', () => {
 		for (const slug of ['upload', 'volumes', 'tables']) {
 			await nav(page, slug).click();
 			await expect(page.getByTestId('case-paused-note')).toContainText(words);
+			await snap(page, `pause-${slug}`);
 		}
 	});
 
