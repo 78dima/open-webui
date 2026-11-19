@@ -110,7 +110,12 @@ print("{\n\tauto_https off\n\tadmin off\n}\n:80 {\n" + "\n".join(body))
 EOF
 COMPOSE=(docker compose -p "$LIVE_NAME" -f "$HERE/compose.yaml")
 cleanup() {
-  if [ -n "${LIVE_KEEP:-}" ]; then echo "LIVE_KEEP: среда $LIVE_NAME оставлена на http://127.0.0.1:$LIVE_PORT (каталог $WORK)"; return; fi
+  if [ -n "${LIVE_KEEP:-}" ]; then
+    # переменные среды для дальнейших команд compose (без ключа провайдера): set -a; . <каталог>/live.env; set +a
+    { export -p | grep -E '^declare -x LIVE_' | grep -v OPENROUTER_KEY | sed 's/^declare -x //'; echo "LIVE_WORKDIR=\"$WORK\""; } > "$WORK/live.env"
+    echo "LIVE_KEEP: среда $LIVE_NAME оставлена на http://127.0.0.1:$LIVE_PORT (каталог $WORK; вход и пароль — $WORK/state.json; переменные для compose — $WORK/live.env)"
+    return
+  fi
   "${COMPOSE[@]}" --profile old down -v --remove-orphans >/dev/null 2>&1 || true
   docker run --rm -v "$WORK:/w" alpine:latest rm -rf /w/build >/dev/null 2>&1 || true
   rm -rf "$WORK"
@@ -134,8 +139,9 @@ if [ -n "${LIVE_ENV_ONLY:-}" ]; then
   # только среда, без сценариев (платная проверка live-paid.mjs ведёт её сама): состояние — в названный файл, рядом —
   # переменные среды для команд compose (без ключа провайдера); убрать: docker compose -p $LIVE_NAME down -v
   cp "$WORK/state.json" "$LIVE_ENV_ONLY"
-  { export -p | grep -E '^declare -x LIVE_' | grep -v OPENROUTER_KEY | sed 's/^declare -x //'; echo "LIVE_WORKDIR=\"$WORK\""; } > "${LIVE_ENV_ONLY%.json}.env"
-  LIVE_KEEP=1
+  export LIVE_KEEP=1
+  cleanup; trap - EXIT
+  cp "$WORK/live.env" "${LIVE_ENV_ONLY%.json}.env"
   exit 0
 fi
 rc=0
