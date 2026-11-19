@@ -1,0 +1,139 @@
+{
+ "deltas": [
+  {
+   "id": 1,
+   "volume_id": 4,
+   "volume_label": "4",
+   "old": {
+    "file_id": 10,
+    "filename": "tom-4.pdf",
+    "pages": 209,
+    "removed": false,
+    "edited_documents": 2
+   },
+   "new": {
+    "file_id": 31,
+    "filename": "tom-4-pereskan.pdf",
+    "pages": 212,
+    "removed": false
+   },
+   "same": 201,
+   "added": [
+    {
+     "page_id": 1201,
+     "label": "т. 4, л.д. 211"
+    },
+    {
+     "page_id": 1202,
+     "label": "т. 4, л.д. 212"
+    },
+    {
+     "page_id": 1203,
+     "label": "т. 4, файл «tom-4-pereskan.pdf», стр. 3"
+    }
+   ],
+   "removed": [
+    {
+     "page_id": 745,
+     "label": "т. 4, файл «tom-4.pdf», стр. 117"
+    }
+   ],
+   "noise": {
+    "pages": 4,
+    "numeric_pages": 1
+   },
+   "noisy": [
+    {
+     "old": {
+      "page_id": 641,
+      "label": "т. 4, л.д. 12"
+     },
+     "new": {
+      "page_id": 1112,
+      "label": "т. 4, л.д. 12"
+     },
+     "numeric": true
+    }
+   ],
+   "changed": [
+    {
+     "old": {
+      "page_id": 645,
+      "label": "т. 4, л.д. 16"
+     },
+     "new": {
+      "page_id": 1116,
+      "label": "т. 4, л.д. 16"
+     },
+     "similarity": 0.91,
+     "by": "number",
+     "counts": {
+      "numeric": 1,
+      "maybe_ocr": 0
+     },
+     "more": 0,
+     "places": [
+      {
+       "kind": "text",
+       "old": {
+        "page_id": 645,
+        "start": 120,
+        "end": 131
+       },
+       "new": {
+        "page_id": 1116,
+        "start": 118,
+        "end": 129
+       }
+      }
+     ]
+    }
+   ],
+   "unsure": [
+    {
+     "old": {
+      "page_id": 700,
+      "label": "т. 4, л.д. 70"
+     },
+     "new": {
+      "page_id": 1170,
+      "label": "т. 4, л.д. 70"
+     },
+     "similarity": 0.88,
+     "by": "number",
+     "counts": {
+      "numeric": 0,
+      "maybe_ocr": 1
+     },
+     "more": 0,
+     "places": []
+    }
+   ],
+   "blind": [
+    {
+     "old": {
+      "page_id": 770,
+      "label": "т. 4, л.д. 143"
+     },
+     "new": {
+      "page_id": 1241,
+      "label": "т. 4, л.д. 143"
+     },
+     "similarity": 0.31,
+     "by": "number",
+     "counts": {},
+     "more": 0,
+     "places": []
+    }
+   ],
+   "complete": true,
+   "single_reading": 3,
+   "replaceable": true,
+   "replaced_at": null,
+   "replaced_by": null,
+   "replaced_by_name": null,
+   "created_at": "2025-11-14T11:00:00+00:00"
+  }
+ ],
+ "total": 1
+}

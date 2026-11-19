@@ -23,6 +23,8 @@
 	import Icon from './Icon.svelte';
 	import Overview from './Overview.svelte';
 	import StateCard from './StateCard.svelte';
+	import Extract from './Extract.svelte';
+	import Replace from './Replace.svelte';
 	import Upload from './Upload.svelte';
 	import Volumes from './Volumes.svelte';
 
@@ -230,6 +232,10 @@
 					<CheckSheets {state} {S} />
 				{:else if section === 'volumes'}
 					<Volumes {state} {S} {hrefOf} />
+				{:else if section === 'replace'}
+					<Replace {state} {S} />
+				{:else if section === 'extract'}
+					<Extract {state} {S} />
 				{:else}
 					<!-- раздел следующей сдачи: пока открывается на прежней странице дела сервиса -->
 					<section class="card" data-testid="case-section-later">

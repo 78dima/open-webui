@@ -1,0 +1,82 @@
+{
+ "edits": [
+  {
+   "id": 8,
+   "entity": "page",
+   "entity_id": "538",
+   "field": "number",
+   "before": {
+    "side": "face",
+    "number_source": "lawyer",
+    "number_as_written": "1"
+   },
+   "after": {
+    "side": "face",
+    "number_source": "lawyer",
+    "number_as_written": null
+   },
+   "field_text": "Номер листа",
+   "before_text": "л. 1, лицевая",
+   "after_text": "без номера, лицевая",
+   "author": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+   "who": "вы",
+   "via": "page",
+   "at": "2025-12-07T06:41:46.186057+00:00",
+   "reverted_by": null,
+   "revert_of": null,
+   "can_revert": true
+  },
+  {
+   "id": 7,
+   "entity": "page",
+   "entity_id": "538",
+   "field": "number",
+   "before": {
+    "side": "face",
+    "number_source": "reads",
+    "number_as_written": null
+   },
+   "after": {
+    "side": "face",
+    "number_source": "lawyer",
+    "number_as_written": "1"
+   },
+   "field_text": "Номер листа",
+   "before_text": "без номера, лицевая",
+   "after_text": "л. 1, лицевая",
+   "author": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+   "who": "вы",
+   "via": "page",
+   "at": "2025-12-07T06:41:25.115791+00:00",
+   "reverted_by": null,
+   "revert_of": null,
+   "can_revert": false
+  },
+  {
+   "id": 6,
+   "entity": "file",
+   "entity_id": "8",
+   "field": "volume",
+   "before": {
+    "volume_id": null,
+    "volume_order": null
+   },
+   "after": {
+    "volume_id": 3,
+    "volume_order": 1
+   },
+   "field_text": "Том файла",
+   "before_text": "без тома",
+   "after_text": "Том 1, файл № 1 в томе",
+   "author": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+   "who": "вы",
+   "via": "page",
+   "at": "2025-12-07T06:39:14.248937+00:00",
+   "reverted_by": null,
+   "revert_of": null,
+   "can_revert": true
+  }
+ ],
+ "page": 0,
+ "end": true
+}

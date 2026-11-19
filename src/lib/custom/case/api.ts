@@ -61,6 +61,8 @@ export type CaseApi = {
 		options?: CaseRequestOptions
 	) => Promise<T>;
 	get: <T = unknown>(path: string, options?: CaseRequestOptions) => Promise<T>;
+	/** Файл сервиса (выписка листов, выгрузка описи и таблицы): содержимое и имя из заголовка ответа. */
+	download: (path: string, options?: CaseRequestOptions) => Promise<{ blob: Blob; name: string }>;
 	post: <T = unknown>(path: string, body?: unknown, options?: CaseRequestOptions) => Promise<T>;
 };
 
@@ -71,6 +73,20 @@ const sessionToken = (): string | null => {
 		return null;
 	}
 };
+
+/** Имя файла из заголовка `Content-Disposition` (`filename*=UTF-8''…`, затем `filename="…"`); нет — пусто. */
+export function fileName(disposition: string | null | undefined): string {
+	const d = disposition ?? '';
+	const star = /filename\*=UTF-8''([^;]+)/i.exec(d);
+	if (star) {
+		try {
+			return decodeURIComponent(star[1].trim());
+		} catch {
+			/* имя не разобрано — дальше обычное */
+		}
+	}
+	return /filename="?([^";]+)"?/i.exec(d)?.[1]?.trim() ?? '';
+}
 
 /** `config` — значение `custom_ui` из `/api/config`; `token` и `fetcher` подменяются в проверках. */
 export function createCaseApi(
@@ -140,10 +156,51 @@ export function createCaseApi(
 		return data as T;
 	}
 
+	async function download(path: string, options: CaseRequestOptions = {}) {
+		const bearer = token();
+		if (!bearer) throw new CaseApiError(401, 'auth');
+		let response: Response;
+		try {
+			response = await (deps.fetcher ?? fetch)(url(path), {
+				method: 'GET',
+				headers: { Authorization: `Bearer ${bearer}` },
+				credentials: 'same-origin',
+				redirect: 'error',
+				cache: 'no-store',
+				signal: options.signal
+			});
+		} catch (error) {
+			if ((error as { name?: string } | null)?.name === 'AbortError') throw error;
+			throw new CaseApiError(0, 'network');
+		}
+		if (!response.ok) {
+			let data: unknown = null;
+			try {
+				data = JSON.parse(await response.text());
+			} catch {
+				data = null;
+			}
+			throw new CaseApiError(
+				response.status,
+				errorKind(response.status),
+				detailText(data) || response.statusText,
+				(data as { detail?: unknown } | null)?.detail
+			);
+		}
+		// страница приложения чата вместо файла — путь к сервису не настроен
+		if ((response.headers.get('Content-Type') ?? '').startsWith('text/html'))
+			throw new CaseApiError(response.status, 'other');
+		return {
+			blob: await response.blob(),
+			name: fileName(response.headers.get('Content-Disposition'))
+		};
+	}
+
 	return {
 		base,
 		url,
 		request,
+		download,
 		get: (path, options) => request('GET', path, undefined, options),
 		post: (path, body, options) => request('POST', path, body, options)
 	};

@@ -191,7 +191,9 @@ const CASE_SCENES = {
 	// разделы сдачи 3: данные — примеры выдуманного дела; `routes` — ручки раздела (хвост адреса → пример или ответ)
 	volumes: { data: () => ({ ...fixture('case-overview-processing'), paused: null }), section: 'volumes', after: async (page) => {
 		await page.getByTestId('case-file-actions').first().click();
-	} }
+	} },
+	replace: { data: () => fixture('case-overview'), section: 'replace', routes: { deltas: 'deltas' } },
+	extract: { data: () => fixture('case-overview'), section: 'extract' }
 };
 
 async function openCase(browser, scene, width, height, dark) {
@@ -290,7 +292,9 @@ const CASE_PAIRS = [
 	['K-check', 'K-check', 'check', 1280, 1860, false],
 	['K-check-phone', 'K-check', 'check', 360, 2900, false],
 	['K-check-dark', 'K-check', 'check', 1280, 1860, true],
-	...trio('K-volumes', 'volumes', 2060, 3200)
+	...trio('K-volumes', 'volumes', 2060, 3200),
+	...trio('K-replace', 'replace', 1720, 2900),
+	...trio('K-extract', 'extract', 900, 1100)
 ];
 const STATUS = ['status-empty', 'status-ready', 'status-paused', 'status-stopped', 'status-offline', 'status-readonly', 'no-case'];
 const set = arg('set', 'all');
