@@ -117,8 +117,8 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 	await page.getByTestId('case-section').first().click();
 	ok(
 		JSON.stringify(await texts(visible(page, 'case-row').locator('.title'))) === JSON.stringify(['А40-123456/2025']) &&
-			JSON.stringify(await texts(visible(page, 'case-folder').locator('.title'))) === JSON.stringify(['2025']),
-		'раздел «Арбитраж»: дело из вложенной папки и папка «2025»'
+			JSON.stringify((await texts(visible(page, 'case-folder').locator('.title'))).sort()) === JSON.stringify(['2025', 'Арбитраж']),
+		'раздел «Арбитраж»: дело из вложенной папки, папка «2025» и сама папка-раздел'
 	);
 	await page.getByTestId('case-section').first().click();
 

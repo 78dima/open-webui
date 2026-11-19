@@ -590,9 +590,17 @@ await step('файлы папки вне дела', async () => {
 	const waited = Math.round((Date.now() - t0) / 1000);
 	if (!file?.id || upd.status !== 200 || !listed.length)
 		return cannot(`файл папки: положить файл в «Знания» папки через Open WebUI этой среды не получилось (загрузка ${up.status}, папка ${upd.status}, файлов вне дела ${listed.length})`);
-	await page.goto(base + CASE);
-	await page.getByTestId('case-summary').waitFor({ timeout: 30000 });
-	if (!(await nav(page, 'folder-files').waitFor({ timeout: 30000 }).then(() => true, () => false))) {
+	// Сервис помнит папку и её «Знания» до 60 с отдельно на каждый вход: выше файл увидел вход сценария, а у входа
+	// браузера своя память того же срока. Страница спрашивает файлы папки один раз при открытии (как прежняя), поэтому
+	// открываем её заново, пока пункт не появится, — так юрист и увидит файл: открыв дело через минуту.
+	let appeared = false;
+	const t1 = Date.now();
+	while (!appeared && Date.now() - t1 < 90000) {
+		await page.goto(base + CASE);
+		await page.getByTestId('case-summary').waitFor({ timeout: 30000 });
+		appeared = await nav(page, 'folder-files').waitFor({ timeout: 6000 }).then(() => true, () => false);
+	}
+	if (!appeared) {
 		const seen = await page.evaluate(async (f) => {
 			const r = await fetch(`/legal-tools/api/cases/${f}/folder-files`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, Accept: 'application/json' } });
 			return `${r.status} ${(await r.text()).slice(0, 160)}`;
