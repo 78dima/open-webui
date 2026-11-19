@@ -39,16 +39,47 @@ mkdir -p "$LIVE_WORK" "$WORK/files"
 docker run --rm --network none --user "$(id -u):$(id -g)" -v "$CORPUS:/corpus:ro" -v "$LIVE_WORK:/work" \
   -v "$PROBE/keymap.py:/keymap.py:ro" --entrypoint python "$LIVE_TOOLS_IMAGE" -I /keymap.py /corpus /work/keymap.json \
   | sed 's/^/     карта ответов модели: /' || { echo "FAIL карта ответов модели (keymap.py)"; exit 1; }
+# превращённое дело для «Замены тома»: том 1 переснят целиком (как в сквозной пробе дела) — и его карта ответов
+if (cd "$TOOLS_REPO/tools" && uv run ../corpus/case-v1/render.py build --profile mini --mutate dup-volume=1 \
+      --out "$LIVE_WORK/mut" >/dev/null 2>&1); then
+  mkdir -p "$WORK/mutcorpus" && ln -s "$LIVE_WORK/mut" "$WORK/mutcorpus/mini" && cp "$LIVE_WORK/mut/key.json" "$WORK/mutcorpus/key.json"
+  docker run --rm --network none --user "$(id -u):$(id -g)" -v "$WORK/mutcorpus/key.json:/corpus/key.json:ro" \
+    -v "$LIVE_WORK/mut:/corpus/mini:ro" -v "$LIVE_WORK:/work" -v "$PROBE/keymap.py:/keymap.py:ro" --entrypoint python \
+    "$LIVE_TOOLS_IMAGE" -I /keymap.py /corpus /work/keymap-mut.json \
+    | sed 's/^/     карта ответов модели, переснятый том: /' || { echo "FAIL карта ответов переснятого тома"; exit 1; }
+else
+  echo "     переснятый том не собран (corpus/case-v1/render.py --mutate): «Замена тома» вживую не проверяется"
+  rm -rf "$LIVE_WORK/mut"
+fi
 # том побольше — чтобы передача шла двумя частями (часть — 5 МБ): «Том 1» выдуманного дела трижды подряд
-(cd "$TOOLS_REPO/tools" && uv run -q python - "$CORPUS/mini/Том 1.pdf" "$WORK/files/Том 7 (большой).pdf" <<'EOF'
-import sys
-from pypdf import PdfWriter
-w = PdfWriter()
-for _ in range(3):
-    w.append(sys.argv[1])
-w.write(sys.argv[2])
+# ещё: второй большой том (загрузка, начатая на прежней странице, продолжается на новой), архив ZIP, папка с двумя
+# PDF, файл для «Знаний» папки чата — всё из листов того же выдуманного дела (подставная модель их знает)
+(cd "$TOOLS_REPO/tools" && uv run -q python - "$CORPUS/mini" "$WORK/files" <<'EOF'
+import sys, zipfile, os
+from pypdf import PdfReader, PdfWriter
+src, out = sys.argv[1], sys.argv[2]
+def many(name, times, to):
+    w = PdfWriter()
+    for _ in range(times):
+        w.append(os.path.join(src, name))
+    w.write(os.path.join(out, to))
+def pages(name, which, to):
+    r, w = PdfReader(os.path.join(src, name)), PdfWriter()
+    for n in which:
+        w.add_page(r.pages[n])
+    os.makedirs(os.path.dirname(os.path.join(out, to)), exist_ok=True)
+    w.write(os.path.join(out, to))
+many("Том 1.pdf", 3, "Том 7 (большой).pdf")
+many("Том 2.pdf", 8, "Том 8 (большой).pdf")
+pages("Том 2.pdf", [0], "Доверенность.pdf")            # в «Знания» папки
+pages("Том 2.pdf", [1], "Письмо.pdf")                  # внутрь архива
+pages("tom5.pdf", [0, 1], "Папка с томами/том-а.pdf")
+pages("tom5.pdf", [2, 3], "Папка с томами/том-б.pdf")
+with zipfile.ZipFile(os.path.join(out, "Архив.zip"), "w") as z:
+    z.write(os.path.join(out, "Письмо.pdf"), "Письмо.pdf")
+os.remove(os.path.join(out, "Письмо.pdf"))
 EOF
-) || { echo "FAIL большой том не собран"; exit 1; }
+) || { echo "FAIL файлы живой проверки не собраны"; exit 1; }
 # правила Caddy — блок chat.<домен> настоящего Caddyfile сервера, только адрес — порт без TLS
 python3 - "$TOOLS_REPO/deploy/caddy/Caddyfile" > "$LIVE_CADDYFILE" <<'EOF'
 import sys
@@ -73,14 +104,19 @@ export LIVE_RELEASE_GROUP=$(python3 -c 'import json,sys; print(json.load(open(sy
 for _ in $(seq 30); do "${COMPOSE[@]}" run --rm --no-deps tools init-buckets >/dev/null 2>&1 && break; sleep 2; done
 "${COMPOSE[@]}" up -d --pull never --wait --wait-timeout 180 tools >/dev/null 2>&1 || { echo "FAIL legal-tools не поднялся"; "${COMPOSE[@]}" logs --no-color --tail 40 tools; exit 1; }
 "${COMPOSE[@]}" run --rm --no-deps case-worker case-worker --resume >/dev/null 2>&1 || true
-"${COMPOSE[@]}" up -d --pull never --no-recreate case-worker >/dev/null 2>&1
+"${COMPOSE[@]}" up -d --pull never --no-recreate case-worker jobs-worker >/dev/null 2>&1
 python3 -I "$HERE/setup.py" cases "$BASE" "$WORK/state.json"
 rc=0
 (cd "$HERE/.." && node case-live/live.mjs --state "$WORK/state.json" ${OUT:+--out "$OUT"}) || rc=1
 (cd "$HERE/.." && node case-live/live-case.mjs --state "$WORK/state.json" --corpus "$CORPUS/mini" \
    --big "$WORK/files/Том 7 (большой).pdf" ${OUT:+--out "$OUT"}) || rc=1
-if "${COMPOSE[@]}" logs --no-color tools case-worker 2>&1 | grep -q 'Traceback'; then
-  echo "FAIL в журнале legal-tools есть Traceback:"; "${COMPOSE[@]}" logs --no-color tools case-worker 2>&1 | grep -B2 -A8 'Traceback' | tail -24; rc=1
+# остальные разделы страницы дела — на том же деле (сдача 3); пропуск: LIVE_SECTIONS=0
+if [ "${LIVE_SECTIONS:-1}" = 1 ] && [ -f "$WORK/case.json" ]; then
+  (cd "$HERE/.." && node case-live/live-sections.mjs --state "$WORK/state.json" --case "$WORK/case.json" --files "$WORK/files" \
+     --mut "$LIVE_WORK/mut" ${OUT:+--out "$OUT"}) || rc=1
+fi
+if "${COMPOSE[@]}" logs --no-color tools case-worker jobs-worker 2>&1 | grep -q 'Traceback'; then
+  echo "FAIL в журнале legal-tools есть Traceback:"; "${COMPOSE[@]}" logs --no-color tools case-worker jobs-worker 2>&1 | grep -B2 -A8 'Traceback' | tail -24; rc=1
 else
   echo "OK   журналы legal-tools и case-worker без Traceback"
 fi

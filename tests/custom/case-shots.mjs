@@ -202,6 +202,25 @@ const CASE_SCENES = {
 		await page.getByTestId('case-fact').first().getByRole('button').first().click();
 	} },
 	deadlines: { data: () => fixture('case-overview'), section: 'deadlines', routes: { 'deadlines**': 'deadlines' } },
+	tables: { data: () => fixture('case-overview-processing'), section: 'tables', routes: { tables: 'tables-list', 'tables/scope?**': 'tables-scope' } },
+	'table-open': { data: () => fixture('case-overview'), section: 'tables/81de6f04-621e-4774-a99e-993399a3713d', routes: { 'tables/*?**': 'table-open' }, after: async (page) => {
+		await page.getByTestId('case-table-cell').first().getByRole('button').first().click();
+	} },
+	files: { data: () => fixture('case-overview'), section: 'folder-files' },
+	danger: { data: () => fixture('case-overview'), section: 'danger' },
+	// окна (лист K-dialogs): правка строки описи и «История правок»
+	'dialog-doc': { data: () => fixture('case-overview'), section: 'inventory', routes: { 'documents?**': 'case-documents-marks', 'pages?**': 'case-pages' }, after: async (page) => {
+		await page.getByTestId('case-doc').nth(1).getByRole('button').first().click();
+		await page.locator('dialog[open]').waitFor();
+	} },
+	'dialog-history': { data: () => fixture('case-overview-processing'), section: 'volumes', routes: { 'edits?**': 'case-edits' }, after: async (page) => {
+		await page.getByTestId('case-volume').first().getByRole('button', { name: 'История' }).first().click();
+		await page.locator('dialog[open]').waitFor();
+	} },
+	'dialog-danger': { data: () => fixture('case-overview'), section: 'danger', after: async (page) => {
+		await page.getByTestId('case-danger').getByRole('button').click();
+		await page.locator('dialog[open]').waitFor();
+	} },
 	copies: { data: () => fixture('case-overview'), section: 'copies', routes: { copies: 'copies' }, after: async (page) => {
 		await page.getByTestId('case-copy').first().getByRole('button').first().click();
 	} },
@@ -269,6 +288,8 @@ async function openCase(browser, scene, width, height, dark) {
 		await rows.nth(1).getByRole('combobox').selectOption({ index: 1 });
 		await page.getByTestId('case-upload-start').click(); // у третьего PDF вид не указан — подсказка у кнопки
 	}
+	// раздел со своей ручкой: дождаться его данных («Загрузка…» ушла)
+	if (s.section) await page.waitForFunction(() => !document.querySelector('main [role="status"]'), null, { timeout: 15000 }).catch(() => undefined);
 	if (s.after) await s.after(page, width);
 	await page.evaluate(() => document.fonts.ready);
 	await page.waitForTimeout(250);
@@ -322,7 +343,11 @@ const CASE_PAIRS = [
 	...trio('K-passport', 'passport', PH('K-passport'), PH('K-passport-phone')),
 	...trio('K-amounts', 'amounts', PH('K-amounts'), PH('K-amounts-phone')),
 	...trio('K-chronology', 'chronology', PH('K-chronology'), PH('K-chronology-phone')),
-	...trio('K-deadlines', 'deadlines', PH('K-deadlines'), PH('K-deadlines-phone'))
+	...trio('K-deadlines', 'deadlines', PH('K-deadlines'), PH('K-deadlines-phone')),
+	...trio('K-tables', 'tables', PH('K-tables'), PH('K-tables-phone')),
+	...trio('K-table-open', 'table-open', PH('K-table-open'), PH('K-table-open-phone')),
+	...trio('K-files', 'files', PH('K-files'), PH('K-files-phone')),
+	...trio('K-danger', 'danger', PH('K-danger'), PH('K-danger-phone'))
 ];
 const STATUS = ['status-empty', 'status-ready', 'status-paused', 'status-stopped', 'status-offline', 'status-readonly', 'no-case'];
 const set = arg('set', 'all');
@@ -339,6 +364,7 @@ if (set !== 'd') {
 		report.push({ mock: name, scene, width, dark, overflow });
 	}
 	if (mocks && !only) await mock(browser, 'K-status', 1280, 940, false, join(out, 'K-status.mock.png'));
+	if (mocks && !only) for (const sheet of ['K-dialogs', 'K-states', 'K-marks']) await mock(browser, sheet, 1280, PH(sheet), false, join(out, `${sheet}.mock.png`));
 	for (const scene of only ? [] : STATUS) {
 		const overflow = await shotCase(browser, scene, 1280, 720, false, join(out, `K-status.${scene}.page.png`));
 		report.push({ mock: 'K-status', scene, width: 1280, dark: false, overflow });

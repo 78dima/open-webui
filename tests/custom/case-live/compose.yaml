@@ -64,6 +64,13 @@ services:
     command: ["case-worker"]
     environment: *tools-env
     depends_on: {pg: {condition: service_healthy}}
+  # общий воркер заданий сервиса: проходы по делу («Таблицы и проходы») исполняет он
+  jobs-worker:
+    image: ${LIVE_TOOLS_IMAGE:?}
+    networks: [live]
+    command: ["worker"]
+    environment: *tools-env
+    depends_on: {pg: {condition: service_healthy}}
   prov:
     image: ${LIVE_PROV_IMAGE:?}
     networks: [live]

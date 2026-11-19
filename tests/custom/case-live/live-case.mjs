@@ -3,8 +3,8 @@
 // обработки, глядя на ход, «Проверьте листы» и переход на лист, «Открыть лист» по номеру, тот же путь глазами юриста
 // с правом «только чтение», сверка с прежней страницей сервиса на этом же деле. Подмен в браузере нет.
 import { chromium } from '@playwright/test';
-import { mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 const arg = (name) => {
 	const i = process.argv.indexOf(`--${name}`);
@@ -70,6 +70,8 @@ await api('POST', `/api/v1/folders/${folder}/access/update`, owner.token, {
 	access_grants: [{ principal_type: 'user', principal_id: colleague.id, permission: 'read' }],
 	share_mode: 'continue'
 });
+// то же дело — для проверки остальных разделов (live-sections.mjs)
+writeFileSync(join(dirname(arg('state')), 'case.json'), JSON.stringify({ folder }));
 const CASE = `/case/${folder}`;
 const OLD = `/legal-tools/case/${folder}`;
 const overviewApi = async (token = owner.token) => (await api('GET', `/legal-tools/api/cases/${folder}`, token)).data;
