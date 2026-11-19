@@ -33,10 +33,25 @@ describe('«Мои дела»: разбор ответа ручки', () => {
 		expect(readListing(null)).toEqual([]);
 		expect(readListing({ own: 'x', shared: [null, {}, { folder_id: 7 }] })).toEqual([]);
 		const [f] = readListing({ own: [{ folder_id: 'a', case: { volumes: 'много' } }] });
-		expect(f).toMatchObject({ id: 'a', title: '', path: '', write: false, case: { volumes: 0, changed: null } });
+		expect(f).toMatchObject({
+			id: 'a',
+			title: '',
+			path: '',
+			write: false,
+			case: { volumes: 0, changed: null }
+		});
 	});
 	it('доступ: моё, общее (можно править), только чтение', () => {
-		expect(folders.map(access)).toEqual(['own', 'own', 'own', 'own', 'own', 'shared', 'readonly', 'readonly']);
+		expect(folders.map(access)).toEqual([
+			'own',
+			'own',
+			'own',
+			'own',
+			'own',
+			'shared',
+			'readonly',
+			'readonly'
+		]);
 	});
 });
 
@@ -74,11 +89,19 @@ describe('«Мои дела»: разделы из чата', () => {
 			{ id: id(5), parent_id: id(4) }
 		]);
 		expect(isAncestor(id(4), id(5), loop)).toBe(true);
-		expect(flatSections(buildSections(folders, loop)).map((s) => s.title).sort()).toEqual(['2025', 'Арбитраж']);
+		expect(
+			flatSections(buildSections(folders, loop))
+				.map((s) => s.title)
+				.sort()
+		).toEqual(['2025', 'Арбитраж']);
 	});
 	it('папка без названия получает переданное слово', () => {
 		const nameless = readListing({ own: [{ folder_id: 'p' }, { folder_id: 'c' }] });
-		const s = buildSections(nameless, parentMap(nameless, [{ id: 'c', parent_id: 'p' }]), 'Без названия');
+		const s = buildSections(
+			nameless,
+			parentMap(nameless, [{ id: 'c', parent_id: 'p' }]),
+			'Без названия'
+		);
 		expect(s[0].label).toBe('Без названия');
 	});
 });
@@ -103,7 +126,9 @@ describe('«Мои дела»: отбор действует на оба спи�
 		expect(titles(pick({ query: 'ВЕТЕР' }))).toEqual(['Северный ветер — поставка']);
 		expect(pick({ query: 'мироненко' })).toEqual([]);
 		const yo = readListing({ own: [{ folder_id: 'a', title: 'Королёв — заём' }] });
-		expect(applyFilter(yo, { scope: 'all', section: null, query: 'королев' }, new Map())).toHaveLength(1);
+		expect(
+			applyFilter(yo, { scope: 'all', section: null, query: 'королев' }, new Map())
+		).toHaveLength(1);
 	});
 	it('условия складываются', () => {
 		expect(pick({ scope: 'shared', section: id(4) })).toEqual([]);
@@ -130,14 +155,24 @@ describe('«Мои дела»: порядок дел', () => {
 			'Северный ветер — поставка'
 		]);
 		expect(titles(cases)).toEqual(before);
-		const numbered = readListing({ own: ['Том 10', 'Том 2', 'том 1'].map((t, i) => ({ folder_id: `n${i}`, title: t, case: { id: 'c', volumes: 1 } })) });
+		const numbered = readListing({
+			own: ['Том 10', 'Том 2', 'том 1'].map((t, i) => ({
+				folder_id: `n${i}`,
+				title: t,
+				case: { id: 'c', volumes: 1 }
+			}))
+		});
 		expect(titles(sortCases(numbered, 'name'))).toEqual(['том 1', 'Том 2', 'Том 10']);
 	});
 	it('дело без даты изменения — в конце недавних', () => {
 		const list = readListing({
 			own: [
 				{ folder_id: 'a', title: 'Без даты', case: { id: '1', volumes: 0, changed: null } },
-				{ folder_id: 'b', title: 'С датой', case: { id: '2', volumes: 0, changed: '2025-01-01T00:00:00+00:00' } }
+				{
+					folder_id: 'b',
+					title: 'С датой',
+					case: { id: '2', volumes: 0, changed: '2025-01-01T00:00:00+00:00' }
+				}
 			]
 		});
 		expect(titles(sortCases(list, 'recent'))).toEqual(['С датой', 'Без даты']);

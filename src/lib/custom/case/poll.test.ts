@@ -26,7 +26,11 @@ describe('переспрашивание страницы дела', () => {
 		const c = clock();
 		let busy = true;
 		let runs = 0;
-		const p = createPoller({ run: async () => void runs++, delay: () => (busy ? 5000 : 30000), ...c });
+		const p = createPoller({
+			run: async () => void runs++,
+			delay: () => (busy ? 5000 : 30000),
+			...c
+		});
 		await p.refresh();
 		expect([runs, c.pending()]).toEqual([1, [5000]]);
 		busy = false;

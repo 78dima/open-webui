@@ -59,10 +59,15 @@
 							text={ru.case_page.unavailable_hint}
 							testid="case-fallback"
 						>
-							<button class="btn p big act" type="button" disabled={busy} on:click={() => load(true)}
+							<button
+								class="btn p big act"
+								type="button"
+								disabled={busy}
+								on:click={() => load(true)}
 								><Icon name="retry" size={18} />{ru.case_page.retry}</button
 							>
-							<a class="btn big" href={chatHref}><Icon name="chat" size={18} />{ru.case_page.to_chat}</a
+							<a class="btn big" href={chatHref}
+								><Icon name="chat" size={18} />{ru.case_page.to_chat}</a
 							>
 						</StateCard>
 					{/if}

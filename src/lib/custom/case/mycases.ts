@@ -79,7 +79,8 @@ export function parentMap(folders: CaseFolder[], nodes: FolderNode[] | null): Ma
 	for (const node of nodes ?? []) {
 		const id = text(node?.id);
 		const parent = text(node?.parent_id);
-		if (id && parent && id !== parent && known.has(id) && known.has(parent)) parents.set(id, parent);
+		if (id && parent && id !== parent && known.has(id) && known.has(parent))
+			parents.set(id, parent);
 	}
 	return parents;
 }

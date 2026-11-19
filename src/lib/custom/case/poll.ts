@@ -26,7 +26,8 @@ export type Poller = {
 
 export function createPoller(options: PollerOptions): Poller {
 	const setTimer = options.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
-	const clearTimer = options.clearTimer ?? ((id) => clearTimeout(id as ReturnType<typeof setTimeout>));
+	const clearTimer =
+		options.clearTimer ?? ((id) => clearTimeout(id as ReturnType<typeof setTimeout>));
 	const hidden = options.hidden ?? (() => typeof document !== 'undefined' && document.hidden);
 	let timer: unknown = null;
 	let controller: AbortController | null = null;

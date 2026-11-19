@@ -142,9 +142,27 @@
 	$: columns = Array.isArray(S.my_cases_columns_g) ? S.my_cases_columns_g : [];
 
 	$: scopes = [
-		{ id: 'all', icon: 'folder', label: S.my_cases_filter_all, short: S.my_cases_filter_all_short, n: all.cases },
-		{ id: 'own', icon: 'user', label: S.my_cases_filter_own, short: S.my_cases_filter_own, n: all.casesOwn },
-		{ id: 'shared', icon: 'users', label: S.shared_with_me, short: S.shared_short, n: all.casesShared }
+		{
+			id: 'all',
+			icon: 'folder',
+			label: S.my_cases_filter_all,
+			short: S.my_cases_filter_all_short,
+			n: all.cases
+		},
+		{
+			id: 'own',
+			icon: 'user',
+			label: S.my_cases_filter_own,
+			short: S.my_cases_filter_own,
+			n: all.casesOwn
+		},
+		{
+			id: 'shared',
+			icon: 'users',
+			label: S.shared_with_me,
+			short: S.shared_short,
+			n: all.casesShared
+		}
 	] as { id: Scope; icon: IconName; label: string; short: string; n: number }[];
 
 	const ACCESS: Record<string, { icon: IconName; key: string }> = {
@@ -201,7 +219,10 @@
 			</a>
 		</header>
 
-		<div class="mc-head" class:apart={phase !== 'loading' && !(phase === 'ready' && folders.length)}>
+		<div
+			class="mc-head"
+			class:apart={phase !== 'loading' && !(phase === 'ready' && folders.length)}
+		>
 			<h1>{S.my_cases_title}</h1>
 			{#if phase === 'loading'}
 				<span class="mc-loading" role="status">{S.loading}</span>
@@ -247,7 +268,13 @@
 				</div>
 			</section>
 		{:else if phase === 'error'}
-			<StateCard icon="al" tone="stop" title={failure.title} text={failure.text} testid="case-error">
+			<StateCard
+				icon="al"
+				tone="stop"
+				title={failure.title}
+				text={failure.text}
+				testid="case-error"
+			>
 				<button class="mc-big act" type="button" data-testid="case-retry" on:click={load}>
 					<Icon name="retry" size={18} />{S.retry}
 				</button>
@@ -370,7 +397,8 @@
 											>{f.title || S.folder_untitled}</a
 										>
 									</div>
-									<span class="vol" class:none={!f.case?.volumes} role="cell">{volumesText(f)}</span>
+									<span class="vol" class:none={!f.case?.volumes} role="cell">{volumesText(f)}</span
+									>
 									<span class="date" role="cell">{day(f.case?.changed)}</span>
 									<span role="cell"
 										><span class="mc-pill {access(f)}"><Icon name={a.icon} />{S[a.key]}</span></span
@@ -398,7 +426,8 @@
 											: ''}</span
 									>
 									<span class="tag"
-										><span class="mc-pill {access(f)}"><Icon name={a.icon} size={15} />{S[a.key]}</span
+										><span class="mc-pill {access(f)}"
+											><Icon name={a.icon} size={15} />{S[a.key]}</span
 										></span
 									>
 								</span>
@@ -425,7 +454,12 @@
 					</div>
 					<div class="mc-grid">
 						{#each empties as f (f.id)}
-							<div class="mc-folder" class:ro={!f.write} data-testid="case-folder" data-folder={f.id}>
+							<div
+								class="mc-folder"
+								class:ro={!f.write}
+								data-testid="case-folder"
+								data-folder={f.id}
+							>
 								<span class="ico w" aria-hidden="true"
 									><Icon name="folder" size={18} stroke={1.7} /></span
 								>
@@ -450,7 +484,8 @@
 					</div>
 				{:else}
 					<div class="mc-freehead alone w">
-						<a class="mc-new" href={chatHref}><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
+						<a class="mc-new" href={chatHref}
+							><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
 						>
 					</div>
 				{/if}

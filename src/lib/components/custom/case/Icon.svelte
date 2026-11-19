@@ -30,7 +30,7 @@
 		'users',
 		'vol',
 		'x',
-		'zoom',
+		'zoom'
 	] as const;
 	export type IconName = (typeof ICONS)[number];
 </script>

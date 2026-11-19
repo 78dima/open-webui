@@ -117,13 +117,18 @@ export function createCaseApi(
 			throw new CaseApiError(0, 'network');
 		}
 		let data: unknown = null;
+		let foreign = false;
 		try {
 			const text = await response.text();
 			data = text ? JSON.parse(text) : null;
 		} catch (error) {
 			if ((error as { name?: string } | null)?.name === 'AbortError') throw error;
 			data = null;
+			foreign = true;
 		}
+		// «200», но не JSON — ответил не сервис (например, приложение чата отдало свою страницу по этому пути,
+		// когда путь к сервису не настроен): это сбой, а не пустой список
+		if (response.ok && foreign) throw new CaseApiError(response.status, 'other');
 		if (!response.ok) {
 			throw new CaseApiError(
 				response.status,

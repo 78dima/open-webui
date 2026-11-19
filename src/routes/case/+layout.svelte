@@ -9,7 +9,8 @@
 	import '$lib/custom/case/case.css';
 
 	onMount(() => {
-		if (!$user) void goto(`/auth?redirect=${encodeURIComponent($page.url.pathname + $page.url.search)}`);
+		if (!$user)
+			void goto(`/auth?redirect=${encodeURIComponent($page.url.pathname + $page.url.search)}`);
 	});
 </script>
 
