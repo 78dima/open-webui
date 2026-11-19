@@ -1,5 +1,5 @@
 <script lang="ts">
-	// ai-dvokat: страница дела — /case/<папка> («Обзор») и /case/<папка>/<раздел>. Макет общий для всех разделов дела:
+	// ai-dvokat: страница дела — /case/<папка> («Обзор»), /case/<папка>/<раздел> и /case/<папка>/tables/<номер>. Макет общий для всех разделов дела:
 	// страница дела создаётся один раз и живёт, пока открыто это дело, — обзор, его переспрашивание и идущие загрузки
 	// не прерываются при переходе между разделами. Прежняя метка раздела (#sec-check) из старых ссылок — на адрес раздела.
 	import { onMount } from 'svelte';
@@ -31,6 +31,12 @@
 
 <svelte:head><title>{title ? `${title} / ` : ''}{$WEBUI_NAME}</title></svelte:head>
 {#key folderId}
-	<CasePage bind:this={casePage} {folderId} section={$page.params.section ?? ''} bind:title />
+	<CasePage
+		bind:this={casePage}
+		{folderId}
+		section={$page.params.section ?? ''}
+		sub={$page.params.item ?? ''}
+		bind:title
+	/>
 {/key}
 <slot />

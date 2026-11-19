@@ -31,12 +31,16 @@
 	import StateCard from './StateCard.svelte';
 	import Extract from './Extract.svelte';
 	import Replace from './Replace.svelte';
+	import TableOpen from './TableOpen.svelte';
+	import Tables from './Tables.svelte';
 	import Upload from './Upload.svelte';
 	import Volumes from './Volumes.svelte';
 
 	export let folderId: string;
 	/** Раздел из адреса; пусто — «Обзор». */
 	export let section = '';
+	/** Часть адреса после раздела: открытая таблица — `/case/<папка>/tables/<номер>`. */
+	export let sub = '';
 	/** Адрес «Моих дел», чата папки и страницы дела — страницы того же приложения. */
 	export let casesHref = '/case';
 	export let chatHref = `/folders/${encodeURIComponent(folderId)}`;
@@ -206,27 +210,31 @@
 					>
 				</StateCard>
 			{:else}
-				<div class="head">
-					<div class="col g2 grow">
-						<span class="eyebrow">{section ? name || S.case_no_title : S.case_caption}</span>
-						{#if section && headCount}
-							<div class="row g12">
-								<h1>{label}</h1>
-								<span class="cnt headcnt" class:w={item?.warn}
-									>{section === 'inventory' ? count(headCount, S.documents_forms) : headCount}</span
-								>
-							</div>
-						{:else}
-							<h1>{section ? label || S.not_found : name || S.case_no_title}</h1>
-						{/if}
+				{#if !(section === 'tables' && sub && open)}
+					<div class="head">
+						<div class="col g2 grow">
+							<span class="eyebrow">{section ? name || S.case_no_title : S.case_caption}</span>
+							{#if section && headCount}
+								<div class="row g12">
+									<h1>{label}</h1>
+									<span class="cnt headcnt" class:w={item?.warn}
+										>{section === 'inventory'
+											? count(headCount, S.documents_forms)
+											: headCount}</span
+									>
+								</div>
+							{:else}
+								<h1>{section ? label || S.not_found : name || S.case_no_title}</h1>
+							{/if}
+						</div>
+						<div class="row g8">
+							<GotoForm action={refAction} {volumes} {S} />
+							{#if !section}
+								<a class="btn big p" href={chatHref}><Icon name="chat" />{S.chat_of_case}</a>
+							{/if}
+						</div>
 					</div>
-					<div class="row g8">
-						<GotoForm action={refAction} {volumes} {S} />
-						{#if !section}
-							<a class="btn big p" href={chatHref}><Icon name="chat" />{S.chat_of_case}</a>
-						{/if}
-					</div>
-				</div>
+				{/if}
 
 				{#if section === ''}
 					<Overview {state} {S} {hrefOf} />
@@ -252,6 +260,12 @@
 					<Chronology {state} {S} />
 				{:else if section === 'deadlines'}
 					<Deadlines {state} {S} />
+				{:else if section === 'tables'}
+					{#if sub}
+						{#key sub}<TableOpen {state} {S} {hrefOf} id={sub} caseName={name} />{/key}
+					{:else}
+						<Tables {state} {S} {hrefOf} />
+					{/if}
 				{:else if section === 'replace'}
 					<Replace {state} {S} />
 				{:else if section === 'extract'}

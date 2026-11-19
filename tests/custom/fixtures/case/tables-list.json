@@ -1,0 +1,192 @@
+{
+ "tables": [
+  {
+   "id": "81de6f04-621e-4774-a99e-993399a3713d",
+   "kind": "table",
+   "question": "Что это за документ как доказательство: что им подтверждается и кто его представил.",
+   "preset": "evidence",
+   "title": "Реестр доказательств",
+   "status": "done",
+   "finished": true,
+   "stop": null,
+   "scope": "всё дело",
+   "pages_scope": 209,
+   "pages_read": 209,
+   "not_read": 0,
+   "not_read_reasons": {},
+   "windows_total": 29,
+   "windows_done": 29,
+   "model": "openai/gpt-6-luna",
+   "case_version": 6,
+   "stale": false,
+   "reader_stale": false,
+   "parent": "d1e16f23-a5f0-4382-a7cb-143f92f3c47c",
+   "created_by": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+   "created_at": "2025-10-13T12:15:33.809025+00:00",
+   "finished_at": "2025-10-13T12:15:47.590059+00:00"
+  },
+  {
+   "id": "d1e16f23-a5f0-4382-a7cb-143f92f3c47c",
+   "kind": "table",
+   "question": "Что это за документ как доказательство: что им подтверждается и кто его представил.",
+   "preset": "evidence",
+   "title": "Реестр доказательств",
+   "status": "done",
+   "finished": true,
+   "stop": null,
+   "scope": "всё дело",
+   "pages_scope": 209,
+   "pages_read": 209,
+   "not_read": 0,
+   "not_read_reasons": {},
+   "windows_total": 29,
+   "windows_done": 29,
+   "model": "openai/gpt-6-luna",
+   "case_version": 6,
+   "stale": false,
+   "reader_stale": true,
+   "parent": null,
+   "created_by": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+   "created_at": "2025-10-13T10:16:07.009453+00:00",
+   "finished_at": "2025-10-13T10:16:21.505434+00:00"
+  },
+  {
+   "id": "90c6988f-2aa0-41c7-a72d-fcbddc5223ed",
+   "kind": "findings",
+   "question": "Суд определил назначить по делу судебную товароведческую экспертизу, проведение поручить АНО «Центр оценки». Согласно товарной накладной груз принят кладовщиком ответчика без замечаний по количеству и качеству. Представитель ответчика заявил ходатайство об отложении разбирательства для подготовки отзыва. Эксперт пришёл к выводу, что стоимость поставленного товара соответствует рыночной на дату поставки. Стороны подписали дополнительное соглашение о переносе срока оплаты на тридцать календарных дней. В платёжном поручении в назначении платежа указан номер счёта.",
+   "preset": null,
+   "title": null,
+   "status": "done",
+   "finished": true,
+   "stop": null,
+   "scope": "всё дело",
+   "pages_scope": 209,
+   "pages_read": 209,
+   "not_read": 0,
+   "not_read_reasons": {},
+   "windows_total": 29,
+   "windows_done": 29,
+   "model": "openai/gpt-6-luna",
+   "case_version": 6,
+   "stale": false,
+   "reader_stale": true,
+   "parent": null,
+   "created_by": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+   "created_at": "2025-10-13T10:15:31.110888+00:00",
+   "finished_at": "2025-10-13T10:15:49.514565+00:00"
+  }
+ ],
+ "presets": [
+  {
+   "name": "expertise",
+   "title": "Заключение эксперта",
+   "kind": "table",
+   "params": [],
+   "page": false,
+   "scope_hint": "заключения экспертов и специалистов",
+   "columns": [
+    "Эксперт и квалификация",
+    "Предупреждение об ответственности",
+    "Исследованные материалы",
+    "Методики",
+    "Выводы"
+   ],
+   "available": true
+  },
+  {
+   "name": "notices",
+   "title": "Извещения",
+   "kind": "table",
+   "params": [],
+   "page": true,
+   "scope_hint": "определения о назначении заседаний, повестки, уведомления о вручении, конверты, отчёты об отслеживании",
+   "columns": [
+    "Кого и о чём",
+    "Как и когда отправлено",
+    "Получено ли"
+   ],
+   "available": true
+  },
+  {
+   "name": "positions",
+   "title": "Позиции сторон",
+   "kind": "table",
+   "params": [],
+   "page": true,
+   "scope_hint": "иск, отзывы, возражения, пояснения, жалобы, ходатайства с изложением позиции",
+   "columns": [
+    "Чья позиция",
+    "Требование или возражение",
+    "Обстоятельства",
+    "Нормы, как названы",
+    "Доказательства"
+   ],
+   "available": true
+  },
+  {
+   "name": "evidence",
+   "title": "Реестр доказательств",
+   "kind": "table",
+   "params": [],
+   "page": true,
+   "scope_hint": "документы-доказательства: договоры, акты, платёжные документы, письма, заключения, протоколы следственных и процессуальных действий и подобные — не процессуальные документы суда и участников",
+   "columns": [
+    "Что это и что подтверждает",
+    "Кто составил",
+    "Оригинал или копия",
+    "Копии и расхождения"
+   ],
+   "available": true
+  },
+  {
+   "name": "motions",
+   "title": "Ходатайства",
+   "kind": "table",
+   "params": [],
+   "page": true,
+   "scope_hint": "ходатайства, заявления, протоколы заседаний, определения и постановления, которыми ходатайства разрешены",
+   "columns": [
+    "Что это",
+    "Кто и когда заявил",
+    "О чём",
+    "Как разрешено"
+   ],
+   "available": true
+  },
+  {
+   "name": "pro_contra",
+   "title": "За и против позиции",
+   "kind": "question",
+   "params": [
+    "position",
+    "subject"
+   ],
+   "page": false,
+   "scope_hint": "всё дело или тома, где может быть сказано о предмете",
+   "columns": [],
+   "available": true
+  },
+  {
+   "name": "contradictions",
+   "title": "Противоречия",
+   "kind": "question",
+   "params": [
+    "subject"
+   ],
+   "page": false,
+   "scope_hint": "всё дело или тома, где может быть сказано о предмете",
+   "columns": [],
+   "available": true
+  },
+  {
+   "name": "judgment_vs_record",
+   "title": "Решение против материалов",
+   "kind": "question",
+   "params": [],
+   "page": false,
+   "scope_hint": "решение, постановление или определение суда этого дела — один документ",
+   "columns": [],
+   "available": true
+  }
+ ]
+}

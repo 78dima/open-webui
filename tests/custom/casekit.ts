@@ -65,7 +65,7 @@ export async function openSection(page: Page, scene: Scene = {}) {
 			});
 		});
 	}
-	const q = `${scene.section ? `&s=${scene.section}` : ''}${scene.item ? `&i=${scene.item}` : ''}`;
+	const q = scene.section ? `&s=${scene.section}${scene.item ? `/${scene.item}` : ''}` : '';
 	await page.goto(`/?casepage=${F}${q}`);
 	await page.waitForFunction(() => typeof (window as any).setConfig === 'function');
 	if (scene.dark) await page.evaluate(() => document.documentElement.classList.add('dark'));

@@ -10,7 +10,12 @@
 
 	const params = new URLSearchParams(location.search);
 	const folderId = params.get('casepage') ?? '';
-	let section = params.get('s') ?? '';
+	// раздел и, после косой черты, его часть: `s=tables/<номер>` — открытая таблица
+	const split = (s: string) => {
+		const [a = '', ...rest] = s.split('/');
+		return [a, rest.join('/')];
+	};
+	let [section, item] = split(params.get('s') ?? '');
 	let title = '';
 	const hrefOf = (slug: string) => `/?casepage=${encodeURIComponent(folderId)}${slug ? `&s=${slug}` : ''}`;
 	function follow(ev: MouseEvent) {
@@ -19,16 +24,16 @@
 		if (!href.startsWith('/?casepage=') || ev.defaultPrevented) return;
 		ev.preventDefault();
 		history.pushState({}, '', href);
-		section = new URLSearchParams(href.slice(2)).get('s') ?? '';
+		[section, item] = split(new URLSearchParams(href.slice(2)).get('s') ?? '');
 	}
-	window.addEventListener('popstate', () => (section = new URLSearchParams(location.search).get('s') ?? ''));
+	window.addEventListener('popstate', () => ([section, item] = split(new URLSearchParams(location.search).get('s') ?? '')));
 	$: document.title = title;
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
 {#if $config}
 	<div class="frame" on:click={follow}>
-		<CaseRoot><CasePage {folderId} {section} {hrefOf} bind:title /></CaseRoot>
+		<CaseRoot><CasePage {folderId} {section} sub={item} {hrefOf} bind:title /></CaseRoot>
 	</div>
 {/if}
 <Toaster />

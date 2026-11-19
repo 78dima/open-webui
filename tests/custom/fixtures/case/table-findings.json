@@ -1,0 +1,163 @@
+{
+ "sweep": {
+  "id": "90c6988f-2aa0-41c7-a72d-fcbddc5223ed",
+  "kind": "findings",
+  "question": "Суд определил назначить по делу судебную товароведческую экспертизу, проведение поручить АНО «Центр оценки». Согласно товарной накладной груз принят кладовщиком ответчика без замечаний по количеству и качеству. Представитель ответчика заявил ходатайство об отложении разбирательства для подготовки отзыва. Эксперт пришёл к выводу, что стоимость поставленного товара соответствует рыночной на дату поставки. Стороны подписали дополнительное соглашение о переносе срока оплаты на тридцать календарных дней. В платёжном поручении в назначении платежа указан номер счёта.",
+  "preset": null,
+  "title": null,
+  "status": "done",
+  "finished": true,
+  "stop": null,
+  "scope": "всё дело",
+  "pages_scope": 209,
+  "pages_read": 209,
+  "not_read": 0,
+  "not_read_reasons": {},
+  "windows_total": 29,
+  "windows_done": 29,
+  "model": "openai/gpt-6-luna",
+  "case_version": 6,
+  "stale": false,
+  "reader_stale": true,
+  "parent": null,
+  "created_by": "f0a3d4be-7b2a-4d39-abf0-8b5d17b33ca7",
+  "created_at": "2025-10-13T10:15:31.110888+00:00",
+  "finished_at": "2025-10-13T10:15:49.514565+00:00",
+  "text_short": 18,
+  "photos": 6,
+  "text_short_sheets": [
+   {
+    "page_id": 641,
+    "label": "т. 4, л.д. 12",
+    "read_id": null,
+    "hl": null,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/641"
+   },
+   {
+    "page_id": 644,
+    "label": "т. 4, л.д. 15",
+    "read_id": null,
+    "hl": null,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/644"
+   },
+   {
+    "page_id": 646,
+    "label": "т. 4, л.д. 17",
+    "read_id": null,
+    "hl": null,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/646"
+   },
+   {
+    "page_id": 675,
+    "label": "т. 4, л.д. 46",
+    "read_id": null,
+    "hl": null,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/675"
+   }
+  ],
+  "photo_sheets": [
+   {
+    "page_id": 645,
+    "label": "т. 4, л.д. 16",
+    "read_id": null,
+    "hl": null,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/645"
+   },
+   {
+    "page_id": 595,
+    "label": "т. 4, л.д. 177",
+    "read_id": null,
+    "hl": null,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/595"
+   },
+   {
+    "page_id": 597,
+    "label": "т. 4, л.д. 179",
+    "read_id": null,
+    "hl": null,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/597"
+   },
+   {
+    "page_id": 599,
+    "label": "т. 4, л.д. 181",
+    "read_id": null,
+    "hl": null,
+    "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/599"
+   }
+  ],
+  "rest": null,
+  "reread": {
+   "windows": 29,
+   "pages": 209,
+   "estimate_usd": 0.0204986
+  }
+ },
+ "kind": "findings",
+ "after": null,
+ "findings": [
+  {
+   "document_id": 68,
+   "document": "Исковое заявление о взыскании задолженности",
+   "quote": "Претензия направлена ответчику",
+   "group_key": null,
+   "page_id": 629,
+   "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 1",
+   "read_id": 1398,
+   "hl": [
+    699,
+    734
+   ],
+   "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/629?v=1398&hl=699-734",
+   "also": []
+  },
+  {
+   "document_id": 68,
+   "document": "Исковое заявление о взыскании задолженности",
+   "quote": "Генеральный директор истца Карпов И. С.",
+   "group_key": null,
+   "page_id": 629,
+   "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 1",
+   "read_id": 1398,
+   "hl": [
+    1000,
+    1046
+   ],
+   "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/629?v=1398&hl=1000-1046",
+   "also": []
+  },
+  {
+   "document_id": 68,
+   "document": "Исковое заявление о взыскании задолженности",
+   "quote": "Стороны подписали дополнительное соглашение о переносе срока оплаты на тридцать календарных дней.\nВ платёжном поручении в назначении.",
+   "group_key": null,
+   "page_id": 629,
+   "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 1",
+   "read_id": 1398,
+   "hl": [
+    1079,
+    1214
+   ],
+   "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/629?v=1398&hl=1079-1214",
+   "also": []
+  },
+  {
+   "document_id": 68,
+   "document": "Исковое заявление о взыскании задолженности",
+   "quote": "Эксперт пришёл к выводу, что",
+   "group_key": null,
+   "page_id": 629,
+   "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 1",
+   "read_id": 1398,
+   "hl": [
+    1340,
+    1375
+   ],
+   "url": "https://chat.example.ru/legal-tools/case/ccfd097b-11c7-498d-a1e7-bf4ed19a30ff/p/629?v=1398&hl=1340-1375",
+   "also": []
+  }
+ ],
+ "total": 31,
+ "page": 0,
+ "next_page": null,
+ "end": true
+}
