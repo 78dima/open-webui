@@ -83,7 +83,7 @@ test.describe('«Удаление дела»', () => {
 
 test('«Потрачено по делу»: раздел таблиц выключен настройкой — строка в «Загрузить материалы»; включён — там её нет', async ({ page }) => {
 	const spent = fixture('case-overview').spent;
-	const line = `Потрачено по делу: обработка ${spent.processing} USD, работа ${spent.work} USD`;
+	const line = `Потрачено по делу: обработка ${String(spent.processing).replace('.', ',')} USD, работа ${String(spent.work).replace('.', ',')} USD`;
 	await openSection(page, { section: 'upload', boot: { sections: BOOT.sections.filter((s: string) => s !== 'tables') } });
 	await expect(page.getByTestId('case-spent')).toHaveText(line);
 	await openSection(page, { section: 'upload' });

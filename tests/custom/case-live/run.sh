@@ -9,6 +9,9 @@
 #   flock /tmp/ai-dvokat-docker-build.lock docker build -t legal-assistant/legal-tools:case-ui-g <ai-dvokat>/tools/
 #   LIVE_NAME=<проект> LIVE_SUBNET=<свободная /24> tests/custom/case-live/run.sh [каталог для снимков]
 # LIVE_KEEP=1 — оставить среду (убрать: docker compose -p $LIVE_NAME down -v). Код выхода 0 — все проверки OK.
+# LIVE_ENV_ONLY=<файл состояния> — поднять среду и выйти, не запуская сценариев (её ведёт платная проверка
+# live-paid.mjs: настоящий провайдер задаётся LIVE_OPENROUTER_URL и LIVE_OPENROUTER_KEY, пределы — LIVE_BUDGET_USD и
+# LIVE_SWEEP_MAX_USD; только по слову владельца).
 # LIVE_TOOLS_OLD_IMAGE=<образ сервиса до сдачи 4> — рядом поднимается прежняя страница листа (/legal-tools-old): с ней
 # сверяется скопированная строка.
 set -euo pipefail
@@ -117,6 +120,14 @@ if [ -n "${LIVE_TOOLS_OLD_IMAGE:-}" ] && docker image inspect "$LIVE_TOOLS_OLD_I
   "${COMPOSE[@]}" --profile old up -d --pull never --no-recreate tools-old >/dev/null 2>&1 && OLD=1
 fi
 python3 -I "$HERE/setup.py" cases "$BASE" "$WORK/state.json"
+if [ -n "${LIVE_ENV_ONLY:-}" ]; then
+  # только среда, без сценариев (платная проверка live-paid.mjs ведёт её сама): состояние — в названный файл, рядом —
+  # переменные среды для команд compose (без ключа провайдера); убрать: docker compose -p $LIVE_NAME down -v
+  cp "$WORK/state.json" "$LIVE_ENV_ONLY"
+  { export -p | grep -E '^declare -x LIVE_' | grep -v OPENROUTER_KEY | sed 's/^declare -x //'; echo "LIVE_WORKDIR=\"$WORK\""; } > "${LIVE_ENV_ONLY%.json}.env"
+  LIVE_KEEP=1
+  exit 0
+fi
 rc=0
 (cd "$HERE/.." && node case-live/live.mjs --state "$WORK/state.json" ${OUT:+--out "$OUT"}) || rc=1
 (cd "$HERE/.." && node case-live/live-case.mjs --state "$WORK/state.json" --corpus "$CORPUS/mini" \

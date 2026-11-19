@@ -2,7 +2,7 @@
 # фронтенд — сборка этой рабочей копии), legal-tools ветки с Postgres, Redis и MinIO и Caddy с правилами сервера
 # (deploy/caddy/Caddyfile ai-dvokat): страница ходит к сервису по /legal-tools/* того же адреса — как на сервере.
 # Обработку томов ведёт настоящий case-worker; распознаёт подставная «идеальная модель» сквозной пробы дела (prov.py).
-# Платных вызовов нет: модели чата и К+ не подключены. Наружу — один порт на 127.0.0.1.
+# Платных вызовов нет (кроме платной проверки, см. ниже): модели чата и К+ не подключены. Наружу — один порт на 127.0.0.1.
 name: ${LIVE_NAME:?}
 networks:
   live:
@@ -23,9 +23,12 @@ x-tools-env: &tools-env
   # распознавание — подставная «идеальная модель» сквозной пробы дела (prov.py, ответы по ключу выдуманного дела
   # corpus/case-v1) и её же подставной антивирус: обработка настоящая, платных вызовов нет
   LEGAL_TOOLS_CLAMAV_HOST: prov
-  LEGAL_TOOLS_OPENROUTER_URL: http://prov:8080/openrouter/api/v1
-  LEGAL_TOOLS_OPENROUTER_API_KEY: sk-or-live-not-a-key
-  LEGAL_TOOLS_CASE_BUDGET_USD: "50"                       # с запасом: при пределе в 1 USD шаги второго тома встают на паузу
+  # платная проверка (только по слову владельца, live-paid.mjs): настоящий провайдер — LIVE_OPENROUTER_URL и
+  # LIVE_OPENROUTER_KEY, предел расходов дела — LIVE_BUDGET_USD, предел одного прохода — LIVE_SWEEP_MAX_USD
+  LEGAL_TOOLS_OPENROUTER_URL: ${LIVE_OPENROUTER_URL:-http://prov:8080/openrouter/api/v1}
+  LEGAL_TOOLS_OPENROUTER_API_KEY: ${LIVE_OPENROUTER_KEY:-sk-or-live-not-a-key}
+  LEGAL_TOOLS_CASE_BUDGET_USD: "${LIVE_BUDGET_USD:-50}"   # с запасом: при пределе в 1 USD шаги второго тома встают на паузу
+  LEGAL_TOOLS_CASE_SWEEP_MAX_USD: "${LIVE_SWEEP_MAX_USD:-3}"
   LEGAL_TOOLS_CASE_PART_MB: "5"                           # наименьшая часть: файл в 6 МБ идёт двумя частями
   LEGAL_TOOLS_PUBLIC_URL: http://legal-tools-api:8000
   LEGAL_TOOLS_RECEIPT_PAGE_BASE: /legal-tools

@@ -366,7 +366,10 @@
 <!-- «Потрачено по делу» живёт в разделе «Таблицы и проходы»; если он выключен настройкой — здесь, под оценкой -->
 {#if $data?.spent && !$boot?.sections.includes('tables')}
 	<p class="sm mut" data-testid="case-spent">
-		{fmt(S.spent_line, { processing: $data.spent.processing, work: $data.spent.work })}
+		{fmt(S.spent_line, {
+			processing: money($data.spent.processing),
+			work: money($data.spent.work)
+		})}
 	</p>
 {/if}
 
