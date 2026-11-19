@@ -1,0 +1,153 @@
+{
+ "documents": [
+  {
+   "id": 53,
+   "volume_id": 3,
+   "volume_label": "1",
+   "file_id": 8,
+   "first_page_id": 538,
+   "last_page_id": 542,
+   "label": "т. 1, стр. файла 1–5",
+   "first_label": "т. 1, стр. файла 1",
+   "last_label": "т. 1, стр. файла 5",
+   "title": "Акт сверки взаимных расчётов",
+   "doc_type": "акт",
+   "date_as_written": "15 июля 2025 г.",
+   "date_value": "2025-02-26",
+   "number": null,
+   "author": null,
+   "parties": [],
+   "source": "model",
+   "edited": false,
+   "sheets": 1,
+   "checks": {
+    "date_iso_ok": true,
+    "date_on_pages": true,
+    "title_on_first": true
+   },
+   "e_case": false,
+   "url": "https://chat.example.ru/legal-tools/case/503941c2-c490-40c7-ab93-8287e657e3f1/p/538",
+   "amounts": [
+    {
+     "written": "6 931 рублей",
+     "what": "В платёжном поручении в назначении платежа указан номер счёта и ссылка на договор поставки. Генеральный директор истца Карпов И. С. подписал.",
+     "value": "Стороны",
+     "label": "т. 1, стр. файла 4",
+     "url": "https://chat.example.ru/legal-tools/case/503941c2-c490-40c7-ab93-8287e657e3f1/p/541?v=1373&hl=1730-2234",
+     "unchecked": false,
+     "edited": false,
+     "unit": null
+    }
+   ],
+   "unchecked": [],
+   "overlap": [],
+   "uncovered": false
+  },
+  {
+   "id": 54,
+   "volume_id": 3,
+   "volume_label": "1",
+   "file_id": 8,
+   "first_page_id": 543,
+   "last_page_id": 544,
+   "label": "т. 1, стр. файла 6–7",
+   "first_label": "т. 1, стр. файла 6",
+   "last_label": "т. 1, стр. файла 7",
+   "title": "Договор поставки № 17/25",
+   "doc_type": "договор",
+   "date_as_written": "3 апреля 2025 года",
+   "date_value": "2025-02-26",
+   "number": null,
+   "author": null,
+   "parties": [
+    "Зайцева Е. А.",
+    "Тихонов Артём Игоревич"
+   ],
+   "source": "model",
+   "edited": false,
+   "sheets": 2,
+   "checks": {
+    "date_iso_ok": true,
+    "date_on_pages": true,
+    "title_on_first": true
+   },
+   "e_case": false,
+   "url": "https://chat.example.ru/legal-tools/case/503941c2-c490-40c7-ab93-8287e657e3f1/p/543",
+   "amounts": [],
+   "unchecked": [],
+   "overlap": [],
+   "uncovered": false
+  },
+  {
+   "id": 55,
+   "volume_id": 3,
+   "volume_label": "1",
+   "file_id": 8,
+   "first_page_id": 545,
+   "last_page_id": 545,
+   "label": "т. 1, стр. файла 8",
+   "first_label": "т. 1, стр. файла 8",
+   "last_label": "т. 1, стр. файла 8",
+   "title": "Претензия",
+   "doc_type": "претензия",
+   "date_as_written": "19 июля 2025 года",
+   "date_value": "2025-01-16",
+   "number": "№ 17/25-П",
+   "author": "Представитель истца по",
+   "parties": [
+    "Зайцева Е. А."
+   ],
+   "source": "model",
+   "edited": false,
+   "sheets": 1,
+   "checks": {
+    "date_iso_ok": true,
+    "date_on_pages": true,
+    "title_on_first": true
+   },
+   "e_case": false,
+   "url": "https://chat.example.ru/legal-tools/case/503941c2-c490-40c7-ab93-8287e657e3f1/p/545",
+   "amounts": [],
+   "unchecked": [],
+   "overlap": [],
+   "uncovered": false
+  },
+  {
+   "id": 56,
+   "volume_id": 3,
+   "volume_label": "1",
+   "file_id": 8,
+   "first_page_id": 546,
+   "last_page_id": 546,
+   "label": "т. 1, стр. файла 9",
+   "first_label": "т. 1, стр. файла 9",
+   "last_label": "т. 1, стр. файла 9",
+   "title": "Счёт на оплату",
+   "doc_type": "счёт",
+   "date_as_written": null,
+   "date_value": null,
+   "number": "68018",
+   "author": "Представитель истца по доверенности",
+   "parties": [
+    "АНО «Центр оценки»"
+   ],
+   "source": "model",
+   "edited": false,
+   "sheets": 1,
+   "checks": {
+    "date_on_pages": null,
+    "title_on_first": true
+   },
+   "e_case": false,
+   "url": "https://chat.example.ru/legal-tools/case/503941c2-c490-40c7-ab93-8287e657e3f1/p/546",
+   "amounts": [],
+   "unchecked": [],
+   "overlap": [],
+   "uncovered": false
+  }
+ ],
+ "total": 15,
+ "page": 0,
+ "next_page": null,
+ "end": true
+}

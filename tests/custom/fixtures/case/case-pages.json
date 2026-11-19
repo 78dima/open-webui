@@ -1,0 +1,28 @@
+{
+ "pages": [
+  {
+   "id": 629,
+   "label": "т. 4, файл «tom-2-chast-1.pdf», стр. 1",
+   "side": "face",
+   "document_id": 68
+  },
+  {
+   "id": 630,
+   "label": "т. 4, л.д. 1",
+   "side": "face",
+   "document_id": 69
+  },
+  {
+   "id": 631,
+   "label": "т. 4, л.д. 2",
+   "side": "face",
+   "document_id": 69
+  },
+  {
+   "id": 632,
+   "label": "т. 4, л.д. 3",
+   "side": "face",
+   "document_id": 69
+  }
+ ]
+}

@@ -223,3 +223,36 @@ export function numberingChecks(
 	}
 	return { total, groups: [...by].map(([key, n]) => ({ key, n })) };
 }
+
+// ---- опись ----
+
+export type Doc = {
+	id: number;
+	volume_id?: number | null;
+	file_id?: number | null;
+	first_page_id: number;
+	last_page_id: number;
+	label: string;
+	title?: string | null;
+	doc_type?: string | null;
+	date_as_written?: string | null;
+	date_value?: string | null;
+	number?: string | null;
+	author?: string | null;
+	edited?: boolean;
+	sheets: number;
+	unchecked?: string[];
+	overlap?: ({ label?: string } | null)[];
+	uncovered?: boolean;
+};
+/** Пометки проверки строки описи кодом сервиса: чего не нашли на листах, пересечения, «не размечено». */
+export function docNotes(d: Doc, S: Strings): string[] {
+	const out: string[] = [];
+	const un = d.unchecked ?? [];
+	if (un.includes('title')) out.push(S.inventory_unchecked);
+	if (un.includes('date')) out.push(S.inventory_date_unchecked);
+	const ov = (d.overlap ?? []).map((o) => o?.label).filter(Boolean);
+	if (ov.length) out.push(fmt(S.inventory_overlap, { docs: ov.join('; ') }));
+	if (d.uncovered) out.push(S.inventory_uncovered);
+	return out;
+}

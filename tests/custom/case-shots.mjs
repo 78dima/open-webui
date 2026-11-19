@@ -193,7 +193,10 @@ const CASE_SCENES = {
 		await page.getByTestId('case-file-actions').first().click();
 	} },
 	replace: { data: () => fixture('case-overview'), section: 'replace', routes: { deltas: 'deltas' } },
-	extract: { data: () => fixture('case-overview'), section: 'extract' }
+	extract: { data: () => fixture('case-overview'), section: 'extract' },
+	inventory: { data: () => fixture('case-overview'), section: 'inventory', routes: { 'documents?**': 'case-documents-marks' }, after: async (page, width) => {
+		if (width > 720) for (const n of [3, 4]) await page.getByTestId('case-doc').nth(n).getByRole('checkbox').check();
+	} }
 };
 
 async function openCase(browser, scene, width, height, dark) {
@@ -294,7 +297,8 @@ const CASE_PAIRS = [
 	['K-check-dark', 'K-check', 'check', 1280, 1860, true],
 	...trio('K-volumes', 'volumes', 2060, 3200),
 	...trio('K-replace', 'replace', 1720, 2900),
-	...trio('K-extract', 'extract', 900, 1100)
+	...trio('K-extract', 'extract', 1020, 1300),
+	...trio('K-inventory', 'inventory', 1460, 3100)
 ];
 const STATUS = ['status-empty', 'status-ready', 'status-paused', 'status-stopped', 'status-offline', 'status-readonly', 'no-case'];
 const set = arg('set', 'all');

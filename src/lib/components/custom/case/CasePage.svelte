@@ -14,13 +14,14 @@
 		sectionOpen,
 		SECTION_SETTING
 	} from '$lib/custom/case/casepage';
-	import { caseStrings, fmt } from '$lib/custom/case/strings';
+	import { caseStrings, count, fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import CaseNav from './CaseNav.svelte';
 	import CheckSheets from './CheckSheets.svelte';
 	import Dialog from './Dialog.svelte';
 	import GotoForm from './GotoForm.svelte';
 	import Icon from './Icon.svelte';
+	import Inventory from './Inventory.svelte';
 	import Overview from './Overview.svelte';
 	import StateCard from './StateCard.svelte';
 	import Extract from './Extract.svelte';
@@ -206,7 +207,9 @@
 						{#if section && headCount}
 							<div class="row g12">
 								<h1>{label}</h1>
-								<span class="cnt headcnt" class:w={item?.warn}>{headCount}</span>
+								<span class="cnt headcnt" class:w={item?.warn}
+									>{section === 'inventory' ? count(headCount, S.documents_forms) : headCount}</span
+								>
 							</div>
 						{:else}
 							<h1>{section ? label || S.not_found : name || S.case_no_title}</h1>
@@ -232,6 +235,8 @@
 					<CheckSheets {state} {S} />
 				{:else if section === 'volumes'}
 					<Volumes {state} {S} {hrefOf} />
+				{:else if section === 'inventory'}
+					<Inventory {state} {S} />
 				{:else if section === 'replace'}
 					<Replace {state} {S} />
 				{:else if section === 'extract'}
