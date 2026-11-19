@@ -224,6 +224,10 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 	ok([...seen].some((x) => x.startsWith('Идёт обработка')) && (await page.evaluate(() => window.__sameDocument === true)),
 		`ход был виден без перезагрузки страницы: ${progress.length ? progress.map((x) => x.split('|')[1]).slice(0, 4).join(' → ') : [...seen].join(' / ')}`);
 	await page.waitForTimeout(6000); // ещё один оборот обзора — счётчики меню и состав дела
+	// паспорт строится после распознавания: шапка дела из него появляется на открытой странице сама
+	const headShown = await page.getByTestId('case-head').waitFor({ timeout: 120000 }).then(() => true, () => false);
+	ok(headShown && (await page.evaluate(() => window.__sameDocument === true)),
+		`шапка дела из паспорта появилась без перезагрузки страницы: «${headShown ? (await page.getByTestId('case-head').locator('dl').textContent()).replace(/\s+/g, ' ').trim().slice(0, 90) : ''}»`);
 	await shot(page, 'live-case-overview-1280-light');
 
 	// --- сверка с прежней страницей сервиса на этом же деле

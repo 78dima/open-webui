@@ -61,7 +61,6 @@
 	type Party = Place & { roles?: { value: string }[] };
 	let head: { numbers: Place[]; courts: Place[]; parties: Party[] } | null = null;
 	let headAt = 0;
-	let headVersion: number | undefined;
 	let gone = false;
 	async function loadHead() {
 		headAt = Date.now();
@@ -76,15 +75,9 @@
 			/* шапка из паспорта — дополнение: обзор работает и без неё */
 		}
 	}
-	$: if (
-		d &&
-		sectionOpen('passport', b) &&
-		d.version !== headVersion &&
-		Date.now() - headAt > 20000
-	) {
-		headVersion = d.version;
-		void loadHead();
-	}
+	// с каждым приходом обзора, но не чаще раза в 20 с: паспорт строится после распознавания и версию дела не меняет,
+	// поэтому по одной версии его не поймать — страница, открытая во время обработки, осталась бы без шапки
+	$: if (d && sectionOpen('passport', b) && Date.now() - headAt > 20000) void loadHead();
 	onDestroy(() => (gone = true));
 	$: hasHead =
 		!!head && (head.numbers.length > 0 || head.courts.length > 0 || head.parties.length > 0);

@@ -222,6 +222,36 @@ test.describe('«Обзор», 1280', () => {
 		await expect(page.locator('.main')).not.toContainText('USD');
 	});
 
+	test('шапка из паспорта перечитывается с обзором, не чаще раза в 20 с: паспорт, построенный после открытия страницы, появляется сам', async ({ page }) => {
+		let built = false;
+		let asked = 0;
+		await open(page, { data: processing });
+		await page.unroute(`**${API}/passport`);
+		await page.route(`**${API}/passport`, (r) => {
+			asked += 1;
+			return r.fulfill({ json: built ? fixture('passport') : { fields: [], can_write: true } });
+		});
+		await page.evaluate(() => {
+			const now = Date.now.bind(Date);
+			(window as any).__ahead = 0;
+			Date.now = () => now() + (window as any).__ahead;
+		});
+		const ahead = (ms: number) => page.evaluate((x) => ((window as any).__ahead += x), ms);
+		await ahead(21000);
+		await refresh(page);
+		await expect.poll(() => asked).toBe(1);
+		await expect(page.getByTestId('case-head')).toHaveCount(0); // паспорта ещё нет — шапки нет
+		built = true;
+		await refresh(page);
+		await page.waitForTimeout(300);
+		expect(asked).toBe(1); // 20 с не прошло — паспорт не переспрашивается
+		await ahead(21000);
+		await refresh(page);
+		await expect(page.getByTestId('case-head')).toBeVisible();
+		await expect(page.getByTestId('case-head')).toContainText(S.map_pf_court);
+		expect(asked).toBe(2);
+	});
+
 	test('состояния сводки: готово, пауза сама пройдёт, остановлено, пусто', async ({ page }) => {
 		await open(page);
 		await expect(summary(page)).toHaveAttribute('data-state', 'ready');
