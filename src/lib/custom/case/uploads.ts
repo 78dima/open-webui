@@ -26,7 +26,10 @@ export function planParts(size: number, partSize: number): Part[] {
 	}
 	return out;
 }
-export function missingParts(plan: Part[], received: { n: number; size: number }[] | undefined): Part[] {
+export function missingParts(
+	plan: Part[],
+	received: { n: number; size: number }[] | undefined
+): Part[] {
 	const have = new Map((received ?? []).map((p) => [p.n, p.size]));
 	return plan.filter((p) => have.get(p.n) !== p.end - p.start);
 }
@@ -80,10 +83,14 @@ export type PendingRow = {
 
 /** Выбранные файлы → строки к загрузке: PDF и ZIP — по строке (у каждого свой том), снимки — одной серией. Всё из
     одного выбора каталога — один batch и порядок по пути внутри каталога. */
-export function planRows(files: File[], makeId: () => string | null): Omit<PendingRow, 'id' | 'label' | 'cont'>[] {
+export function planRows(
+	files: File[],
+	makeId: () => string | null
+): Omit<PendingRow, 'id' | 'label' | 'cont'>[] {
 	const list = [...files] as AnyFile[];
 	const dir = list.some((f) => !!f.webkitRelativePath);
-	if (dir) list.sort((a, b) => (filePath(a) < filePath(b) ? -1 : filePath(a) > filePath(b) ? 1 : 0));
+	if (dir)
+		list.sort((a, b) => (filePath(a) < filePath(b) ? -1 : filePath(a) > filePath(b) ? 1 : 0));
 	const batch = dir ? makeId() : null;
 	const rows: Omit<PendingRow, 'id' | 'label' | 'cont'>[] = [];
 	const photos: File[] = [];
@@ -113,8 +120,10 @@ export const SERVER_TEXT: Record<string, string> = {
 	received: 'upload_status_received',
 	done_nofile: 'upload_status_done_nofile_g'
 };
-export const serverTextKey = (phase: string): string => SERVER_TEXT[phase] ?? 'upload_status_received';
-export const serverFailed = (phase: string): boolean => phase === 'failed' || phase === 'intake_failed';
+export const serverTextKey = (phase: string): string =>
+	SERVER_TEXT[phase] ?? 'upload_status_received';
+export const serverFailed = (phase: string): boolean =>
+	phase === 'failed' || phase === 'intake_failed';
 
 // ---- движок ----
 export type ActiveState = 'queued' | 'running' | 'paused' | 'failed' | 'done';
@@ -194,10 +203,15 @@ export type Uploads = Readable<UploadsState> & {
 export function createUploads(options: Options): Uploads {
 	const { api, folderId } = options;
 	const storage: Storage | null =
-		options.storage !== undefined ? options.storage : typeof localStorage !== 'undefined' ? localStorage : null;
+		options.storage !== undefined
+			? options.storage
+			: typeof localStorage !== 'undefined'
+				? localStorage
+				: null;
 	const second = options.second ?? (() => new Promise<void>((r) => setTimeout(r, 1000)));
 	const makeId =
-		options.makeId ?? (() => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : null));
+		options.makeId ??
+		(() => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : null));
 	const maxRunning = options.maxRunning ?? 2;
 	const path = (rest = '') => `api/cases/${encodeURIComponent(folderId)}/uploads${rest}`;
 	const localKey = `case-up:${folderId}`;
@@ -250,7 +264,10 @@ export function createUploads(options: Options): Uploads {
 		const known = local[fileKey(file)];
 		const byLocal = known ? server.find((u) => u.id === known) : undefined;
 		if (byLocal) return byLocal;
-		return server.find((u) => u.filename === file.name && u.size === file.size && !isActive(u.id)) ?? null;
+		return (
+			server.find((u) => u.filename === file.name && u.size === file.size && !isActive(u.id)) ??
+			null
+		);
 	}
 
 	function addFiles(files: File[]): Rejected[] {
@@ -370,7 +387,12 @@ export function createUploads(options: Options): Uploads {
 				return await fn();
 			} catch (error) {
 				const status = error instanceof CaseApiError ? error.status : -1;
-				if (job.state !== 'running' || job.aborted || !(error instanceof CaseApiError) || !retryAgain(status, job.serverTries))
+				if (
+					job.state !== 'running' ||
+					job.aborted ||
+					!(error instanceof CaseApiError) ||
+					!retryAgain(status, job.serverTries)
+				)
 					throw error;
 				if (status >= 500) job.serverTries++;
 				job.attempt++;
@@ -409,7 +431,9 @@ export function createUploads(options: Options): Uploads {
 			emit();
 			for (const p of todo) {
 				if (job.state !== 'running' || job.aborted) throw new Halt();
-				await withRetry(job, () => api.request('PUT', path(`/${job.id}/parts/${p.n}`), file.slice(p.start, p.end)));
+				await withRetry(job, () =>
+					api.request('PUT', path(`/${job.id}/parts/${p.n}`), file.slice(p.start, p.end))
+				);
 				job.attempt = 0;
 				job.serverTries = 0;
 				job.sent += p.end - p.start;
@@ -427,7 +451,11 @@ export function createUploads(options: Options): Uploads {
 			if (job.aborted || (job.state as ActiveState) === 'paused' || error instanceof Halt) return;
 			const e = error as CaseApiError;
 			// сервер не собрал файл и после повторов: дальше не повторяем — «отменить и выбрать файл снова»
-			job.assembleFailed = job.stage === 'complete' && e instanceof CaseApiError && e.status >= 500 && e.status !== 503;
+			job.assembleFailed =
+				job.stage === 'complete' &&
+				e instanceof CaseApiError &&
+				e.status >= 500 &&
+				e.status !== 503;
 			job.stage = null;
 			job.serverTries = 0;
 			job.state = 'failed';
@@ -476,7 +504,13 @@ export function createUploads(options: Options): Uploads {
 
 	function nudge(uploads: Upload[]) {
 		for (const u of uploads) {
-			if (u.phase !== 'received' || (u.intake && u.intake !== 'none') || retried.has(u.id) || isActive(u.id)) continue;
+			if (
+				u.phase !== 'received' ||
+				(u.intake && u.intake !== 'none') ||
+				retried.has(u.id) ||
+				isActive(u.id)
+			)
+				continue;
 			retried.add(u.id);
 			api.post(path(`/${u.id}/complete`)).catch(() => retried.delete(u.id));
 		}

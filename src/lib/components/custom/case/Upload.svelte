@@ -30,7 +30,9 @@
 	);
 	$: server = $data?.uploads ?? [];
 	// незавершённые загрузки, которые эта страница не ведёт (начаты раньше или в другой вкладке)
-	$: unfinished = server.filter((u) => u.status === 'receiving' && !uploads.isActive(u.id) && $uploads);
+	$: unfinished = server.filter(
+		(u) => u.status === 'receiving' && !uploads.isActive(u.id) && $uploads
+	);
 	// загрузки, которые сервер принимает или не принял (их части уже переданы)
 	$: other = server.filter((u) => u.status !== 'receiving' && !uploads.isActive(u.id) && $uploads);
 	$: listed = $uploads.active.length + other.length;
@@ -73,14 +75,18 @@
 	];
 	const rowSize = (r: PendingRow) => size(r.files.reduce((a, f) => a + f.size, 0));
 	/** Каталог с несколькими PDF: перед первой его строкой — «Всем PDF папки». */
-	function groupHead(rows: PendingRow[], n: number): { name: string; count: number; group: string } | null {
+	function groupHead(
+		rows: PendingRow[],
+		n: number
+	): { name: string; count: number; group: string } | null {
 		const r = rows[n];
 		if (r.kind === 'photo' || !r.group) return null;
 		const mates = rows.filter((x) => x.group === r.group && x.kind !== 'photo');
 		if (mates.length < 2 || mates[0] !== r) return null;
 		return { name: dirName(r.files[0]), count: mates.length, group: r.group };
 	}
-	const percent = (u: ActiveUpload) => (u.size ? Math.floor((100 * u.sent) / u.size) : u.state === 'done' ? 100 : 0);
+	const percent = (u: ActiveUpload) =>
+		u.size ? Math.floor((100 * u.sent) / u.size) : u.state === 'done' ? 100 : 0;
 	const progress = (u: ActiveUpload) => ({ done: mb(u.sent), total: mb(u.size) });
 	const link = (template: unknown, name: string) => {
 		const [before, after = ''] = String(template ?? '').split(`{${name}}`);
@@ -101,13 +107,33 @@
 >
 	<span class="ico n big only-w mark" aria-hidden="true"><Icon name="up" klass="l" /></span>
 	<div class="row g12 center">
-		<button type="button" class="btn big p" on:click={() => pickFiles.click()}>{S.upload_pick_files}</button>
-		<button type="button" class="btn big only-w" on:click={() => pickDir.click()}>{S.upload_pick_folder_g}</button>
+		<button type="button" class="btn big p" on:click={() => pickFiles.click()}
+			>{S.upload_pick_files}</button
+		>
+		<button type="button" class="btn big only-w" on:click={() => pickDir.click()}
+			>{S.upload_pick_folder_g}</button
+		>
 		<span class="md only-w soft">{S.upload_drop}</span>
 	</div>
 	<p class="xs mut">{fmt(S.upload_formats_g, { mb: maxMb })}</p>
-	<input bind:this={pickFiles} type="file" multiple accept={ACCEPT} hidden on:change={picked} data-testid="case-pick-files" />
-	<input bind:this={pickDir} type="file" multiple webkitdirectory hidden on:change={picked} data-testid="case-pick-dir" />
+	<input
+		bind:this={pickFiles}
+		type="file"
+		multiple
+		accept={ACCEPT}
+		hidden
+		on:change={picked}
+		data-testid="case-pick-files"
+	/>
+	<input
+		bind:this={pickDir}
+		type="file"
+		multiple
+		webkitdirectory
+		hidden
+		on:change={picked}
+		data-testid="case-pick-dir"
+	/>
 </section>
 
 {#if unfinished.length}
@@ -116,9 +142,15 @@
 		{#each unfinished as u (u.id)}
 			<div class="row g12">
 				<span class="aw"
-					>{fmt(S.upload_unfinished_row, { name: u.filename, done: mb(u.received), total: mb(u.size) })}</span
+					>{fmt(S.upload_unfinished_row, {
+						name: u.filename,
+						done: mb(u.received),
+						total: mb(u.size)
+					})}</span
 				>
-				<button type="button" class="btn s warnbtn" on:click={() => cancelServer(u.id)}>{S.upload_cancel}</button>
+				<button type="button" class="btn s warnbtn" on:click={() => cancelServer(u.id)}
+					>{S.upload_cancel}</button
+				>
 			</div>
 		{/each}
 	</div>
@@ -139,12 +171,16 @@
 			{@const missing = $uploads.kindMissing && r.kind !== 'photo' && !r.inputKind}
 			{#if head}
 				<div class="row sp g8 dir" data-testid="case-queue-dir">
-					<span class="b sm aw">{fmt(S.upload_dir_group_g, { name: head.name, n: head.count })}</span>
+					<span class="b sm aw"
+						>{fmt(S.upload_dir_group_g, { name: head.name, n: head.count })}</span
+					>
 					<span class="row g8 sm soft"
 						>{S.upload_dir_kind_all_g}
 						{#each KINDS as k (k.kind)}
-							<button type="button" class="btn s" on:click={() => uploads.setGroupKind(head.group, k.kind)}
-								>{S[k.key]}</button
+							<button
+								type="button"
+								class="btn s"
+								on:click={() => uploads.setGroupKind(head.group, k.kind)}>{S[k.key]}</button
 							>
 						{/each}</span
 					>
@@ -160,7 +196,9 @@
 						>
 						<span class="sm mut">· {rowSize(r)}</span></span
 					>
-					<button type="button" class="btn t" on:click={() => uploads.removeRow(r.id)}>{S.upload_remove_row}</button>
+					<button type="button" class="btn t" on:click={() => uploads.removeRow(r.id)}
+						>{S.upload_remove_row}</button
+					>
 				</div>
 				<div class="row g16 as">
 					{#if r.kind !== 'photo'}
@@ -221,9 +259,14 @@
 		{/each}
 
 		<div class="row g16 foot">
-			{#if $uploads.kindMissing}<span class="sm b c-stop" role="alert">{S.upload_kind_required}</span>{/if}
-			<button type="button" class="btn big p" on:click={() => uploads.start()} data-testid="case-upload-start"
-				>{S.upload_start}</button
+			{#if $uploads.kindMissing}<span class="sm b c-stop" role="alert"
+					>{S.upload_kind_required}</span
+				>{/if}
+			<button
+				type="button"
+				class="btn big p"
+				on:click={() => uploads.start()}
+				data-testid="case-upload-start">{S.upload_start}</button
 			>
 		</div>
 	</section>
@@ -239,7 +282,9 @@
 		{#each $uploads.active as u (u.key)}
 			<div class="li" data-testid="case-upload" data-state={u.state}>
 				<div class="col g8 grow">
-					<span class="aw"><span class="b">{u.name}</span> <span class="sm mut">· {size(u.size)}</span></span>
+					<span class="aw"
+						><span class="b">{u.name}</span> <span class="sm mut">· {size(u.size)}</span></span
+					>
 					<div class="bar" aria-hidden="true">
 						{#if u.state !== 'queued' || u.sent}
 							<i
@@ -254,7 +299,9 @@
 						<span class="row g6 sm b fg2"><Icon name="ok" />{S.upload_done}</span>
 					{:else if u.state === 'failed'}
 						<span class="sm b c-stop aw" role="alert"
-							>{u.assembleFailed ? S.upload_complete_failed : fmt(S.upload_failed, { detail: u.error })}</span
+							>{u.assembleFailed
+								? S.upload_complete_failed
+								: fmt(S.upload_failed, { detail: u.error })}</span
 						>
 					{:else if u.state === 'paused'}
 						<span class="sm soft">{fmt(S.upload_paused_g, progress(u))}</span>
@@ -269,13 +316,17 @@
 				{#if u.state !== 'done'}
 					<div class="row g8">
 						{#if u.state === 'running'}
-							<button type="button" class="btn s" on:click={() => uploads.togglePause(u.key)}>{S.upload_pause}</button>
+							<button type="button" class="btn s" on:click={() => uploads.togglePause(u.key)}
+								>{S.upload_pause}</button
+							>
 						{:else if (u.state === 'paused' || u.state === 'failed') && !u.assembleFailed}
 							<button type="button" class="btn s p" on:click={() => uploads.togglePause(u.key)}
 								>{S.upload_resume}</button
 							>
 						{/if}
-						<button type="button" class="btn t" on:click={() => uploads.cancel(u.key)}>{S.upload_cancel}</button>
+						<button type="button" class="btn t" on:click={() => uploads.cancel(u.key)}
+							>{S.upload_cancel}</button
+						>
 					</div>
 				{/if}
 			</div>
@@ -284,23 +335,28 @@
 		{#each other as u (u.id)}
 			{@const bad = serverFailed(u.phase)}
 			<div class="li" data-testid="case-upload-server" data-phase={u.phase}>
-				<span class="grow aw"><span class="b">{u.filename}</span> <span class="sm mut">· {size(u.size)}</span></span>
+				<span class="grow aw"
+					><span class="b">{u.filename}</span> <span class="sm mut">· {size(u.size)}</span></span
+				>
 				<span class="pill box" class:s={bad} class:i={!bad && u.phase !== 'done_nofile'}>
-					{#if bad}<Icon name="al" />{:else if u.phase !== 'done_nofile'}<Icon name="clock" />{/if}{fmt(
-						S[serverTextKey(u.phase)],
-						{ error: u.error || '' }
-					)}</span
+					{#if bad}<Icon name="al" />{:else if u.phase !== 'done_nofile'}<Icon
+							name="clock"
+						/>{/if}{fmt(S[serverTextKey(u.phase)], { error: u.error || '' })}</span
 				>
 			</div>
 		{/each}
 
 		<div class="li col g4 tail">
 			<p class="sm mut">
-				{volumesLink.before}<a class="ref" href={hrefOf('volumes')}>{S.upload_goes_to_volumes_link}</a
+				{volumesLink.before}<a class="ref" href={hrefOf('volumes')}
+					>{S.upload_goes_to_volumes_link}</a
 				>{volumesLink.after}
 			</p>
 			<p class="sm mut">
-				{#if estimate?.usd != null}{fmt(S.upload_estimate, { usd: money(estimate.usd), pages: estimate.pages })}{' '}{/if}{S.upload_estimate_hint}
+				{#if estimate?.usd != null}{fmt(S.upload_estimate, {
+						usd: money(estimate.usd),
+						pages: estimate.pages
+					})}{' '}{/if}{S.upload_estimate_hint}
 			</p>
 		</div>
 	</section>

@@ -23,7 +23,12 @@
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
-<dialog bind:this={dialog} aria-labelledby={labelledby} on:close={() => (open = false)} on:click={backdrop}>
+<dialog
+	bind:this={dialog}
+	aria-labelledby={labelledby}
+	on:close={() => (open = false)}
+	on:click={backdrop}
+>
 	<div class="dlg">
 		{#if title}<h2 id={labelledby}>{title}</h2>{/if}
 		<slot />

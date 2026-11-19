@@ -6,7 +6,10 @@ import { legalToolsBase } from '../jobs';
 const answers = new Map<string, Promise<boolean>>();
 const TIMEOUT_MS = 8000;
 
-export function caseAccess(config: unknown, deps: { fetcher?: typeof fetch; token?: string | null } = {}): Promise<boolean> {
+export function caseAccess(
+	config: unknown,
+	deps: { fetcher?: typeof fetch; token?: string | null } = {}
+): Promise<boolean> {
 	let token = deps.token;
 	if (token === undefined) {
 		try {

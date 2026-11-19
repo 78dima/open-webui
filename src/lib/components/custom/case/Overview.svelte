@@ -51,7 +51,13 @@
 	};
 
 	// ---- шапка дела из паспорта (раздел паспорта сервиса; перечитывается не чаще раза в 20 с, как на прежней странице) ----
-	type Place = { value: string; label?: string; url?: string; handwritten?: number; records?: number };
+	type Place = {
+		value: string;
+		label?: string;
+		url?: string;
+		handwritten?: number;
+		records?: number;
+	};
 	type Party = Place & { roles?: { value: string }[] };
 	let head: { numbers: Place[]; courts: Place[]; parties: Party[] } | null = null;
 	let headAt = 0;
@@ -70,12 +76,18 @@
 			/* шапка из паспорта — дополнение: обзор работает и без неё */
 		}
 	}
-	$: if (d && sectionOpen('passport', b) && d.version !== headVersion && Date.now() - headAt > 20000) {
+	$: if (
+		d &&
+		sectionOpen('passport', b) &&
+		d.version !== headVersion &&
+		Date.now() - headAt > 20000
+	) {
 		headVersion = d.version;
 		void loadHead();
 	}
 	onDestroy(() => (gone = true));
-	$: hasHead = !!head && (head.numbers.length > 0 || head.courts.length > 0 || head.parties.length > 0);
+	$: hasHead =
+		!!head && (head.numbers.length > 0 || head.courts.length > 0 || head.parties.length > 0);
 </script>
 
 {#if hasHead && head}
@@ -175,14 +187,17 @@
 							<span class="pill"><Icon name="ok" />{S.overview_state_ready}</span>
 						{:else if paused && paused.self}
 							<span class="pill w"
-								><Icon name="pause" />{fmt(S.overview_state_paused, { time: since(paused.since) })}</span
+								><Icon name="pause" />{fmt(S.overview_state_paused, {
+									time: since(paused.since)
+								})}</span
 							>
 						{:else if paused}
 							<span class="pill s"><Icon name="al" />{S.overview_state_stopped}</span>
 						{:else}
 							<span class="pill i"><Icon name="clock" />{S.overview_state_processing}</span>
 						{/if}
-						{#if !b.can_write}<span class="pill ro"><Icon name="lock" />{S.access_readonly}</span>{/if}
+						{#if !b.can_write}<span class="pill ro"><Icon name="lock" />{S.access_readonly}</span
+							>{/if}
 					</div>
 				{/if}
 				{#if sum.kind === 'empty'}
@@ -211,13 +226,16 @@
 					{/if}
 					<p class="md soft">{paused ? pausedText : S.overview_can_close}</p>
 				{/if}
-				{#if sum.kind !== 'empty' && !b.can_write}<p class="md soft">{S.overview_readonly_text}</p>{/if}
+				{#if sum.kind !== 'empty' && !b.can_write}<p class="md soft">
+						{S.overview_readonly_text}
+					</p>{/if}
 				{#if sum.kind === 'ready' && (sum.checks || b.can_write)}
 					<div class="row g8 acts">
 						{#if sum.checks && sectionOpen('check', b)}
 							<a class="btn big p" href={hrefOf('check')}>{S.overview_check_btn}</a>
 						{/if}
-						{#if b.can_write}<a class="btn big" href={hrefOf('upload')}>{S.overview_upload_more}</a>{/if}
+						{#if b.can_write}<a class="btn big" href={hrefOf('upload')}>{S.overview_upload_more}</a
+							>{/if}
 					</div>
 				{/if}
 				{#if sum.kind === 'empty' && b.can_write}
@@ -241,7 +259,8 @@
 		<div class="tiles" data-testid="case-tiles">
 			{#if sectionOpen('check', b)}
 				<a class="tile" href={hrefOf('check')}
-					><span class="chip" aria-hidden="true"><Icon name="list" klass="l" /></span><span class="col"
+					><span class="chip" aria-hidden="true"><Icon name="list" klass="l" /></span><span
+						class="col"
 						><span class="l">{S.section_check}</span><span class="row g8 ab"
 							><span class="v">{sum.checks}</span><span class="l"
 								>{plural(sum.checks, S.overview_tile_check_forms)}</span
@@ -252,7 +271,8 @@
 			{/if}
 			{#if sectionOpen('volumes', b)}
 				<a class="tile b" href={hrefOf('volumes')}
-					><span class="chip" aria-hidden="true"><Icon name="vol" klass="l" /></span><span class="col"
+					><span class="chip" aria-hidden="true"><Icon name="vol" klass="l" /></span><span
+						class="col"
 						><span class="l">{S.files_without_volume}</span><span class="row g8 ab"
 							><span class="v">{loose.length}</span>{#if loose.length}<span class="l"
 									>{S.overview_tile_loose_note}</span
@@ -263,7 +283,8 @@
 			{/if}
 			{#if b.can_write}
 				<a class="tile c" href={hrefOf('upload')}
-					><span class="chip" aria-hidden="true"><Icon name="up" klass="l" /></span><span class="col"
+					><span class="chip" aria-hidden="true"><Icon name="up" klass="l" /></span><span
+						class="col"
 						><span class="l">{S.overview_tile_uploads}</span><span class="row g8 ab"
 							><span class="v">{uploads.length}</span>{#if failed}<span class="l"
 									>{count(failed, S.overview_tile_uploads_failed_forms)}</span
@@ -287,7 +308,10 @@
 					<span class="b num nob until">{fmt(S.map_deadline_end, { b: day(dl.end_date) })}</span>
 					<span class="col g4 grow"
 						><span class="b aw">{dl.title}</span>{#if dl.basis?.label}<span class="sm mut"
-								>{basis.before}<SheetRef label={dl.basis.label} href={dl.basis.url} />{basis.after}</span
+								>{basis.before}<SheetRef
+									label={dl.basis.label}
+									href={dl.basis.url}
+								/>{basis.after}</span
 							>{/if}</span
 					>
 					{#if dl.state === 'confirmed'}
@@ -312,8 +336,13 @@
 				{#each volumes as v (v.id)}
 					{@const st = volumeState(v)}
 					<div class="tr" data-testid="case-comp-volume">
-						<span class="b lg aw">{v.label ? fmt(S.volume_title, { label: v.label }) : S.volume_no_label}</span>
-						<span><span class="pill {TONE[st.tone]}"><Icon name={ICON[st.tone]} />{text(st)}</span></span>
+						<span class="b lg aw"
+							>{v.label ? fmt(S.volume_title, { label: v.label }) : S.volume_no_label}</span
+						>
+						<span
+							><span class="pill {TONE[st.tone]}"><Icon name={ICON[st.tone]} />{text(st)}</span
+							></span
+						>
 						<span class="md fg2"
 							>{count(v.pages ?? 0, S.pages_forms)}{v.range?.first
 								? ` · ${fmt(v.status === 'reading' || v.status === 'receiving' ? S.overview_comp_range_sofar : S.volume_range, v.range)}`
@@ -338,7 +367,10 @@
 					{@const st = filesState(ecase)}
 					<div class="tr" data-testid="case-comp-ecase">
 						<span class="b lg">{S.section_ecase}</span>
-						<span><span class="pill {TONE[st.tone]}"><Icon name={ICON[st.tone]} />{text(st)}</span></span>
+						<span
+							><span class="pill {TONE[st.tone]}"><Icon name={ICON[st.tone]} />{text(st)}</span
+							></span
+						>
 						<span class="md fg2"
 							>{count(ecase.length, S.files_forms)} · {count(
 								ecase.reduce((a, f) => a + (f.pages ?? 0), 0),

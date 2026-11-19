@@ -297,6 +297,25 @@ test.describe('«Обзор», 1280', () => {
 		await expect(summary(page).getByRole('heading')).toHaveText('Распознано 363 из 669 страниц');
 	});
 
+	test('«Открыть лист»: пока юрист не выбрал том, стоит первый по порядку — и когда в деле появляются новые тома', async ({ page }) => {
+		let both = false;
+		const one = processing();
+		await open(page, {
+			overview: (r) => {
+				const d = processing();
+				if (!both) d.overview.volumes = d.overview.volumes.filter((v: any) => v.label === '5/1');
+				return r.fulfill({ json: d });
+			}
+		});
+		expect(one.overview.volumes.map((v: any) => v.label)).toEqual(['4', '5/1']);
+		const select = page.getByTestId('case-goto').filter({ visible: true }).locator('select[name="t"]');
+		await expect(select).toHaveValue('5/1');
+		both = true;
+		await refresh(page);
+		await expect(select.locator('option')).toHaveText(['т. 4', 'т. 5/1']);
+		await expect(select).toHaveValue('4');
+	});
+
 	test('обзор не пришёл с первого раза: ошибка с фразой сервиса и «Повторить»', async ({ page }) => {
 		let broken = true;
 		await open(page, {

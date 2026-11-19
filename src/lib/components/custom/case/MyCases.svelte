@@ -393,7 +393,11 @@
 								<div class="mc-row" role="row" data-testid="case-row" data-folder={f.id}>
 									<div class="name" role="cell">
 										{#if f.path}<span class="path">{f.path}</span>{/if}
-										<a class="title" class:none={!f.title} href={hrefOf(f.id)} data-sveltekit-reload={caseHref ? undefined : ''}
+										<a
+											class="title"
+											class:none={!f.title}
+											href={hrefOf(f.id)}
+											data-sveltekit-reload={caseHref ? undefined : ''}
 											>{f.title || S.folder_untitled}</a
 										>
 									</div>
@@ -404,8 +408,10 @@
 										><span class="mc-pill {access(f)}"><Icon name={a.icon} />{S[a.key]}</span></span
 									>
 									<span role="cell"
-										><a class="mc-btn open" href={hrefOf(f.id)} data-sveltekit-reload={caseHref ? undefined : ''}
-											>{S.open_case}</a
+										><a
+											class="mc-btn open"
+											href={hrefOf(f.id)}
+											data-sveltekit-reload={caseHref ? undefined : ''}>{S.open_case}</a
 										></span
 									>
 								</div>
@@ -416,7 +422,12 @@
 					<div class="mc-list n">
 						{#each cases as f (f.id)}
 							{@const a = ACCESS[access(f)]}
-							<a class="mc-line" href={hrefOf(f.id)} data-sveltekit-reload={caseHref ? undefined : ''} data-folder={f.id}>
+							<a
+								class="mc-line"
+								href={hrefOf(f.id)}
+								data-sveltekit-reload={caseHref ? undefined : ''}
+								data-folder={f.id}
+							>
 								<span class="body">
 									{#if f.path}<span class="path">{f.path}</span>{/if}
 									<span class="title" class:none={!f.title}>{f.title || S.folder_untitled}</span>

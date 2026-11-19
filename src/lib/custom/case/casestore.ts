@@ -69,7 +69,8 @@ export function createCaseState(api: CaseApi, folderId: string): CaseState {
 	});
 
 	const onVisible = () => {
-		if (typeof document !== 'undefined' && !document.hidden && get(boot)?.has_case) void poller.refresh();
+		if (typeof document !== 'undefined' && !document.hidden && get(boot)?.has_case)
+			void poller.refresh();
 	};
 
 	async function loadFolderFiles() {
@@ -115,7 +116,8 @@ export function createCaseState(api: CaseApi, folderId: string): CaseState {
 			stopped = true;
 			poller.stop();
 			uploads.destroy();
-			if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
+			if (typeof document !== 'undefined')
+				document.removeEventListener('visibilitychange', onVisible);
 		}
 	};
 }

@@ -130,7 +130,13 @@ export function sectionOfHash(hash: string): string | null {
 	return name in SECTION_SETTING && name ? name : null;
 }
 
-export type NavItem = { slug: string; key: string; count?: number; warn?: boolean; quiet?: boolean };
+export type NavItem = {
+	slug: string;
+	key: string;
+	count?: number;
+	warn?: boolean;
+	quiet?: boolean;
+};
 export type NavGroup = { cap?: string; rule?: boolean; items: NavItem[] };
 
 /** Открыт ли раздел этому юристу в этом деле: настройка разделов сервиса и права. */
@@ -215,7 +221,9 @@ export function gotoVolumes(volumes: Volume[] | undefined): string[] {
 		const label = String(v?.label ?? '').trim();
 		if (label) seen.add(label);
 	}
-	return [...seen].sort((a, b) => (naturalKey(a) < naturalKey(b) ? -1 : naturalKey(a) > naturalKey(b) ? 1 : 0));
+	return [...seen].sort((a, b) =>
+		naturalKey(a) < naturalKey(b) ? -1 : naturalKey(a) > naturalKey(b) ? 1 : 0
+	);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -231,7 +239,8 @@ export function processing(data: CaseData | null, localRunning = false): boolean
 	// незавершённая загрузка из другой вкладки (receiving) опрос не ускоряет: её части шлёт не эта страница
 	if ((data.uploads ?? []).some((u) => UPLOAD_BUSY.has(u.phase))) return true;
 	if (Object.values(data.files ?? {}).some((f) => FILE_BUSY.has(String(f.status)))) return true;
-	if ((data.overview.volumes ?? []).some((v) => v.status === 'receiving' || v.status === 'reading')) return true;
+	if ((data.overview.volumes ?? []).some((v) => v.status === 'receiving' || v.status === 'reading'))
+		return true;
 	return localRunning;
 }
 
@@ -283,7 +292,6 @@ export function summary(data: CaseData): Summary {
 	const busy =
 		processing(data) ||
 		uploads.some((u) => u.phase === 'receiving') || // файл ещё передаётся — материалы в пути
-
 		ic.indexed < ic.total ||
 		volumes.some((v) => v.status !== 'inventory_ready') ||
 		files.some((f) => FILE_BUSY.has(String(f.status)));
@@ -315,7 +323,8 @@ export function volumeState(v: Volume): State {
 
 /** Состояние группы файлов (электронное дело): после обработки — «прочитано». */
 export function filesState(files: FileFacts[]): State {
-	if (files.length && files.every((f) => f.status === 'indexed')) return { tone: 'plain', key: 'ecase_state_ready' };
+	if (files.length && files.every((f) => f.status === 'indexed'))
+		return { tone: 'plain', key: 'ecase_state_ready' };
 	const reading = files.filter((f) => f.status === 'reading');
 	if (reading.length) {
 		return {
@@ -327,7 +336,8 @@ export function filesState(files: FileFacts[]): State {
 			}
 		};
 	}
-	if (files.some((f) => f.status === 'blocked' || f.status === 'failed')) return { tone: 'stop', key: 'status_failed' };
+	if (files.some((f) => f.status === 'blocked' || f.status === 'failed'))
+		return { tone: 'stop', key: 'status_failed' };
 	return { tone: 'info', key: 'volume_state_queued' };
 }
 
@@ -356,11 +366,31 @@ export function inVolume(label: string, volume: string | null | undefined): stri
 	return head && label.startsWith(head) ? label.slice(head.length) : label;
 }
 
-export type CheckGroupId = 'numbers' | 'text' | 'number_check' | 'number_unset' | 'gap' | 'other' | 'volume';
-type GroupDef = { id: CheckGroupId; title: string; icon: string; codes: string[]; hint?: string; flat?: boolean };
+export type CheckGroupId =
+	| 'numbers'
+	| 'text'
+	| 'number_check'
+	| 'number_unset'
+	| 'gap'
+	| 'other'
+	| 'volume';
+type GroupDef = {
+	id: CheckGroupId;
+	title: string;
+	icon: string;
+	codes: string[];
+	hint?: string;
+	flat?: boolean;
+};
 /** Группы по виду замечания (названия приняты владельцем 19.11); код вне перечня — «Другие замечания к листам». */
 export const CHECK_GROUPS: GroupDef[] = [
-	{ id: 'numbers', title: 'check_group_numbers', icon: 'hash', codes: ['text_disagree'], hint: 'check_group_numbers_hint' },
+	{
+		id: 'numbers',
+		title: 'check_group_numbers',
+		icon: 'hash',
+		codes: ['text_disagree'],
+		hint: 'check_group_numbers_hint'
+	},
 	{ id: 'text', title: 'check_group_text', icon: 'img', codes: ['text_short'] },
 	{
 		id: 'number_check',
@@ -375,7 +405,13 @@ export const CHECK_GROUPS: GroupDef[] = [
 		codes: ['number_unresolved', 'no_number', 'no_number_sheet'],
 		hint: 'check_group_number_unset_hint'
 	},
-	{ id: 'gap', title: 'check_group_gap', icon: 'gap', codes: ['gap', 'gap_long', 'gap_min'], hint: 'check_group_gap_hint' },
+	{
+		id: 'gap',
+		title: 'check_group_gap',
+		icon: 'gap',
+		codes: ['gap', 'gap_long', 'gap_min'],
+		hint: 'check_group_gap_hint'
+	},
 	{ id: 'other', title: 'check_group_other', icon: 'al', codes: [] },
 	{
 		id: 'volume',
@@ -400,7 +436,11 @@ export type CheckItem = {
 	note: string;
 	reason: string;
 };
-export type CheckChips = { key: string; reason: string; byVolume: { volume: string | null; sheets: Sheet[] }[] };
+export type CheckChips = {
+	key: string;
+	reason: string;
+	byVolume: { volume: string | null; sheets: Sheet[] }[];
+};
 export type CheckGroup = {
 	id: CheckGroupId;
 	title: string;
@@ -424,7 +464,17 @@ export function checkGroups(
 	const out = new Map<CheckGroupId, CheckGroup>(
 		CHECK_GROUPS.map((g) => [
 			g.id,
-			{ id: g.id, title: g.title, icon: g.icon, hint: g.hint, flat: !!g.flat, rows: [], chips: [], count: 0, countSheets: false }
+			{
+				id: g.id,
+				title: g.title,
+				icon: g.icon,
+				hint: g.hint,
+				flat: !!g.flat,
+				rows: [],
+				chips: [],
+				count: 0,
+				countSheets: false
+			}
 		])
 	);
 	const groupOf = (code: string) => CHECK_GROUPS.find((g) => g.codes.includes(code))?.id ?? 'other';
@@ -433,10 +483,14 @@ export function checkGroups(
 		const g = out.get(groupOf(r.code))!;
 		const volume = r.volume_id != null ? (labelOf.get(r.volume_id) ?? null) : null;
 		const sheets: Sheet[] =
-			r.sheets ?? (r.page_id != null ? [{ page_id: r.page_id, label: r.label, url: r.url ?? null }] : []);
+			r.sheets ??
+			(r.page_id != null ? [{ page_id: r.page_id, label: r.label, url: r.url ?? null }] : []);
 		if (CHIP_CODES.has(r.code) && sheets.length) {
 			let chips = g.chips.find((c) => c.reason === r.reason);
-			if (!chips) g.chips.push((chips = { key: `${r.code}:${g.chips.length}`, reason: r.reason, byVolume: [] }));
+			if (!chips)
+				g.chips.push(
+					(chips = { key: `${r.code}:${g.chips.length}`, reason: r.reason, byVolume: [] })
+				);
 			let bucket = chips.byVolume.find((b) => b.volume === volume);
 			if (!bucket) chips.byVolume.push((bucket = { volume, sheets: [] }));
 			bucket.sheets.push(...sheets);
@@ -457,7 +511,15 @@ export function checkGroups(
 			detail = p.main;
 			note = p.inventory ?? '';
 		}
-		g.rows.push({ key: `${r.code}:${r.page_id ?? 'v' + r.volume_id}:${n}`, code: r.code, volume, sheets, detail, note, reason: r.reason });
+		g.rows.push({
+			key: `${r.code}:${r.page_id ?? 'v' + r.volume_id}:${n}`,
+			code: r.code,
+			volume,
+			sheets,
+			detail,
+			note,
+			reason: r.reason
+		});
 		g.count += g.id === 'number_check' ? Math.max(1, sheets.length) : 1;
 		if (g.id === 'number_check') g.countSheets = true;
 	});
@@ -492,7 +554,13 @@ export function when(iso: string | null | undefined): string {
 	const d = new Date(iso);
 	return Number.isNaN(d.getTime())
 		? ''
-		: d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+		: d.toLocaleString('ru-RU', {
+				day: '2-digit',
+				month: '2-digit',
+				year: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
 }
 /** Время начала паузы для пометки «Пауза с 10:02»: сегодняшняя — часы и минуты, иначе с датой. */
 export function since(iso: string | null | undefined, now = new Date()): string {
@@ -505,4 +573,5 @@ export function since(iso: string | null | undefined, now = new Date()): string 
 		: `${d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} ${time}`;
 }
 /** Сумма «1,84» из «1.84»: на странице дробь пишется с запятой. */
-export const money = (usd: string | null | undefined): string => String(usd ?? '').replace('.', ',');
+export const money = (usd: string | null | undefined): string =>
+	String(usd ?? '').replace('.', ',');

@@ -37,16 +37,24 @@
 	/** Пояснение группы: своё; у перечня с одной причиной — сама причина словами сервиса. */
 	const hint = (g: CheckGroup) =>
 		g.hint ? S[g.hint] : g.chips.length === 1 && !g.rows.length ? cap(g.chips[0].reason) : '';
-	const volumeTitle = (label: string | null) => (label ? fmt(S.volume_title, { label }) : S.volume_no_label);
+	const volumeTitle = (label: string | null) =>
+		label ? fmt(S.volume_title, { label }) : S.volume_no_label;
 </script>
 
 <div class="row sp g12" data-testid="case-check">
 	<p class="md lead">{S.check_hint}</p>
 	{#if withRows.length > 1}
-		<select class="in s" aria-label={S.goto_volume} bind:value={volume} data-testid="case-check-volume">
+		<select
+			class="in s"
+			aria-label={S.goto_volume}
+			bind:value={volume}
+			data-testid="case-check-volume"
+		>
 			<option value={null}>{S.check_filter_all}</option>
 			{#each withRows as v (v.id)}
-				<option value={v.id}>{v.label ? fmt(S.check_filter_volume, { label: v.label }) : S.volume_no_label}</option>
+				<option value={v.id}
+					>{v.label ? fmt(S.check_filter_volume, { label: v.label }) : S.volume_no_label}</option
+				>
 			{/each}
 		</select>
 	{/if}
@@ -64,34 +72,48 @@
 		{@const closed = folded.has(g.id)}
 		{@const more = !opened.has(g.id)}
 		{@const text = hint(g)}
-		<section class="card group" class:flat={g.flat} data-testid="case-check-group" data-group={g.id}>
+		<section
+			class="card group"
+			class:flat={g.flat}
+			data-testid="case-check-group"
+			data-group={g.id}
+		>
 			<div class="row g12 as nw" class:open={!closed}>
-				<span class="ico" class:n={g.flat} aria-hidden="true"><Icon name={g.icon as IconName} klass="l" /></span>
+				<span class="ico" class:n={g.flat} aria-hidden="true"
+					><Icon name={g.icon as IconName} klass="l" /></span
+				>
 				<div class="col g2 grow">
 					<div class="row g8">
 						<h3>{title(g)}</h3>
-						<span class="cnt">{g.countSheets ? count(g.count, S.sheets_count_forms) : g.count}</span>
+						<span class="cnt">{g.countSheets ? count(g.count, S.sheets_count_forms) : g.count}</span
+						>
 					</div>
 					{#if text && !closed}<p class="sm mut">{text}</p>{/if}
 				</div>
 				{#if !g.flat}<button
-					type="button"
-					class="tg"
-					aria-expanded={!closed}
-					aria-label={closed ? S.expand : S.collapse}
-					on:click={() => (folded = flip(folded, g.id))}
-				>
-					<Icon name={closed ? 'd' : 'u'} klass="l" />
-				</button>{/if}
+						type="button"
+						class="tg"
+						aria-expanded={!closed}
+						aria-label={closed ? S.expand : S.collapse}
+						on:click={() => (folded = flip(folded, g.id))}
+					>
+						<Icon name={closed ? 'd' : 'u'} klass="l" />
+					</button>{/if}
 			</div>
 
 			{#if !closed}
 				{#each g.chips as c (c.key)}
-					{#if !(g.chips.length === 1 && !g.rows.length)}<p class="sm mut why">{cap(c.reason)}</p>{/if}
+					{#if !(g.chips.length === 1 && !g.rows.length)}<p class="sm mut why">
+							{cap(c.reason)}
+						</p>{/if}
 					{#each c.byVolume as bucket (bucket.volume)}
-						{@const shown = opened.has(`${c.key}:${bucket.volume}`) ? bucket.sheets : bucket.sheets.slice(0, CHIPS_SHOWN)}
+						{@const shown = opened.has(`${c.key}:${bucket.volume}`)
+							? bucket.sheets
+							: bucket.sheets.slice(0, CHIPS_SHOWN)}
 						<div class="row g8 sep chips">
-							{#if bucket.volume}<span class="b md vol">{fmt(S.goto_volume_option, { label: bucket.volume })}:</span>{/if}
+							{#if bucket.volume}<span class="b md vol"
+									>{fmt(S.goto_volume_option, { label: bucket.volume })}:</span
+								>{/if}
 							{#each shown as s (s.page_id)}
 								{#if s.url}
 									<a class="chipl" href={s.url} data-sveltekit-reload title={s.label}
@@ -126,8 +148,13 @@
 							{#each more ? g.rows.slice(0, ROWS_SHOWN) : g.rows as r (r.key)}
 								<div class="tr" class:t={!!r.note} data-testid="case-check-row">
 									<span class="refs">
-										{#each r.sheets as s, n (s.page_id)}{n ? ', ' : ''}<SheetRef label={s.label} href={s.url} />{/each}
-										{#if !r.sheets.length}<span class="b">{r.volume ? fmt(S.goto_volume_option, { label: r.volume }) : ''}</span>{/if}
+										{#each r.sheets as s, n (s.page_id)}{n ? ', ' : ''}<SheetRef
+												label={s.label}
+												href={s.url}
+											/>{/each}
+										{#if !r.sheets.length}<span class="b"
+												>{r.volume ? fmt(S.goto_volume_option, { label: r.volume }) : ''}</span
+											>{/if}
 									</span>
 									<span class="col g2 md fg2" class:num={r.code === 'text_disagree'}>
 										<span class="aw">{r.detail}</span>
@@ -138,7 +165,10 @@
 							{#if more && g.rows.length > ROWS_SHOWN}
 								<div class="tr">
 									<span
-										><button type="button" class="btn" on:click={() => (opened = flip(opened, g.id))}
+										><button
+											type="button"
+											class="btn"
+											on:click={() => (opened = flip(opened, g.id))}
 											>{fmt(S.show_more_n, { n: g.rows.length - ROWS_SHOWN })}</button
 										></span
 									>

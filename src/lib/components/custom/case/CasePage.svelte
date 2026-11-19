@@ -7,7 +7,13 @@
 	import { config } from '$lib/stores';
 	import { createCaseApi, type CaseApiError } from '$lib/custom/case/api';
 	import { createCaseState } from '$lib/custom/case/casestore';
-	import { gotoVolumes, navGroups, navItem, sectionOpen, SECTION_SETTING } from '$lib/custom/case/casepage';
+	import {
+		gotoVolumes,
+		navGroups,
+		navItem,
+		sectionOpen,
+		SECTION_SETTING
+	} from '$lib/custom/case/casepage';
 	import { caseStrings, fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import CaseNav from './CaseNav.svelte';
@@ -25,7 +31,8 @@
 	/** Адрес «Моих дел», чата папки и страницы дела — страницы того же приложения. */
 	export let casesHref = '/case';
 	export let chatHref = `/folders/${encodeURIComponent(folderId)}`;
-	export let hrefOf = (slug: string) => `/case/${encodeURIComponent(folderId)}${slug ? `/${slug}` : ''}`;
+	export let hrefOf = (slug: string) =>
+		`/case/${encodeURIComponent(folderId)}${slug ? `/${slug}` : ''}`;
 	/** Заголовок вкладки — наружу (его ставит маршрут). */
 	export let title = '';
 
@@ -76,7 +83,8 @@
 		ev.returnValue = S.upload_leave_warning ?? '';
 	};
 	/** Идёт ли передача файла — маршрут спрашивает перед уходом из дела внутри приложения. */
-	export const uploading = () => $uploads.active.some((u) => u.state === 'running' || u.state === 'queued');
+	export const uploading = () =>
+		$uploads.active.some((u) => u.state === 'running' || u.state === 'queued');
 
 	onMount(() => {
 		void state.start();
@@ -86,7 +94,7 @@
 		state.stop();
 		if (typeof window !== 'undefined') window.removeEventListener('beforeunload', leaving);
 	});
-	$: section, (menuOpen = false);
+	$: (section, (menuOpen = false));
 </script>
 
 {#if menuOpen && $boot?.has_case}
@@ -96,7 +104,12 @@
 				<span class="xs mut aw">{name || S.case_no_title}</span>
 				<h1 class="menutitle">{S.nav_title}</h1>
 			</div>
-			<button type="button" class="rb plain" aria-label={S.nav_close} on:click={() => (menuOpen = false)}>
+			<button
+				type="button"
+				class="rb plain"
+				aria-label={S.nav_close}
+				on:click={() => (menuOpen = false)}
+			>
 				<Icon name="x" klass="l" />
 			</button>
 		</div>
@@ -118,14 +131,24 @@
 
 		<main class="main" id="main-content">
 			<div class="top">
-				<a class="rb" href={casesHref} aria-label={S.nav_to_cases}><Icon name="back" klass="l" /></a>
+				<a class="rb" href={casesHref} aria-label={S.nav_to_cases}><Icon name="back" klass="l" /></a
+				>
 				{#if $boot?.has_case}
-					<button type="button" class="sel plain" aria-haspopup="true" on:click={() => (menuOpen = true)} data-testid="case-menu-open">
+					<button
+						type="button"
+						class="sel plain"
+						aria-haspopup="true"
+						on:click={() => (menuOpen = true)}
+						data-testid="case-menu-open"
+					>
 						<span>{label || S.nav_overview}</span><Icon name="d" />
 					</button>
 					{#if volumes.length}
-						<button type="button" class="btn p" on:click={() => (gotoOpen = true)} data-testid="case-goto-open"
-							>{S.goto_short}</button
+						<button
+							type="button"
+							class="btn p"
+							on:click={() => (gotoOpen = true)}
+							data-testid="case-goto-open">{S.goto_short}</button
 						>
 					{/if}
 				{/if}
@@ -161,7 +184,12 @@
 						<h1>{name || S.case_no_title}</h1>
 					</div>
 				</div>
-				<StateCard icon="folder" title={S.case_no_g} text={S.folders_without_case_note} testid="case-none">
+				<StateCard
+					icon="folder"
+					title={S.case_no_g}
+					text={S.folders_without_case_note}
+					testid="case-none"
+				>
 					<button type="button" class="btn big p act" disabled={creating} on:click={createCase}
 						>{creating ? S.create_case_busy : S.create_case}</button
 					>
@@ -216,7 +244,9 @@
 
 <Dialog bind:open={gotoOpen} title={S.goto_title_g} labelledby="cg-goto-title">
 	<GotoForm action={refAction} {volumes} {S} variant="window" />
-	<div class="row"><button type="button" class="btn" on:click={() => (gotoOpen = false)}>{S.cancel}</button></div>
+	<div class="row">
+		<button type="button" class="btn" on:click={() => (gotoOpen = false)}>{S.cancel}</button>
+	</div>
 </Dialog>
 
 <style>

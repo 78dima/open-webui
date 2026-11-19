@@ -11,7 +11,11 @@
 	let volume = '';
 	let sheet = '';
 	let back = false;
-	$: if (volumes.length && !volumes.includes(volume)) volume = volumes[0];
+	let picked = false; // том выбран юристом: тогда новые тома дела выбор не меняют
+	$: if (volumes.length && (!picked || !volumes.includes(volume))) {
+		if (!volumes.includes(volume)) picked = false;
+		if (!picked) volume = volumes[0];
+	}
 	const option = (label: string) => String(S.goto_volume_option ?? '').replace('{label}', label);
 </script>
 
@@ -25,7 +29,13 @@
 		data-testid="case-goto"
 	>
 		{#if variant === 'bar'}<span>{S.goto_title_g}</span>{/if}
-		<select class="in {variant === 'bar' ? 's' : ''}" name="t" aria-label={S.goto_volume} bind:value={volume}>
+		<select
+			class="in {variant === 'bar' ? 's' : ''}"
+			name="t"
+			aria-label={S.goto_volume}
+			bind:value={volume}
+			on:change={() => (picked = true)}
+		>
 			{#each volumes as v (v)}<option value={v}>{option(v)}</option>{/each}
 		</select>
 		<input

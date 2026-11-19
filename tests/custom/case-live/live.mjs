@@ -150,15 +150,20 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 	const sent = await created.request().allHeaders(); // Origin ставит браузер: он виден только в полном наборе
 	ok(created.status() === 201 && sent['x-ai-case'] === '1' && sent.origin === base,
 		`«Завести дело»: POST → ${created.status()}, X-Ai-Case: 1, Origin ${sent.origin} принят сервисом`);
-	await page.waitForURL(`${base}/legal-tools/case/${guseva}`, { timeout: 30000 });
-	await page.waitForSelector('body[data-page="case"]');
-	ok((await page.title()).includes('Гусева'), `после заведения открыта страница дела сервиса (прежняя): «${await page.title()}»`);
+	await page.waitForURL(`${base}/case/${guseva}`, { timeout: 30000 });
+	await page.waitForSelector('[data-testid="case-summary"][data-state="empty"]', { timeout: 30000 });
+	ok((await page.locator('.head h1').textContent()) === 'Гусева М. О. — раздел имущества',
+		`после заведения открыта страница дела форка /case/<папка>: «${await page.title()}»`);
 	await page.goto(base + '/case');
 	await ready(page);
 	ok((await visible(page, 'case-row').filter({ hasText: 'Гусева М. О. — раздел имущества' }).count()) === 1 &&
 		(await texts(page.locator('[data-testid^="case-scope-"]')))[0] === 'Все дела 5', 'дело заведено: в «Моих делах» теперь 5 дел, папка ушла из «Папок без дела»');
 	const open = visible(page, 'case-row').filter({ hasText: 'Гусева М. О. — раздел имущества' }).getByRole('link', { name: 'Открыть дело' });
-	ok((await open.getAttribute('href')) === `/legal-tools/case/${guseva}`, '«Открыть дело» ведёт на прежнюю страницу дела');
+	ok((await open.getAttribute('href')) === `/case/${guseva}`, '«Открыть дело» ведёт на страницу дела форка');
+	// прежняя страница дела сервиса жива по своему адресу
+	const oldCase = await page.goto(`${base}/legal-tools/case/${guseva}`);
+	await page.waitForSelector('body[data-page="case"]');
+	ok(oldCase.status() === 200 && (await page.title()).includes('Гусева'), `прежняя страница дела /legal-tools/case/<папка> работает: «${await page.title()}»`);
 
 	// прежняя страница «Мои дела» сервиса жива (старый адрес)
 	const old = await page.goto(base + '/legal-tools/case/');
@@ -203,8 +208,12 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_C
 	ok(title === 'Не найдено' && (await page.getByTestId('case-retry').count()) === 1, `юрист вне группы выпуска: «${title}» и «Повторить»`);
 	await shot(page, 'live-1280-outsider');
 	await page.goto(base + '/');
-	const shown = await visible(page, 'custom-cases-link').first().waitFor({ timeout: 20000 }).then(() => true, () => false);
-	console.log(`     юрист вне группы: пункт «Дела» в панели чата ${shown ? 'виден (выключатель общий для всех)' : 'не виден'}`);
+	const asked = [];
+	page.on('response', (r) => r.url().endsWith('/legal-tools/api/cases/access') && asked.push(r.status()));
+	await page.locator('#sidebar-new-chat-button').filter({ visible: true }).first().waitFor({ timeout: 30000 });
+	await page.waitForTimeout(1500);
+	ok((await visible(page, 'custom-cases-link').count()) === 0 && asked.length >= 1 && asked.every((x) => x === 200),
+		`юрист вне группы: чат открыт, пункта «Дела» в панели нет (сервис ответил «нет», запросов: ${asked.length})`);
 	await context.close();
 }
 

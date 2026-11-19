@@ -1,7 +1,8 @@
 # ai-dvokat: живая проверка страниц «Дел» — своя среда, стенд не трогается (run.sh). Настоящие Open WebUI (образ форка,
 # фронтенд — сборка этой рабочей копии), legal-tools ветки с Postgres, Redis и MinIO и Caddy с правилами сервера
 # (deploy/caddy/Caddyfile ai-dvokat): страница ходит к сервису по /legal-tools/* того же адреса — как на сервере.
-# Платных вызовов нет: модели и К+ не подключены. Наружу — один порт на 127.0.0.1.
+# Обработку томов ведёт настоящий case-worker; распознаёт подставная «идеальная модель» сквозной пробы дела (prov.py).
+# Платных вызовов нет: модели чата и К+ не подключены. Наружу — один порт на 127.0.0.1.
 name: ${LIVE_NAME:?}
 networks:
   live:
@@ -17,11 +18,15 @@ x-tools-env: &tools-env
   LEGAL_TOOLS_WEBUI_SECRET_KEY: live-secret-case-ui-0123456789abcdef
   LEGAL_TOOLS_DELEGATION_SECRET: live-delegation-secret-0123456789abcdef
   LEGAL_TOOLS_DOWNLOAD_SECRET: live-download-secret-0123456789abcdef
-  LEGAL_TOOLS_LITELLM_URL: http://127.0.0.1:9/v1          # моделей нет: проверка их не зовёт
-  LEGAL_TOOLS_CLAMAV_HOST: 127.0.0.1
+  LEGAL_TOOLS_LITELLM_URL: http://127.0.0.1:9/v1          # модели чата нет: проверка её не зовёт
   LEGAL_TOOLS_KPLUS_BASE_URL: http://127.0.0.1:9
-  LEGAL_TOOLS_OPENROUTER_URL: http://127.0.0.1:9/api/v1
+  # распознавание — подставная «идеальная модель» сквозной пробы дела (prov.py, ответы по ключу выдуманного дела
+  # corpus/case-v1) и её же подставной антивирус: обработка настоящая, платных вызовов нет
+  LEGAL_TOOLS_CLAMAV_HOST: prov
+  LEGAL_TOOLS_OPENROUTER_URL: http://prov:8080/openrouter/api/v1
   LEGAL_TOOLS_OPENROUTER_API_KEY: sk-or-live-not-a-key
+  LEGAL_TOOLS_CASE_BUDGET_USD: "50"                       # с запасом: при пределе в 1 USD шаги второго тома встают на паузу
+  LEGAL_TOOLS_CASE_PART_MB: "5"                           # наименьшая часть: файл в 6 МБ идёт двумя частями
   LEGAL_TOOLS_PUBLIC_URL: http://legal-tools-api:8000
   LEGAL_TOOLS_RECEIPT_PAGE_BASE: /legal-tools
   LEGAL_TOOLS_CASE_RELEASE: "on"
@@ -53,6 +58,17 @@ services:
     command: ["api"]
     environment: *tools-env
     depends_on: {pg: {condition: service_healthy}}
+  case-worker:
+    image: ${LIVE_TOOLS_IMAGE:?}
+    networks: [live]
+    command: ["case-worker"]
+    environment: *tools-env
+    depends_on: {pg: {condition: service_healthy}}
+  prov:
+    image: ${LIVE_PROV_IMAGE:?}
+    networks: [live]
+    entrypoint: [python, /prov.py]
+    volumes: ["${LIVE_PROV:?}:/prov.py:ro", "${LIVE_WORK:?}:/work:ro"]
   owui:
     image: ${LIVE_OWUI_IMAGE:?}
     networks:

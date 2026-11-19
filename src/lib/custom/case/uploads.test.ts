@@ -27,7 +27,10 @@ const settle = async (n = 30) => {
 
 /** Подставной сервис загрузок: помнит части, отвечает как настоящий (`uploads.upload_view`), умеет сбоить. */
 function server(partSize = 4) {
-	const uploads = new Map<string, { info: Upload; parts: Map<number, number>; completed: boolean; deleted: boolean }>();
+	const uploads = new Map<
+		string,
+		{ info: Upload; parts: Map<number, number>; completed: boolean; deleted: boolean }
+	>();
 	const calls: { method: string; path: string; body?: unknown }[] = [];
 	const fails: ((method: string, path: string) => CaseApiError | null)[] = [];
 	let next = 1;
@@ -47,7 +50,15 @@ function server(partSize = 4) {
 			const b = body as { filename: string; size: number };
 			const nid = `u-${next++}`;
 			uploads.set(nid, {
-				info: { id: nid, filename: b.filename, size: b.size, received: 0, part_size: partSize, status: 'receiving', phase: 'receiving' } as Upload,
+				info: {
+					id: nid,
+					filename: b.filename,
+					size: b.size,
+					received: 0,
+					part_size: partSize,
+					status: 'receiving',
+					phase: 'receiving'
+				} as Upload,
 				parts: new Map(),
 				completed: false,
 				deleted: false
@@ -82,9 +93,16 @@ function server(partSize = 4) {
 }
 function memory(initial: Record<string, string> = {}) {
 	const data = { ...initial };
-	return { data, getItem: (k: string) => data[k] ?? null, setItem: (k: string, v: string) => void (data[k] = v) };
+	return {
+		data,
+		getItem: (k: string) => data[k] ?? null,
+		setItem: (k: string, v: string) => void (data[k] = v)
+	};
 }
-const engine = (s: ReturnType<typeof server>, extra: Partial<Parameters<typeof createUploads>[0]> = {}) => {
+const engine = (
+	s: ReturnType<typeof server>,
+	extra: Partial<Parameters<typeof createUploads>[0]> = {}
+) => {
 	const changes: number[] = [];
 	const up = createUploads({
 		api: s.api,
@@ -112,29 +130,55 @@ describe('ядро загрузки частями', () => {
 		]);
 		expect(planParts(0, 4)).toHaveLength(1);
 		const plan = planParts(10, 4);
-		expect(missingParts(plan, [{ n: 1, size: 4 }, { n: 2, size: 3 }]).map((p) => p.n)).toEqual([2, 3]);
+		expect(
+			missingParts(plan, [
+				{ n: 1, size: 4 },
+				{ n: 2, size: 3 }
+			]).map((p) => p.n)
+		).toEqual([2, 3]);
 		expect(missingParts(plan, undefined)).toHaveLength(3);
 	});
 	it('повтор: сеть, 408 и 429 — без счёта; 5xx — не больше пяти подряд; пауза растёт до 30 с', () => {
 		expect([0, 408, 429].map((s) => retryAgain(s, 99))).toEqual([true, true, true]);
-		expect([retryAgain(500, 4), retryAgain(500, 5), retryAgain(404, 0), retryAgain(409, 0)]).toEqual([true, false, false, false]);
+		expect([
+			retryAgain(500, 4),
+			retryAgain(500, 5),
+			retryAgain(404, 0),
+			retryAgain(409, 0)
+		]).toEqual([true, false, false, false]);
 		expect([1, 2, 3, 4, 5, 9].map(backoff)).toEqual([2, 4, 8, 16, 30, 30]);
 	});
 	it('форматы: PDF, ZIP, фото; Word и Excel не принимаются', () => {
 		expect(['a.PDF', 'b.zip', 'c.jpeg', 'd.HEIC', 'e.docx', 'f.xlsx', 'g'].map(classify)).toEqual([
-			'pdf', 'zip', 'photo', 'photo', null, null, null
+			'pdf',
+			'zip',
+			'photo',
+			'photo',
+			null,
+			null,
+			null
 		]);
 	});
 	it('строки к загрузке: PDF и ZIP — по строке, фото — одной серией; каталог — один batch и порядок по пути', () => {
 		let n = 0;
 		const id = () => `b${++n}`;
-		const loose = planRows([file('1.pdf', 1), file('a.jpg', 1), file('b.png', 1), file('x.zip', 1)], id);
+		const loose = planRows(
+			[file('1.pdf', 1), file('a.jpg', 1), file('b.png', 1), file('x.zip', 1)],
+			id
+		);
 		expect(loose.map((r) => [r.kind, r.files.length, r.inputKind, r.batch, r.group])).toEqual([
 			['pdf', 1, null, null, null],
 			['zip', 1, null, null, null],
 			['photo', 2, 'photo', 'b1', null]
 		]);
-		const dir = planRows([file('2.pdf', 1, 'Тома/2.pdf'), file('1.pdf', 1, 'Тома/1.pdf'), file('n.txt', 1, 'Тома/n.txt')], id);
+		const dir = planRows(
+			[
+				file('2.pdf', 1, 'Тома/2.pdf'),
+				file('1.pdf', 1, 'Тома/1.pdf'),
+				file('n.txt', 1, 'Тома/n.txt')
+			],
+			id
+		);
 		expect(dir.map((r) => [r.files[0].name, r.batch, r.group])).toEqual([
 			['1.pdf', 'b2', 'b2'],
 			['2.pdf', 'b2', 'b2']
@@ -142,11 +186,21 @@ describe('ядро загрузки частями', () => {
 		expect(planRows([file('one.jpg', 1)], id)[0].batch).toBeNull();
 	});
 	it('слова этапа приёма — по этапу сервера', () => {
-		expect(['received', 'intake', 'failed', 'intake_failed', 'done_nofile', 'странный'].map(serverTextKey)).toEqual([
-			'upload_status_received', 'upload_status_intake', 'upload_status_failed_g', 'upload_status_intake_failed',
-			'upload_status_done_nofile_g', 'upload_status_received'
+		expect(
+			['received', 'intake', 'failed', 'intake_failed', 'done_nofile', 'странный'].map(
+				serverTextKey
+			)
+		).toEqual([
+			'upload_status_received',
+			'upload_status_intake',
+			'upload_status_failed_g',
+			'upload_status_intake_failed',
+			'upload_status_done_nofile_g',
+			'upload_status_received'
 		]);
-		expect([serverFailed('failed'), serverFailed('intake_failed'), serverFailed('intake')]).toEqual([true, true, false]);
+		expect([serverFailed('failed'), serverFailed('intake_failed'), serverFailed('intake')]).toEqual(
+			[true, true, false]
+		);
 	});
 });
 
@@ -154,7 +208,14 @@ describe('загрузка: очередь, отправка, продолжен
 	it('без ответа «что это» у PDF не стартует; с ответом — создаёт загрузку с видом, томом и каталогом', async () => {
 		const s = server();
 		const { up, state, changes } = engine(s);
-		expect(up.addFiles([file('tom.pdf', 10, 'Тома/tom.pdf'), file('b.pdf', 3, 'Тома/b.pdf'), file('doc.docx', 5), file('big.pdf', 101 * MB)])).toEqual([
+		expect(
+			up.addFiles([
+				file('tom.pdf', 10, 'Тома/tom.pdf'),
+				file('b.pdf', 3, 'Тома/b.pdf'),
+				file('doc.docx', 5),
+				file('big.pdf', 101 * MB)
+			])
+		).toEqual([
 			{ name: 'doc.docx', why: 'format' },
 			{ name: 'big.pdf', why: 'big' }
 		]);
@@ -171,10 +232,28 @@ describe('загрузка: очередь, отправка, продолжен
 		up.setCont(b.id, '4');
 		expect(up.start()).toBe(true);
 		await settle();
-		const created = s.calls.filter((c) => c.method === 'POST' && c.path.endsWith('/uploads')).map((c) => c.body);
+		const created = s.calls
+			.filter((c) => c.method === 'POST' && c.path.endsWith('/uploads'))
+			.map((c) => c.body);
 		expect(created).toEqual([
-			{ filename: 'b.pdf', size: 3, input_kind: 'e_case', volume_hint: null, continues_volume_id: 4, batch_id: 'batch-1', member_path: 'Тома/b.pdf' },
-			{ filename: 'tom.pdf', size: 10, input_kind: 'volume', volume_hint: '5/1', continues_volume_id: null, batch_id: 'batch-1', member_path: 'Тома/tom.pdf' }
+			{
+				filename: 'b.pdf',
+				size: 3,
+				input_kind: 'e_case',
+				volume_hint: null,
+				continues_volume_id: 4,
+				batch_id: 'batch-1',
+				member_path: 'Тома/b.pdf'
+			},
+			{
+				filename: 'tom.pdf',
+				size: 10,
+				input_kind: 'volume',
+				volume_hint: '5/1',
+				continues_volume_id: null,
+				batch_id: 'batch-1',
+				member_path: 'Тома/tom.pdf'
+			}
 		]);
 		expect(s.calls[0].path).toBe('api/cases/f%201/uploads');
 		expect(state().active.map((a) => [a.name, a.state, a.sent])).toEqual([
@@ -195,7 +274,11 @@ describe('загрузка: очередь, отправка, продолжен
 		const gate = new Promise<void>((r) => (release = r));
 		s.fails.push((method) => (method === 'PUT' ? null : null));
 		const original = s.api.request;
-		(s.api as { request: CaseApi['request'] }).request = (async (method: string, path: string, body?: unknown) => {
+		(s.api as { request: CaseApi['request'] }).request = (async (
+			method: string,
+			path: string,
+			body?: unknown
+		) => {
 			if (method === 'PUT') await gate;
 			return original(method, path, body);
 		}) as CaseApi['request'];
@@ -214,37 +297,64 @@ describe('загрузка: очередь, отправка, продолжен
 	it('обрыв связи посреди файла: повтор сам, уже переданные части не шлются заново', async () => {
 		const s = server();
 		let drop = 2;
-		s.fails.push((method, path) => (method === 'PUT' && path.endsWith('/parts/2') && drop-- > 0 ? new CaseApiError(0, 'network') : null));
+		s.fails.push((method, path) =>
+			method === 'PUT' && path.endsWith('/parts/2') && drop-- > 0
+				? new CaseApiError(0, 'network')
+				: null
+		);
 		const waits: number[] = [];
 		const { up, state } = engine(s, { second: async () => void waits.push(1) });
 		up.addFiles([file('a.jpg', 10)]);
 		up.start();
 		await settle(80);
 		expect(state().active[0]).toMatchObject({ state: 'done', sent: 10, retryIn: null });
-		expect(s.calls.filter((c) => c.method === 'PUT').map((c) => c.path.split('/').pop())).toEqual(['1', '2', '2', '2', '3']);
+		expect(s.calls.filter((c) => c.method === 'PUT').map((c) => c.path.split('/').pop())).toEqual([
+			'1',
+			'2',
+			'2',
+			'2',
+			'3'
+		]);
 		expect(waits.length).toBe(2 + 4); // паузы 2 и 4 секунды
 	});
 
 	it('сервер отвечает 5xx: после пяти повторов — «не загрузился» с фразой сервера, «Продолжить» досылает остаток', async () => {
 		const s = server();
 		let broken = true;
-		s.fails.push((method, path) => (broken && method === 'PUT' && path.endsWith('/parts/2') ? new CaseApiError(500, 'other', 'внутренняя ошибка — повторите позже') : null));
+		s.fails.push((method, path) =>
+			broken && method === 'PUT' && path.endsWith('/parts/2')
+				? new CaseApiError(500, 'other', 'внутренняя ошибка — повторите позже')
+				: null
+		);
 		const { up, state } = engine(s);
 		up.addFiles([file('a.jpg', 10)]);
 		up.start();
 		await settle(200);
-		expect(state().active[0]).toMatchObject({ state: 'failed', sent: 4, error: 'внутренняя ошибка — повторите позже', assembleFailed: false });
-		expect(s.calls.filter((c) => c.method === 'PUT' && c.path.endsWith('/parts/2'))).toHaveLength(6);
+		expect(state().active[0]).toMatchObject({
+			state: 'failed',
+			sent: 4,
+			error: 'внутренняя ошибка — повторите позже',
+			assembleFailed: false
+		});
+		expect(s.calls.filter((c) => c.method === 'PUT' && c.path.endsWith('/parts/2'))).toHaveLength(
+			6
+		);
 		broken = false;
 		up.togglePause(state().active[0].key);
 		await settle(60);
 		expect(state().active[0]).toMatchObject({ state: 'done', sent: 10 });
-		expect(s.calls.filter((c) => c.method === 'PUT' && c.path.endsWith('/parts/1'))).toHaveLength(1);
+		expect(s.calls.filter((c) => c.method === 'PUT' && c.path.endsWith('/parts/1'))).toHaveLength(
+			1
+		);
 	});
 
 	it('сервер не собрал файл: дальше только «Отменить»; отказ 409 — без повторов', async () => {
 		const s = server();
-		s.fails.push((method, path) => (method === 'POST' && path.endsWith('/complete') ? new CaseApiError(500, 'other', 'сбой хранилища') : null));
+		s.fails.push((method, path) =>
+			method === 'POST' && path.endsWith('/complete')
+				? new CaseApiError(500, 'other', 'сбой хранилища')
+				: null
+		);
 		const { up, state } = engine(s);
 		up.addFiles([file('a.jpg', 3)]);
 		up.start();
@@ -255,12 +365,19 @@ describe('загрузка: очередь, отправка, продолжен
 		expect(state().active[0].state).toBe('failed');
 
 		const s2 = server();
-		s2.fails.push((method, path) => (method === 'POST' && path.endsWith('/uploads') ? new CaseApiError(409, 'conflict', 'этот файл уже в деле или ещё добавляется') : null));
+		s2.fails.push((method, path) =>
+			method === 'POST' && path.endsWith('/uploads')
+				? new CaseApiError(409, 'conflict', 'этот файл уже в деле или ещё добавляется')
+				: null
+		);
 		const second = engine(s2);
 		second.up.addFiles([file('a.jpg', 3)]);
 		second.up.start();
 		await settle();
-		expect(second.state().active[0]).toMatchObject({ state: 'failed', error: 'этот файл уже в деле или ещё добавляется' });
+		expect(second.state().active[0]).toMatchObject({
+			state: 'failed',
+			error: 'этот файл уже в деле или ещё добавляется'
+		});
 		expect(s2.calls).toHaveLength(1);
 	});
 
@@ -268,7 +385,11 @@ describe('загрузка: очередь, отправка, продолжен
 		const s = server();
 		const { up, state, changes } = engine(s);
 		const original = s.api.request;
-		(s.api as { request: CaseApi['request'] }).request = (async (method: string, path: string, body?: unknown) => {
+		(s.api as { request: CaseApi['request'] }).request = (async (
+			method: string,
+			path: string,
+			body?: unknown
+		) => {
 			const out = await original(method, path, body);
 			if (method === 'PUT' && path.endsWith('/parts/1')) up.togglePause(get(up).active[0].key);
 			return out;
@@ -281,7 +402,11 @@ describe('загрузка: очередь, отправка, продолжен
 		up.togglePause(state().active[0].key);
 		await settle(60);
 		expect(state().active[0]).toMatchObject({ state: 'done', sent: 10 });
-		expect(s.calls.filter((c) => c.method === 'PUT').map((c) => c.path.split('/').pop())).toEqual(['1', '2', '3']);
+		expect(s.calls.filter((c) => c.method === 'PUT').map((c) => c.path.split('/').pop())).toEqual([
+			'1',
+			'2',
+			'3'
+		]);
 
 		up.addFiles([file('b.jpg', 10)]);
 		up.start();
@@ -298,7 +423,11 @@ describe('загрузка: очередь, отправка, продолжен
 		const store = memory();
 		const first = engine(s, { storage: store });
 		const original = s.api.request;
-		(s.api as { request: CaseApi['request'] }).request = (async (method: string, path: string, body?: unknown) => {
+		(s.api as { request: CaseApi['request'] }).request = (async (
+			method: string,
+			path: string,
+			body?: unknown
+		) => {
 			const out = await original(method, path, body);
 			if (method === 'PUT' && path.endsWith('/parts/2')) first.up.destroy(); // страницу закрыли на середине
 			return out;
@@ -320,13 +449,19 @@ describe('загрузка: очередь, отправка, продолжен
 		await settle(60);
 		expect(get(again.up).active[0]).toMatchObject({ state: 'done', id: 'u-1', sent: 10 });
 		const after = s.calls.slice(s.calls.findIndex((c) => c.method === 'GET'));
-		expect(after.map((c) => `${c.method} ${c.path.split('uploads')[1]}`)).toEqual(['GET /u-1', 'PUT /u-1/parts/3', 'POST /u-1/complete']);
+		expect(after.map((c) => `${c.method} ${c.path.split('uploads')[1]}`)).toEqual([
+			'GET /u-1',
+			'PUT /u-1/parts/3',
+			'POST /u-1/complete'
+		]);
 		expect(JSON.parse(store.data['case-up:f 1'])).toEqual({});
 
 		// без записи в хранилище (начато на другом адресе) — по имени и размеру
 		const s3 = server();
 		await s3.api.post('api/cases/f%201/uploads', { filename: 'other.pdf', size: 6 });
-		const third = engine(s3, { serverUploads: () => [{ ...s3.view('u-1'), status: 'receiving' } as Upload] });
+		const third = engine(s3, {
+			serverUploads: () => [{ ...s3.view('u-1'), status: 'receiving' } as Upload]
+		});
 		third.up.addFiles([file('other.pdf', 6)]);
 		await settle(60);
 		expect(get(third.up).active[0]).toMatchObject({ state: 'done', id: 'u-1' });
@@ -337,7 +472,10 @@ describe('загрузка: очередь, отправка, продолжен
 		const s = server();
 		await s.api.post('api/cases/f%201/uploads', { filename: 'a.pdf', size: 1 });
 		const { up, changes } = engine(s);
-		const stuck = [{ id: 'u-1', phase: 'received', intake: 'none' } as Upload, { id: 'u-9', phase: 'intake', intake: 'leased' } as Upload];
+		const stuck = [
+			{ id: 'u-1', phase: 'received', intake: 'none' } as Upload,
+			{ id: 'u-9', phase: 'intake', intake: 'leased' } as Upload
+		];
 		up.nudge(stuck);
 		up.nudge(stuck);
 		await settle();

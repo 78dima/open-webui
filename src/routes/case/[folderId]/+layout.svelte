@@ -21,7 +21,9 @@
 
 	// уход из дела внутри приложения, пока файл передаётся: передача остановилась бы — спросить (продолжить можно позже)
 	beforeNavigate((navigation) => {
-		const inside = navigation.to?.route.id?.startsWith('/case/[folderId]') && navigation.to.params?.folderId === folderId;
+		const inside =
+			navigation.to?.route.id?.startsWith('/case/[folderId]') &&
+			navigation.to.params?.folderId === folderId;
 		if (inside || navigation.willUnload || !casePage?.uploading()) return;
 		if (!window.confirm($caseStrings?.upload_leave_warning ?? '')) navigation.cancel();
 	});
