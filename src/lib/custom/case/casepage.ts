@@ -644,6 +644,17 @@ export function since(iso: string | null | undefined, now = new Date()): string 
 		? time
 		: `${d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} ${time}`;
 }
-/** Сумма «1,84» из «1.84»: на странице дробь пишется с запятой. */
-export const money = (usd: string | null | undefined): string =>
-	String(usd ?? '').replace('.', ',');
+/** Единый форматтер сумм в USD: 0 → «0,00»; от цента — два знака («1,84»); меньше цента — две значащие цифры
+ *  («0,0042», «0,00085») без «< 0,01» и без экспоненты. */
+export function usd(v: unknown): string {
+	if (v == null || v === '') return '—';
+	const n = Number(v);
+	if (!Number.isFinite(n)) return '—';
+	if (n === 0) return '0,00';
+	const abs = Math.abs(n);
+	if (abs >= 0.01) return n.toFixed(2).replace('.', ',');
+	const exp = Math.floor(Math.log10(abs));
+	const decimals = Math.max(2, -exp + 1);
+	const fixed = n.toFixed(decimals).replace(/(\.\d*?[1-9])0+$/, '$1');
+	return fixed.replace('.', ',');
+}

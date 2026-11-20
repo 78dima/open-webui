@@ -235,7 +235,9 @@ describe('таблицы и проходы', () => {
 	});
 	it('цена и правило подтверждения: окно — только если больше 1 USD или цена неизвестна', () => {
 		expect(usd(0.0202048)).toBe('0,02');
-		expect(usd(0.004)).toBe('< 0,01');
+		expect(usd(0.004)).toBe('0,004');
+		expect(usd(0.0042)).toBe('0,0042');
+		expect(usd(0)).toBe('0,00');
 		expect(usd(null)).toBe('—');
 		expect([
 			needsConfirm(0.02),

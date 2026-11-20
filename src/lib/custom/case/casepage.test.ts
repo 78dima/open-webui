@@ -11,7 +11,7 @@ import {
 	gotoVolumes,
 	inVolume,
 	mb,
-	money,
+	usd,
 	navGroups,
 	pauseKey,
 	pollDelay,
@@ -371,7 +371,14 @@ describe('числа и время', () => {
 			size(500),
 			size(84 * 1048576)
 		]).toEqual(['4,2', '157', '850 КБ', '1 КБ', '84 МБ']);
-		expect([money('1.84'), money(null)]).toEqual(['1,84', '']);
+		expect([usd('1.84'), usd('0'), usd(0), usd('0.0042'), usd(0.000856), usd(null)]).toEqual([
+			'1,84',
+			'0,00',
+			'0,00',
+			'0,0042',
+			'0,00086',
+			'—'
+		]);
 	});
 	it('«Пауза с 10:02»: сегодняшняя — только время', () => {
 		const now = new Date(2025, 10, 14, 12, 0);

@@ -9,10 +9,10 @@
 		ecaseFiles,
 		filesState,
 		fileStuck,
-		money,
 		sectionOpen,
 		since,
 		summary,
+		usd,
 		volumeState,
 		when,
 		type State,
@@ -405,15 +405,15 @@
 		<div class="col g4" data-testid="case-overview-money">
 			{#if d.estimate?.usd != null}
 				<p class="sm mut" data-testid="case-upload-estimate">
-					{fmt(S.upload_estimate, { usd: money(d.estimate.usd), pages: d.estimate.pages })}
+					{fmt(S.upload_estimate, { usd: usd(d.estimate.usd), pages: d.estimate.pages })}
 					{S.upload_estimate_hint}
 				</p>
 			{/if}
 			{#if d.spent && !b.sections.includes('tables')}
 				<p class="sm mut" data-testid="case-spent">
 					{fmt(S.spent_line, {
-						processing: money(d.spent.processing),
-						work: money(d.spent.work)
+						processing: usd(d.spent.processing),
+						work: usd(d.spent.work)
 					})}
 				</p>
 			{/if}

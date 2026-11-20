@@ -8,7 +8,7 @@
 	// Здесь же строка «Потрачено по делу» (деньги дела — там, где их тратят). Поведение — прежний `sections/tables.js`.
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
-	import { when, money } from '$lib/custom/case/casepage';
+	import { when } from '$lib/custom/case/casepage';
 	import { createLoader } from '$lib/custom/case/loader';
 	import { casePath, errorText, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
@@ -266,7 +266,7 @@
 
 {#if spent}
 	<p class="sm mut" data-testid="case-spent">
-		{fmt(S.spent_line, { processing: money(spent.processing), work: money(spent.work) })}
+		{fmt(S.spent_line, { processing: usd(spent.processing), work: usd(spent.work) })}
 	</p>
 {/if}
 

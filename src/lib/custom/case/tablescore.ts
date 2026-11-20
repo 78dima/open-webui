@@ -1,7 +1,10 @@
 /* ai-dvokat: «Таблицы и проходы» — слова для юриста по фактам сервиса, без DOM. Перенос ядра прежней секции сервиса
    (`sections/tables.js`: `Core`); проверяется vitest (`tablescore.test.ts`). Ключи строк, выбираемые по данным,
    записаны строками — по ним собирается снимок строк для проверок. */
+import { usd } from './casepage';
 import { fmt } from './strings';
+
+export { usd };
 
 type Strings = Record<string, any>;
 
@@ -169,11 +172,6 @@ export function coverage(sw: Sweep, S: Strings, noSheets = false): string {
 	return line.trim();
 }
 
-export function usd(v: unknown): string {
-	const n = Number(v);
-	if (!Number.isFinite(n) || v == null) return '—';
-	return n > 0 && n < 0.01 ? '< 0,01' : n.toFixed(2).replace('.', ',');
-}
 /** Платное действие дороже 1 USD — перед ним своё окно подтверждения (решение владельца); до 1 USD цены на кнопке
  *  достаточно. Цена неизвестна — подтверждение нужно. */
 export const needsConfirm = (estimate: unknown): boolean => {
