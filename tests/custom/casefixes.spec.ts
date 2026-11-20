@@ -449,24 +449,90 @@ test.describe('ревью 20.11', () => {
 		await expect(row).not.toContainText(S.status_failed);
 	});
 
-	test('23: последний файл папки добавлен в дело — пункт меню и его число уходят сразу', async ({
+	test('23, И-1: после «Добавить в дело» файл сначала «добавляется», затем уходит без перезагрузки', async ({
 		page
 	}) => {
-		let left = [fixture('folder-files').files[0]];
+		let phase: 'idle' | 'adding' | 'done' = 'idle';
+		const first = fixture('folder-files').files[0];
 		await page.route(`**/legal-tools/api/cases/${F}/folder-files/*/add`, (r) => {
-			left = [];
+			phase = 'adding';
 			return r.fulfill({ json: {} });
 		});
-		await openSection(page, { section: 'folder-files' });
+		await openSection(page, {
+			section: 'folder-files',
+			data: () => ({
+				...fixture('case-overview'),
+				uploads:
+					phase === 'adding'
+						? [{ id: 'up-ff', filename: first.name, size: 100, received: 100, status: 'received', phase: 'intake' }]
+						: []
+			})
+		});
 		await page.unroute(`**/legal-tools/api/cases/${F}/folder-files`);
 		await page.route(`**/legal-tools/api/cases/${F}/folder-files`, (r) =>
-			r.fulfill({ json: { files: left } })
+			r.fulfill({
+				json: {
+					files:
+						phase === 'idle' ? [first] : phase === 'adding' ? [{ ...first, adding: true }] : []
+				}
+			})
 		);
 		await page.reload();
 		await page.evaluate(() => (window as any).setConfig({ custom_ui: { case: true } }));
 		await expect(nav(page, 'folder-files')).toHaveCount(1);
 		await page.getByRole('button', { name: S.folder_file_add }).first().click();
+		await expect(page.getByTestId('case-folder-file')).toContainText(S.folder_file_adding);
+		phase = 'done';
+		await refresh(page);
 		await expect(nav(page, 'folder-files')).toHaveCount(0);
+	});
+
+	test('И-4: сбой GET /folder-files оставляет пункт меню и показывает ошибку с «Повторить»', async ({
+		page
+	}) => {
+		let fail = true;
+		await openSection(page, { section: 'folder-files' });
+		await page.unroute(`**/legal-tools/api/cases/${F}/folder-files`);
+		await page.route(`**/legal-tools/api/cases/${F}/folder-files`, (r) =>
+			fail
+				? r.fulfill({ status: 500, json: { detail: 'сбой папки' } })
+				: r.fulfill({ json: fixture('folder-files') })
+		);
+		await page.reload();
+		await page.evaluate(() => (window as any).setConfig({ custom_ui: { case: true } }));
+		await expect(nav(page, 'folder-files')).toHaveCount(1);
+		await expect(page.getByTestId('case-folder-files-error')).toContainText('сбой папки');
+		fail = false;
+		await page.getByTestId('case-folder-files-error').getByRole('button', { name: S.retry }).click();
+		await expect(page.getByTestId('case-folder-files')).toBeVisible();
+	});
+
+	test('И-2: два действия «Убрать» в «Суммах» сразу обновляют счётчик в меню', async ({ page }) => {
+		const am = fixture('amounts');
+		let shown = am.amounts.map((x: any) => ({ ...x, hidden: false }));
+		await openSection(page, {
+			section: 'amounts',
+			data: () => ({
+				...fixture('case-overview'),
+				counts: { ...fixture('case-overview').counts, amounts: shown.filter((x: any) => !x.hidden).length }
+			}),
+			routes: {
+				'amounts**': (r: any) => {
+					if (r.request().method() === 'PATCH') {
+						const id = Number(r.request().url().split('/').pop());
+						shown = shown.map((x: any) => (x.id === id ? { ...x, hidden: true } : x));
+						return r.fulfill({ json: {} });
+					}
+					return r.fulfill({ json: { ...am, amounts: shown.filter((x: any) => !x.hidden) } });
+				}
+			}
+		});
+		const startCount = shown.length;
+		await expect(nav(page, 'amounts').locator('.n')).toHaveText(String(startCount));
+		await page.getByTestId('case-amount').first().getByRole('button', { name: S.map_hide }).click();
+		await expect(nav(page, 'amounts').locator('.n')).toHaveText(String(startCount - 1));
+		await page.getByTestId('case-amount').first().getByRole('button', { name: S.map_hide }).click();
+		await expect(nav(page, 'amounts').locator('.n')).toHaveText(String(startCount - 2));
 	});
 
 	test('28: обзор ответил «не найдено» во время работы — страница сменяется на «Не найдено», прежних данных на экране нет', async ({

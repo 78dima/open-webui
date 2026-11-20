@@ -180,17 +180,27 @@ export type NavItem = {
 export type NavGroup = { cap?: string; rule?: boolean; items: NavItem[] };
 
 /** Открыт ли раздел этому юристу в этом деле: настройка разделов сервиса и права. */
-export function sectionOpen(slug: string, boot: Boot, folderFiles = 0): boolean {
+export function sectionOpen(
+	slug: string,
+	boot: Boot,
+	folderFiles = 0,
+	folderFilesFailed = false
+): boolean {
 	if (!(slug in SECTION_SETTING)) return false;
 	if (slug === 'upload') return boot.can_write;
 	if (slug === 'danger') return boot.is_owner;
-	if (slug === 'folder-files') return folderFiles > 0;
+	if (slug === 'folder-files') return folderFiles > 0 || folderFilesFailed;
 	const setting = SECTION_SETTING[slug];
 	return setting === null || boot.sections.includes(setting);
 }
 
 /** Меню разделов, как в макете K-overview: группы с подписями, счётчики — из ответа обзора. `key` — ключ строки. */
-export function navGroups(boot: Boot, data: CaseData | null, folderFiles = 0): NavGroup[] {
+export function navGroups(
+	boot: Boot,
+	data: CaseData | null,
+	folderFiles = 0,
+	folderFilesFailed = false
+): NavGroup[] {
 	const c = data?.counts ?? {};
 	const n = (name: string) => (c[name] > 0 ? c[name] : undefined);
 	const groups: NavGroup[] = [
@@ -236,7 +246,10 @@ export function navGroups(boot: Boot, data: CaseData | null, folderFiles = 0): N
 		}
 	];
 	return groups
-		.map((g) => ({ ...g, items: g.items.filter((i) => sectionOpen(i.slug, boot, folderFiles)) }))
+		.map((g) => ({
+			...g,
+			items: g.items.filter((i) => sectionOpen(i.slug, boot, folderFiles, folderFilesFailed))
+		}))
 		.filter((g) => g.items.length);
 }
 

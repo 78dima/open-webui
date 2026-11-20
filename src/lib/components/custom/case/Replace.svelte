@@ -99,7 +99,6 @@
 		await state.api.post(casePath(state, `/deltas/${target.id}/replace`));
 		caseToast(S.whatsnew_replace_done);
 		void loader.refresh(true);
-		void state.refresh();
 	}
 	const groups = (d: Delta) =>
 		[

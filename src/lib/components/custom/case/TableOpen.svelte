@@ -241,12 +241,17 @@
 		checked: boolean,
 		note: string | null | undefined
 	) {
-		const r = await state.api.request<{ check: Check | null }>('PUT', path('/checks'), {
-			document_id: row.document_id,
-			column_key: col.key,
-			checked,
-			note: note == null ? null : note
-		});
+		const r = await state.api.request<{ check: Check | null }>(
+			'PUT',
+			path('/checks'),
+			{
+				document_id: row.document_id,
+				column_key: col.key,
+				checked,
+				note: note == null ? null : note
+			},
+			{ refresh: false }
+		);
 		row.cells[col.key].check = r.check;
 		rows = rows;
 	}

@@ -58,7 +58,6 @@
 
 	const patch = async (id: number, body: unknown) => {
 		loader.set(await state.api.request<Answer>('PATCH', casePath(state, `/deadlines/${id}`), body));
-		void state.refresh(); // счётчик «Сроки» в меню и «Ближайшие сроки» обзора — сразу, не со следующим опросом
 	};
 	const act = (id: number, body: unknown) =>
 		patch(id, body).catch((e) => caseToast(errorText(S, e), true));
@@ -102,7 +101,6 @@
 			calc: form.calc.trim() || null
 		});
 		await loader.refresh(true);
-		void state.refresh(); // счётчик меню и «Ближайшие сроки» обзора
 	}
 	let historyId: number | null = null;
 	let historyOpen = false;

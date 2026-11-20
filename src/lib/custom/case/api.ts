@@ -49,7 +49,7 @@ export function detailText(data: unknown): string {
 	return typeof text === 'string' ? text : '';
 }
 
-export type CaseRequestOptions = { signal?: AbortSignal };
+export type CaseRequestOptions = { signal?: AbortSignal; refresh?: boolean };
 export type CaseApi = {
 	base: string;
 	/** Адрес в сервисе от его базы: `url('case/<папка>')` — прежняя страница дела и листы. */

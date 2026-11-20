@@ -416,15 +416,19 @@ export function createUploads(options: Options): Uploads {
 				? await withRetry(job, () => api.get<Upload>(path(`/${job.id}`)))
 				: (
 						await withRetry(job, () =>
-							api.post<{ upload: Upload }>(path(), {
-								filename: file.name,
-								size: file.size,
-								input_kind: opts.inputKind ?? null,
-								volume_hint: opts.volumeHint ?? null,
-								continues_volume_id: opts.continuesVolumeId ?? null,
-								batch_id: opts.batchId ?? null,
-								member_path: opts.memberPath ?? null
-							})
+							api.post<{ upload: Upload }>(
+								path(),
+								{
+									filename: file.name,
+									size: file.size,
+									input_kind: opts.inputKind ?? null,
+									volume_hint: opts.volumeHint ?? null,
+									continues_volume_id: opts.continuesVolumeId ?? null,
+									batch_id: opts.batchId ?? null,
+									member_path: opts.memberPath ?? null
+								},
+								{ refresh: false }
+							)
 						)
 					).upload;
 			job.id = info.id;
@@ -436,7 +440,9 @@ export function createUploads(options: Options): Uploads {
 			for (const p of todo) {
 				if (job.state !== 'running' || job.aborted) throw new Halt();
 				await withRetry(job, () =>
-					api.request('PUT', path(`/${job.id}/parts/${p.n}`), file.slice(p.start, p.end))
+					api.request('PUT', path(`/${job.id}/parts/${p.n}`), file.slice(p.start, p.end), {
+						refresh: false
+					})
 				);
 				job.attempt = 0;
 				job.serverTries = 0;

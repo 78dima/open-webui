@@ -2,41 +2,24 @@
 	// ai-dvokat: «Файлы папки вне дела» (макет K-files; опись § 2.14): файлы из «Знаний» папки чата, которых нет в
 	// деле; «Добавить в дело» с ответом «что это» у PDF и архива (право записи, без подтверждения). Ручки
 	// `GET …/folder-files`, `POST …/folder-files/<id>/add`. Поведение — прежний `case.js` (`loadFolderFiles`).
-	import { onMount } from 'svelte';
-	import type { CaseState } from '$lib/custom/case/casestore';
+	import type { CaseState, FolderFile } from '$lib/custom/case/casestore';
 	import { size } from '$lib/custom/case/casepage';
 	import { casePath, errorText, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import Icon from './Icon.svelte';
+	import StaleNote from './StaleNote.svelte';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
 
-	type FolderFile = {
-		id: string;
-		name?: string | null;
-		size?: number;
-		readable?: boolean;
-		adding?: boolean;
-		kind?: string | null;
-	};
-	const { boot } = state;
+	const { boot, folderFilesState } = state;
 	$: canWrite = !!$boot?.can_write;
-	let files: FolderFile[] | null = null;
-	let error = '';
+	$: files = $folderFilesState.files;
+	$: error = $folderFilesState.error;
 	let kinds: Record<string, string> = {};
 	let busy = new Set<string>();
-	async function load() {
-		try {
-			const d = await state.api.get<{ files: FolderFile[] }>(casePath(state, '/folder-files'));
-			files = d?.files ?? [];
-			error = '';
-		} catch (e) {
-			error = reasonText(S, e);
-		}
-	}
-	onMount(() => void load());
+	const load = () => void state.reloadFolderFiles();
 	async function add(f: FolderFile) {
 		if (busy.has(f.id)) return;
 		busy = new Set(busy).add(f.id);
@@ -45,9 +28,7 @@
 				input_kind: f.kind !== 'photo' ? (kinds[f.id] ?? 'volume') : null
 			});
 			caseToast(S.folder_file_added);
-			await load();
-			void state.reloadFolderFiles(); // пункт меню и его число — сразу (последний файл ушёл в дело — пункта нет)
-			void state.refresh();
+			void state.reloadFolderFiles();
 		} catch (e) {
 			caseToast(errorText(S, e), true);
 		} finally {
@@ -60,10 +41,15 @@
 
 <p class="md intro">{S.folder_files_hint_g}</p>
 
+{#if error && files}
+	<StaleNote {S} {error} retry={load} />
+{/if}
 {#if error && !files}
 	<section class="card" data-testid="case-folder-files-error">
 		<div class="col g12 as">
-			<span class="pill s"><Icon name="al" />{fmt(S.section_error, { detail: error })}</span>
+			<span class="pill s"
+				><Icon name="al" />{fmt(S.section_error, { detail: reasonText(S, error) })}</span
+			>
 			<button type="button" class="btn big" on:click={load}>{S.retry}</button>
 		</div>
 	</section>

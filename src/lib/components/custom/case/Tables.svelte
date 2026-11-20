@@ -109,7 +109,6 @@
 		});
 		caseToast(r?.cached ? S.tables_cached : S.tables_started);
 		void loader.refresh(true);
-		void state.refresh();
 	}
 	async function press() {
 		if (starting || estimating) return;

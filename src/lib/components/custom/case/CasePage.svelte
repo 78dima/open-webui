@@ -55,7 +55,7 @@
 
 	const api = createCaseApi($config?.custom_ui);
 	const state = createCaseState(api, folderId);
-	const { boot, bootError, data, folderFiles, uploads } = state;
+	const { boot, bootError, data, folderFiles, folderFilesState, uploads } = state;
 	$: S = $caseStrings ?? {};
 
 	let menuOpen = false;
@@ -63,10 +63,11 @@
 	let creating = false;
 
 	$: name = $boot?.title || '';
-	$: groups = $boot?.has_case ? navGroups($boot, $data, $folderFiles) : [];
+	$: folderFilesFailed = !!$folderFilesState.error;
+	$: groups = $boot?.has_case ? navGroups($boot, $data, $folderFiles, folderFilesFailed) : [];
 	$: item = navItem(groups, section);
 	$: known = section in SECTION_SETTING;
-	$: open = !!$boot && known && sectionOpen(section, $boot, $folderFiles);
+	$: open = !!$boot && known && sectionOpen(section, $boot, $folderFiles, folderFilesFailed);
 	// «Файлы папки вне дела»: пока список папки не пришёл, раздел не объявляется закрытым
 	$: label = item ? S[item.key] : '';
 	$: volumes = gotoVolumes($data?.overview.volumes);

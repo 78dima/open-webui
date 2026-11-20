@@ -114,9 +114,8 @@
 	const fail = (e: unknown) => caseToast(errorText(S, e), true);
 	const patchFile = (f: FileFacts, body: unknown) =>
 		state.api.request('PATCH', casePath(state, `/files/${f.id}`), body);
-	const confirm = (f: FileFacts) =>
-		patchFile(f, { confirm_suggest: true }).then(() => state.refresh(), fail);
-	const detach = (f: FileFacts) => patchFile(f, { detach: true }).then(() => state.refresh(), fail);
+	const confirm = (f: FileFacts) => patchFile(f, { confirm_suggest: true }).catch(fail);
+	const detach = (f: FileFacts) => patchFile(f, { detach: true }).catch(fail);
 
 	let history: { entity: string; id: number } | null = null;
 	let historyOpen = false;
@@ -168,7 +167,6 @@
 			await state.api.request('DELETE', casePath(state, `/files/${win.file.id}`));
 			caseToast(S.remove_file_done);
 		}
-		void state.refresh();
 	}
 	$: winTitle = !win
 		? ''
@@ -649,7 +647,6 @@
 	{S}
 	entity={history?.entity ?? ''}
 	id={history?.id ?? null}
-	onReverted={() => state.refresh()}
 />
 
 <style>

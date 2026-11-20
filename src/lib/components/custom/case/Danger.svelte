@@ -18,7 +18,9 @@
 	async function remove() {
 		await state.api.request(
 			'DELETE',
-			casePath(state, `?confirm=${encodeURIComponent($boot?.case_id ?? '')}`)
+			casePath(state, `?confirm=${encodeURIComponent($boot?.case_id ?? '')}`),
+			undefined,
+			{ refresh: false }
 		);
 		state.stop(); // дела больше нет: обзор не переспрашивать
 		caseToast(S.delete_case_done);
