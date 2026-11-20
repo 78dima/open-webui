@@ -87,6 +87,7 @@
 		findings?: Finding[];
 		summary?: Record<string, Record<string, number>>;
 		total?: number;
+		total_other_reading?: number;
 		next_page?: number | null;
 		end?: boolean;
 	};
@@ -584,7 +585,14 @@
 		</section>
 	{:else}
 		<section class="card" data-testid="case-findings">
-			<p class="sm mut">{fmt(S.tables_findings_total, { n: view.total ?? findings.length })}</p>
+			<p class="sm mut" data-testid="case-findings-total">
+				{(view.total_other_reading ?? 0) > 0
+					? fmt(S.tables_places_other_reading, {
+							n: view.total ?? findings.length,
+							m: view.total_other_reading
+						})
+					: fmt(S.tables_findings_total, { n: view.total ?? findings.length })}
+			</p>
 			{#each findings as f, n (n)}
 				<div class="li t" data-testid="case-finding">
 					<div class="col g6 grow">

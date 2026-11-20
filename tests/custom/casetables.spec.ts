@@ -464,4 +464,34 @@ test.describe('часть 3: изменения охвата (Т-5), ссылк�
 		await expect(items.nth(1)).toContainText(`Черновик расчёта (${S.inventory_title_unverified})`);
 		await expect(items.nth(2)).not.toContainText(S.inventory_title_unverified);
 	});
+
+	test('счёт мест из другого прочтения в заголовке прохода: N > 0, N = 0 и поле отсутствует', async ({ page }) => {
+		const base = fixture('table-findings');
+		// 1) N > 0 — показывается строка tables_places_other_reading
+		await openSection(page, {
+			section: 'tables',
+			item: base.sweep.id,
+			routes: { 'tables/*?**': { ...base, total: 65, total_other_reading: 6 } }
+		});
+		await expect(page.getByTestId('case-findings-total')).toHaveText(
+			'мест: 65, из них из другого прочтения листа: 6'
+		);
+
+		// 2) N = 0 — прежний счёт tables_findings_total
+		await openSection(page, {
+			section: 'tables',
+			item: base.sweep.id,
+			routes: { 'tables/*?**': { ...base, total: 65, total_other_reading: 0 } }
+		});
+		await expect(page.getByTestId('case-findings-total')).toHaveText('Мест найдено: 65');
+
+		// 3) поле отсутствует (проход до правок) — прежний счёт tables_findings_total
+		const { total_other_reading: _omit, ...legacy } = { ...base, total: 65 };
+		await openSection(page, {
+			section: 'tables',
+			item: base.sweep.id,
+			routes: { 'tables/*?**': legacy }
+		});
+		await expect(page.getByTestId('case-findings-total')).toHaveText('Мест найдено: 65');
+	});
 });
