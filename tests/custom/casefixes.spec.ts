@@ -640,6 +640,25 @@ test('6: открытая таблица на 360 px с длинным дейс�
 	await noSideScroll(page);
 });
 
+test('часть 5А: длинный заголовок открытого прохода и дела на 1280 px занимает всю ширину, действия ниже', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1280, height: 900 });
+	const f = fixture('table-findings');
+	await openSection(page, {
+		section: 'tables',
+		item: f.sweep.id,
+		routes: { 'tables/*?**': f }
+	});
+	const head = page.getByTestId('case-table-head');
+	const h1 = head.getByRole('heading', { level: 1 });
+	const goto = head.getByTestId('case-goto');
+	const [hb, gb] = await Promise.all([h1.boundingBox(), goto.boundingBox()]);
+	expect(hb!.width).toBeGreaterThan(600);
+	expect(gb!.y).toBeGreaterThanOrEqual(hb!.y + hb!.height - 2);
+	await noSideScroll(page);
+});
+
 test('22: пункт «Дела» не меняет состояние панели чата; на телефоне после перехода панель закрыта', async ({
 	page
 }) => {

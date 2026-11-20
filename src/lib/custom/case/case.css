@@ -120,6 +120,7 @@ html.dark .cg{
 :where(.cg) .sel{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);font-size:15px;font-weight:500}
 :where(.cg) .sel>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :where(.cg) .head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px}
+:where(.cg) .head>.grow{flex:1 1 auto}
 :where(.cg) .eyebrow{font-size:13px;color:var(--muted)}
 :where(.cg) .goto{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);font-size:13.5px;color:var(--muted)}
 :where(.cg) .goto label{display:inline-flex;align-items:center;gap:6px;color:var(--fg2)}
