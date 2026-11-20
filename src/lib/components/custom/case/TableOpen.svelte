@@ -15,13 +15,16 @@
 	import { fmt } from '$lib/custom/case/strings';
 	import {
 		canCheck,
+		catchUpNote,
 		copyText,
 		coverage,
 		needsConfirm,
 		placeQuery,
 		refParts,
+		relationWord,
 		restText,
 		sheetText,
+		staleText,
 		stateText,
 		statusTone,
 		statusWord,
@@ -68,6 +71,8 @@
 	type Finding = Place & {
 		document?: string | null;
 		quote: string;
+		relation?: string | null;
+		other_reading?: boolean;
 		also?: Place[];
 		refs?: Ref[];
 		refs_unparsed?: number;
@@ -94,11 +99,15 @@
 	let findings: Finding[] = [];
 	let error = '';
 	let busy = false;
+	let loadedId = '';
+	let mounted = false;
 	async function load(page: number) {
 		if (busy) return;
+		const reqId = id;
 		busy = true;
 		try {
 			const d = await state.api.get<View>(path(`?page=${page}`));
+			if (reqId !== id) return;
 			view = d;
 			// порция не повторяет уже показанное (состав мог сдвинуться между порциями): повтор ключа ломал бы список
 			if (d.kind === 'table') {
@@ -107,13 +116,29 @@
 			} else findings = [...(page ? findings : []), ...(d.findings ?? [])]; // у находок ключ — место в списке
 			error = '';
 		} catch (e) {
+			if (reqId !== id) return;
 			if (view) caseToast(errorText(S, e), true);
 			else error = reasonText(S, e);
 		} finally {
-			busy = false;
+			if (reqId === id) busy = false;
 		}
 	}
-	onMount(() => void load(0));
+	onMount(() => {
+		mounted = true;
+		loadedId = id;
+		void load(0);
+	});
+	// переход по ссылке «есть более новый проход» меняет id без пересоздания компонента
+	$: if (mounted && id && id !== loadedId) {
+		loadedId = id;
+		view = null;
+		rows = [];
+		findings = [];
+		opened = new Set();
+		error = '';
+		busy = false;
+		void load(0);
+	}
 	$: sw = view?.sweep;
 
 	let opened = new Set<string>();
@@ -158,19 +183,37 @@
 	$: actions = !sw || !canWrite ? [] : sweepActions(sw);
 	function sweepActions(s: Sweep): Action[] {
 		const out: Action[] = [];
-		if (s.stale && s.finished)
-			out.push({
-				text: S.tables_catch_up,
-				query: '',
-				// цены этого действия сервис не отдаёт: она неизвестна (а не ноль) — перед платным действием своё окно
-				// с честной строкой «оценки нет» (решение владельца: цена неизвестна — подтверждение нужно)
-				estimate: null,
-				note: '',
-				warn: false,
-				title: S.runs_confirm_catch_up_title,
-				where: 'stale'
-			});
-		if (!s.stale && s.reader_stale)
+		if (s.stale && s.finished && !s.reader_stale) {
+			const cu = s.catch_up;
+			if (cu != null) {
+				const free = cu.windows === 0;
+				out.push({
+					text: free
+						? S.runs_catch_up_free
+						: fmt(S.runs_catch_up_usd, { usd: usd(cu.estimate_usd) }),
+					query: '',
+					estimate: free ? 0 : cu.estimate_usd,
+					note: free
+						? ''
+						: fmt(S.runs_confirm_rest, { title: title(s), n: cu.windows, pages: cu.pages }),
+					warn: false,
+					title: S.runs_confirm_catch_up_title,
+					where: 'stale'
+				});
+			} else {
+				// прежний ответ сервиса без catch_up: кнопка прежнего вида
+				out.push({
+					text: S.tables_catch_up,
+					query: '',
+					estimate: null,
+					note: '',
+					warn: false,
+					title: S.runs_confirm_catch_up_title,
+					where: 'stale'
+				});
+			}
+		}
+		if (s.reader_stale)
 			out.push({
 				text: s.reread
 					? fmt(S.runs_reread_usd, { usd: usd(s.reread.estimate_usd) })
@@ -188,7 +231,7 @@
 				title: S.runs_confirm_reread_title,
 				where: 'reader'
 			});
-		if (!s.stale && s.rest) {
+		if (!s.stale && !s.reader_stale && s.rest) {
 			const raise = s.rest.raise_to_usd != null;
 			out.push({
 				text: fmt(raise ? S.runs_resume_limit_usd : S.runs_resume_usd, {
@@ -367,9 +410,22 @@
 				</div>
 			</div>
 		{/if}
+		{#if sw.newer}
+			<div class="note i" data-testid="case-table-newer">
+				<Icon name="info" klass="l" />
+				<p class="sm grow">
+					<a class="ref" href={hrefOf(`tables/${sw.newer}`)}>{S.tables_newer}</a>
+				</p>
+			</div>
+		{/if}
 		{#if sw.stale}
-			<div class="note row g12 act">
-				<p class="grow">{S.tables_stale}</p>
+			<div class="note row g12 act" data-testid="case-table-stale">
+				<p class="grow">
+					{staleText(sw, S)}{#if sw.catch_up && !sw.reader_stale}{' '}{catchUpNote(
+							sw.catch_up,
+							S
+						)}{/if}
+				</p>
 				{#each actions.filter((a) => a.where === 'stale') as a (a.text)}
 					<button
 						type="button"
@@ -464,6 +520,11 @@
 												><Icon name="al" />{S.tables_numbers_unconfirmed}</span
 											>
 										{/if}
+										{#if a.other_reading}
+											<span class="pill w t box" data-testid="case-other-reading"
+												><Icon name="al" />{S.tables_other_reading}</span
+											>
+										{/if}
 									{/each}
 									{#each cell.copies ?? [] as copy}
 										{#if copy.first_page_id != null}
@@ -519,9 +580,23 @@
 					<div class="col g6 grow">
 						<div class="row g8 sm">
 							<SheetRef label={f.label || S.tables_col_sheet} href={place(f)} />
+							{#if relationWord(f.relation, S)}
+								<span
+									class="pill t"
+									class:i={f.relation === 'answers'}
+									data-testid="case-finding-relation">{relationWord(f.relation, S)}</span
+								>
+							{/if}
 							{#if f.document}<span class="mut aw">· {f.document}</span>{/if}
 						</div>
 						<p class="q pw">{f.quote}</p>
+						{#if f.other_reading}
+							<div class="row">
+								<span class="pill w t box" data-testid="case-other-reading"
+									><Icon name="al" />{S.tables_other_reading}</span
+								>
+							</div>
+						{/if}
 						{#if f.also?.length}
 							<p class="sm mut">
 								{S.tables_also_copies}

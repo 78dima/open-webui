@@ -17,6 +17,7 @@
 		kindWord,
 		needsConfirm,
 		scopeQuery,
+		staleText,
 		statusTone,
 		statusWord,
 		title,
@@ -187,15 +188,22 @@
 								}
 							)}{/if}
 					</p>
-					{#if sw.stale}<div class="note">
+					{#if sw.stale}<div class="note" data-testid="case-table-stale">
 							<Icon name="al" klass="l" />
-							<p class="sm">{S.tables_stale}</p>
+							<p class="sm">{staleText(sw, S)}</p>
 						</div>{/if}
 					{#if sw.reader_stale}
 						<div class="note">
 							<Icon name="al" klass="l" />
 							<p class="sm">{S.tables_reader_stale}</p>
 						</div>
+					{/if}
+					{#if sw.newer}
+						<p class="sm">
+							<a class="ref" href={hrefOf(`tables/${sw.newer}`)} data-testid="case-table-newer"
+								>{S.tables_newer}</a
+							>
+						</p>
 					{/if}
 				</div>
 				<a
