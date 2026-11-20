@@ -227,6 +227,7 @@ html.dark .cg{
 :where(.cg) .ref{font-weight:500;color:var(--link)}
 :where(.cg) .fn{font-size:12.5px;font-weight:400;color:var(--muted)}
 :where(.cg) .chipl{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:1px solid var(--btn-line);border-radius:999px;background:var(--card);font-size:14px;font-weight:500;color:var(--link)}
+:where(.cg) a.ref,:where(.cg) a.chipl{color:var(--link)}
 :where(.cg) .ico{flex:0 0 40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:var(--warn-bg);color:var(--warn)}
 :where(.cg) .ico.n{background:var(--soft);color:var(--fg2)}
 :where(.cg) .ico.i{background:var(--info-bg);color:var(--info)}
