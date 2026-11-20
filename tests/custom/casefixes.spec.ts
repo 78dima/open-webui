@@ -563,6 +563,64 @@ test.describe('ревью 20.11', () => {
 		await field.fill('11а');
 		await expect(field).toHaveValue('11а');
 	});
+
+	test('Г-2, Ж-2: на 360 px заголовок дела во всю ширину, кнопка «В чат дела» ниже, слово не рвётся', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 360, height: 780 });
+		await openSection(page, {
+			boot: { title: 'Показательное уголовное дело — Дорогомиловский район' }
+		});
+		await page.getByTestId('case-summary').waitFor();
+		const geom = await page.evaluate(() => {
+			const h1 = document.querySelector('.head h1')!.getBoundingClientRect();
+			const btn = document.querySelector('.head a.btn.p')!.getBoundingClientRect();
+			return { h1W: Math.round(h1.width), h1Bottom: Math.round(h1.bottom), btnTop: Math.round(btn.top) };
+		});
+		expect(geom.h1W).toBeGreaterThanOrEqual(300);
+		expect(geom.btnTop).toBeGreaterThanOrEqual(geom.h1Bottom);
+		await noSideScroll(page);
+		await snap(page, 'g2-overview-360');
+	});
+
+	test('Г-4, Г-5: цвет ссылок на лист (.ref, .chipl) из --link; в тёмной схеме контраст .btn.dp и .toast.s', async ({
+		page
+	}) => {
+		await openSection(page, { section: 'check' });
+		await page.getByTestId('case-check').waitFor();
+		const lightRef = await page.locator('a.ref').first().evaluate((el) => getComputedStyle(el).color);
+		expect(lightRef).toBe('rgb(75, 71, 168)'); // --link #4b47a8
+		await page.evaluate(() => document.documentElement.classList.add('dark'));
+		const darkRef = await page.locator('a.ref').first().evaluate((el) => getComputedStyle(el).color);
+		expect(darkRef).toBe('rgb(179, 176, 245)'); // --link #b3b0f5
+		await snap(page, 'g4-check-dark');
+
+		// Г-5: кнопка удаления (.btn.dp) и красное сообщение (.toast.s) в тёмной схеме имеют тёмный текст --stop-fg
+		await nav(page, 'danger').click();
+		await page.getByTestId('case-danger').getByRole('button', { name: S.delete_case }).click();
+		const dpColor = await dialog(page).locator('button.btn.dp').evaluate((el) => getComputedStyle(el).color);
+		expect(dpColor).toBe('rgb(21, 21, 29)'); // --stop-fg #15151d
+		await snap(page, 'g5-danger-dark');
+		await dialog(page).getByRole('button', { name: S.cancel }).click();
+
+		// «Разделить» у документа из одного листа называет причину (doc_split_single) и проверяет .toast.s в dark
+		const docs = fixture('case-documents');
+		const single = { ...docs.documents[0], first_page_id: 101, last_page_id: 101, sheets: 1 };
+		await openSection(page, {
+			section: 'inventory',
+			routes: {
+				'documents**': { ...docs, documents: [single] },
+				'pages**': { pages: [{ id: 101, label: 'т. 1, л.д. 1' }] }
+			}
+		});
+		await page.evaluate(() => document.documentElement.classList.add('dark'));
+		await page.getByRole('button', { name: S.doc_split }).first().click();
+		const toast = page.getByTestId('case-toast');
+		await expect(toast).toContainText(S.doc_split_single);
+		const toastColor = await toast.evaluate((el) => getComputedStyle(el).color);
+		expect(toastColor).toBe('rgb(21, 21, 29)');
+		await snap(page, 'g5-toast-dark');
+	});
 });
 
 test('6: открытая таблица на 360 px с длинным действием «Дочитать таблицу по изменившимся листам» — без прокрутки вбок', async ({
