@@ -251,6 +251,7 @@ export type Doc = {
 	last_page_id: number;
 	label: string;
 	title?: string | null;
+	title_inventory?: string | null;
 	doc_type?: string | null;
 	date_as_written?: string | null;
 	date_value?: string | null;
@@ -272,4 +273,14 @@ export function docNotes(d: Doc, S: Strings): string[] {
 	if (ov.length) out.push(fmt(S.inventory_overlap, { docs: ov.join('; ') }));
 	if (d.uncovered) out.push(S.inventory_uncovered);
 	return out;
+}
+
+/** Название документа описи: сверенное (`title`) или запасное по первой строке (`title_inventory`, не сверено). */
+export function docTitle(d: {
+	title?: string | null;
+	title_inventory?: string | null;
+}): { text: string; unverified: boolean } {
+	if (d.title) return { text: d.title, unverified: false };
+	if (d.title_inventory) return { text: d.title_inventory, unverified: true };
+	return { text: '', unverified: false };
 }

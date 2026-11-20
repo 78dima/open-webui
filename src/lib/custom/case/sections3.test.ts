@@ -19,6 +19,7 @@ import {
 import {
 	blockKey,
 	docNotes,
+	docTitle,
 	errorText,
 	factText,
 	fileFacts,
@@ -157,6 +158,18 @@ describe('файлы и тома', () => {
 		).toBe('Выписка т. 4.pdf');
 		expect(fileName('attachment; filename="a.pdf"')).toBe('a.pdf');
 		expect(fileName(null)).toBe('');
+		expect(docTitle({ title: 'Иск', title_inventory: 'Запасное' })).toEqual({
+			text: 'Иск',
+			unverified: false
+		});
+		expect(docTitle({ title: null, title_inventory: 'Запасное по первой строке' })).toEqual({
+			text: 'Запасное по первой строке',
+			unverified: true
+		});
+		expect(docTitle({ title: null, title_inventory: null })).toEqual({
+			text: '',
+			unverified: false
+		});
 	});
 });
 

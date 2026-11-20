@@ -11,7 +11,7 @@
 	import { saveBlob } from '$lib/custom/case/loader';
 	import { inVolume, volumeOf } from '$lib/custom/case/casepage';
 	import { day } from '$lib/custom/case/mycases';
-	import { casePath, errorText, sheetHref, reasonText } from '$lib/custom/case/sections';
+	import { casePath, docTitle, errorText, sheetHref, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import {
 		canCheck,
@@ -56,6 +56,7 @@
 		document_id: number;
 		gone?: boolean;
 		title?: string;
+		title_inventory?: string | null;
 		label?: string;
 		doc_type?: string;
 		date?: string;
@@ -70,6 +71,7 @@
 	};
 	type Finding = Place & {
 		document?: string | null;
+		title_inventory?: string | null;
 		quote: string;
 		relation?: string | null;
 		other_reading?: boolean;
@@ -478,9 +480,17 @@
 							{#if r.gone}
 								<span class="c-warn">{S.tables_doc_gone}</span>
 							{:else}
-								<a class="b aw doc" href={sheetHref(state, r.first_page_id)} data-sveltekit-reload
-									>{r.title || r.label || ''}</a
+								{@const dt = docTitle(r)}
+								<a
+									class="aw doc"
+									class:b={!dt.unverified}
+									class:fg2={dt.unverified}
+									href={sheetHref(state, r.first_page_id)}
+									data-sveltekit-reload>{dt.text || r.label || ''}</a
 								>
+								{#if dt.unverified}<span class="xs mut" data-testid="case-doc-title-unverified"
+										>{S.inventory_title_unverified}</span
+									>{/if}
 								<span class="sm mut aw"
 									><SheetRef
 										label={r.label ?? ''}
@@ -587,7 +597,9 @@
 									data-testid="case-finding-relation">{relationWord(f.relation, S)}</span
 								>
 							{/if}
-							{#if f.document}<span class="mut aw">· {f.document}</span>{/if}
+							{#if f.document}<span class="mut aw">· {f.document}</span>{:else if f.title_inventory}<span
+									class="mut aw">· {f.title_inventory} ({S.inventory_title_unverified})</span
+								>{/if}
 						</div>
 						<p class="q pw">{f.quote}</p>
 						{#if f.other_reading}

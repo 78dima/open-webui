@@ -227,3 +227,70 @@ test('«Опись» на телефоне 360: строки карточкам�
 	for (const field of await dialog(page).locator('input, select').all())
 		expect(await field.evaluate((e) => parseFloat(getComputedStyle(e).fontSize))).toBeGreaterThanOrEqual(16);
 });
+
+test('запасное название документа описи (title_inventory): три состояния и правка юристом без случайного сохранения', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1280, height: 900 });
+	const base = fixture('case-documents');
+	const docs = [
+		{ ...base.documents[0], title: 'Исковое заявление (сверенное)' },
+		{ ...base.documents[1], title: null, title_inventory: 'Протокол осмотра от 04.06.2026' },
+		{ ...base.documents[2], title: null, title_inventory: null }
+	];
+	let savedTitle: string | null = null;
+	const { calls } = await openSection(page, {
+		section: 'inventory',
+		routes: {
+			'documents?**': (r: any) =>
+				r.fulfill({
+					json: {
+						documents: docs.map((d, i) =>
+							i === 1 && savedTitle ? { ...d, title: savedTitle, title_inventory: null, edited: true } : d
+						),
+						total: 3,
+						end: true
+					}
+				}),
+			'documents/*': (r: any, c: any) => {
+				savedTitle = c.body.title_as_written ?? null;
+				return r.fulfill({ json: { ok: true } });
+			},
+			'pages?**': pages()
+		}
+	});
+	const rows = page.getByTestId('case-doc');
+	await expect(rows).toHaveCount(3);
+	// 1) сверенное название — обычное жирное, без подписи «не сверено»
+	await expect(rows.nth(0).locator('.b')).toHaveText('Исковое заявление (сверенное)');
+	await expect(rows.nth(0).getByTestId('case-doc-title-unverified')).toHaveCount(0);
+	// 2) только запасное — приглушённо с подписью происхождения
+	await expect(rows.nth(1).getByTestId('case-doc-title-fallback')).toHaveText('Протокол осмотра от 04.06.2026');
+	await expect(rows.nth(1).getByTestId('case-doc-title-unverified')).toHaveText(S.inventory_title_unverified);
+	// 3) нет ни того ни другого — прочерк «—»
+	await expect(rows.nth(2)).toContainText('—');
+	await expect(rows.nth(2).getByTestId('case-doc-title-unverified')).toHaveCount(0);
+
+	// окно «Изменить» для документа с запасным названием: поле пустое, запасное — подсказкой под ним
+	await rows.nth(1).getByRole('button', { name: S.doc_edit }).click();
+	const dlg = dialog(page);
+	const input = dlg.getByLabel(S.doc_field_title);
+	await expect(input).toHaveValue('');
+	await expect(dlg.getByTestId('case-doc-edit-title-hint')).toContainText('Протокол осмотра от 04.06.2026');
+	await expect(dlg.getByTestId('case-doc-edit-title-hint')).toContainText(S.inventory_title_unverified);
+	// сохранение без ввода не отправляет запасное название как правку юриста
+	await dlg.getByRole('button', { name: S.save }).click();
+	await expect(dlg).toHaveCount(0);
+	expect(writes(calls)).toEqual([]);
+
+	// ввод своего названия юристом: сохраняется как обычный title, подпись «не сверено» исчезает
+	await rows.nth(1).getByRole('button', { name: S.doc_edit }).click();
+	await dialog(page).getByLabel(S.doc_field_title).fill('Протокол осмотра места происшествия');
+	await dialog(page).getByRole('button', { name: S.save }).click();
+	await expect(page.getByText(S.saved)).toBeVisible();
+	await expect(rows.nth(1).locator('.b')).toHaveText('Протокол осмотра места происшествия');
+	await expect(rows.nth(1).getByTestId('case-doc-title-unverified')).toHaveCount(0);
+	expect(calls.find((c) => c.method === 'PATCH')!.body).toEqual({
+		title_as_written: 'Протокол осмотра места происшествия'
+	});
+});

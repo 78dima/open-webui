@@ -19,6 +19,7 @@
 	type Diff = { kind: string; confirmed?: boolean | null; shown?: boolean; a: Place; b: Place };
 	type DocSide = {
 		title?: string | null;
+		title_inventory?: string | null;
 		doc_type?: string | null;
 		date?: string | null;
 		label: string;
@@ -128,8 +129,12 @@
 									<span class="mut">{S.copies_doc_gone}</span>
 								{:else}
 									<span class="aw"
-										>{#if d.title || d.doc_type}<span class="b">{d.title || d.doc_type}</span
-											>{:else}<span class="mut">{S.copies_untitled}</span>{/if} —
+										>{#if d.title}<span class="b">{d.title}</span>{:else if d.title_inventory}<span
+												class="fg2">{d.title_inventory}</span
+											>{' '}<span class="xs mut">({S.inventory_title_unverified})</span
+											>{:else if d.doc_type}<span class="b">{d.doc_type}</span>{:else}<span
+												class="mut">{S.copies_untitled}</span
+											>{/if} —
 										<a class="ref" href={sheetHref(state, d.page_id)} target="_blank" rel="noopener"
 											>{d.label}</a
 										>{d.date ? `, ${d.date}` : ''}</span

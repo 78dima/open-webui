@@ -12,6 +12,7 @@
 	import {
 		casePath,
 		docNotes,
+		docTitle,
 		errorText,
 		query,
 		sheetHref,
@@ -353,7 +354,16 @@
 						><SheetRef label={d.label} href={sheetHref(state, d.first_page_id)} /></span
 					>
 					<div class="col g6 as">
-						{#if d.title}<span class="b aw">{d.title}</span>{:else}<span class="mut">—</span>{/if}
+						{#if d.title}
+							<span class="b aw">{d.title}</span>
+						{:else if d.title_inventory}
+							<span class="fg2 aw" data-testid="case-doc-title-fallback">{d.title_inventory}</span>
+							<span class="xs mut" data-testid="case-doc-title-unverified"
+								>{S.inventory_title_unverified}</span
+							>
+						{:else}
+							<span class="mut">—</span>
+						{/if}
 						{#if second(d)}<span class="sm mut aw">{second(d)}</span>{/if}
 						{#if d.edited}<span class="pill t" data-testid="case-doc-edited"
 								>{S.inventory_edited}</span
@@ -420,7 +430,11 @@
 				type="text"
 				maxlength="1000"
 				bind:value={form.title_as_written}
-			/></label
+			/>{#if !win.doc.title && win.doc.title_inventory}<span
+					class="xs mut aw"
+					data-testid="case-doc-edit-title-hint"
+					>{win.doc.title_inventory} · {S.inventory_title_unverified}</span
+				>{/if}</label
 		>
 		<div class="row g12">
 			<label class="lbl grow"
@@ -479,7 +493,10 @@
 			>
 		</div>
 	{:else if win?.kind === 'split'}
-		<p class="md fg2 aw">{win.doc.title || ''} · {win.doc.label}</p>
+		{@const dt = docTitle(win.doc)}
+		<p class="md fg2 aw">
+			{#if dt.text}{dt.text}{#if dt.unverified}{' '}({S.inventory_title_unverified}){/if}{' · '}{/if}{win.doc.label}
+		</p>
 		<label class="lbl"
 			>{S.doc_split_at}<select class="in" bind:value={splitAt}>
 				{#each win.pages as p (p.id)}<option value={String(p.id)}>{p.label}</option>{/each}
