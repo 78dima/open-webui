@@ -187,7 +187,7 @@ describe('ядро загрузки частями', () => {
 	});
 	it('«такой файл уже есть» — для одного файла; у архива остаётся прежняя фраза с «или архив пуст»', () => {
 		expect(serverTextKey('done_nofile', 'Том 3.pdf')).toBe('upload_status_done_nofile_g');
-		expect(serverTextKey('done_nofile', 'Архив.ZIP')).toBe('upload_status_done_nofile');
+		expect(serverTextKey('done_nofile', 'Архив.ZIP')).toBe('upload_status_done_nofile_g');
 		expect(serverTextKey('intake', 'Архив.zip')).toBe('upload_status_intake');
 	});
 	it('слова этапа приёма — по этапу сервера', () => {
