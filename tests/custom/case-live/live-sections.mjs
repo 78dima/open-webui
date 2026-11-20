@@ -294,11 +294,22 @@ await step('опись', async () => {
 		return got;
 	};
 	const listed = (await tools('/documents?page=0')).documents;
-	const pick = listed.find((d) => d.sheets > 1 && d.title && !d.edited) ?? listed.find((d) => d.sheets > 1 && d.title);
+	const nameOf = (d) => d.title || d.title_inventory || '';
+	const pick =
+		listed.find((d) => d.sheets > 1 && d.title && !d.edited) ??
+		listed.find((d) => d.sheets > 1 && d.title) ??
+		listed.find((d) => d.sheets > 1 && d.title_inventory && !d.edited) ??
+		listed.find((d) => d.sheets > 1 && d.title_inventory) ??
+		listed.find((d) => d.sheets > 1);
+	if (!pick) {
+		ok(false, `в описи нет документа с несколькими листами (в первой порции: ${listed.length})`);
+		return;
+	}
 	const id = pick.id;
 	const mine = page.locator(`[data-testid="case-doc"][data-doc="${id}"]`);
 	await mine.waitFor({ timeout: 30000 });
-	const title0 = pick.title;
+	const hadTitle = Boolean(pick.title);
+	const title0 = nameOf(pick) || pick.label || `документ ${id}`;
 	await mine.getByRole('button', { name: S.doc_edit, exact: true }).click();
 	await dlg(page).getByLabel(S.doc_field_title).fill(`${title0} (правка)`);
 	await dlg(page).getByRole('button', { name: S.save }).click();
@@ -308,7 +319,10 @@ await step('опись', async () => {
 	await dlg(page).getByRole('button', { name: S.history }).click();
 	const hist = await historyRows(page);
 	await dlg(page).getByRole('button', { name: S.revert }).first().click();
-	ok(hist.length >= 1 && (await toast(page, S.revert_done)) && (await mine.locator('.b').first().filter({ hasText: new RegExp(`^${title0.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).waitFor({ timeout: 30000 }).then(() => true, () => false)),
+	const reverted = hadTitle
+		? await mine.locator('.b').first().filter({ hasText: new RegExp(`^${title0.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).waitFor({ timeout: 30000 }).then(() => true, () => false)
+		: await mine.getByText(`${title0} (правка)`).waitFor({ state: 'detached', timeout: 30000 }).then(() => true, () => false);
+	ok(hist.length >= 1 && (await toast(page, S.revert_done)) && reverted,
 		`«История» из окна «Изменить»: «${(hist[0] ?? '').slice(0, 80)}»; откат вернул название`);
 	// разделить и объединить обратно; в описи больше строк, чем первая порция страницы, — счёт по ответу сервиса
 	const n0 = await total();
