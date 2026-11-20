@@ -107,6 +107,42 @@ describe('casestore § 4.1', () => {
 		st.stop();
 	});
 
+	it('ревью № 13: если список вернул adding раньше, чем обзор пришёл уже без загрузок — следующий обзор всё равно перечитает список', async () => {
+		let folderStep = 0;
+		const api = stubApi({
+			get: async (p) => {
+				if (p.endsWith('/boot')) return BOOT;
+				if (p.endsWith('/folder-files')) {
+					folderStep++;
+					return folderStep === 1
+						? { files: [{ id: 'ff1', name: 'a.pdf', readable: true, adding: true, kind: 'pdf' }] }
+						: { files: [] };
+				}
+				// обзор уже без идущих загрузок с самого начала (набор busy не меняется)
+				return { overview: {}, uploads: [] };
+			}
+		});
+		const st = createCaseState(api, 'f1', { coalesceMs: 10 });
+		await st.start();
+		expect(folderStep).toBe(1);
+		expect(get(st.folderFilesState).files?.[0]?.adding).toBe(true);
+
+		// следующий обзор тоже без загрузок (набор busy не менялся), но в списке есть adding → список перечитывается
+		await st.refresh();
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(folderStep).toBe(2);
+		expect(get(st.folderFiles)).toBe(0);
+		expect(get(st.folderFilesState).files).toEqual([]);
+
+		// когда adding больше нет и uploads не меняется — лишних перечитываний нет
+		await st.refresh();
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(folderStep).toBe(2);
+		st.stop();
+	});
+
 	it('И-4: сбой GET /folder-files сохраняет ошибку в сторе, а не прячет раздел как ноль', async () => {
 		let fail = true;
 		const api = stubApi({

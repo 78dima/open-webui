@@ -146,7 +146,9 @@ export function createCaseState(
 					.map((u) => u.id)
 					.sort()
 					.join(',');
-				if (prevBusyUploads !== null && busyKey !== prevBusyUploads) void loadFolderFiles();
+				const hasAdding = (get(folderFilesState).files ?? []).some((f) => f.adding);
+				if (prevBusyUploads !== null && (hasAdding || busyKey !== prevBusyUploads))
+					void loadFolderFiles();
 				prevBusyUploads = busyKey;
 			} catch (error) {
 				if ((error as Error)?.name === 'AbortError' || stopped) return;
