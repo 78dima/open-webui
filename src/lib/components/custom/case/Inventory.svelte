@@ -529,7 +529,7 @@
 		padding-bottom: 12px;
 	}
 	.t-inv.ro .tr {
-		grid-template-columns: 170px minmax(0, 1fr) 120px 130px 60px 150px;
+		grid-template-columns: 140px minmax(220px, 1fr) 105px 96px 52px 96px;
 	}
 	.wide {
 		grid-column: 2 / -1;
