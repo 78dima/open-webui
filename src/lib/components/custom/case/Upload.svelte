@@ -5,7 +5,7 @@
 	// потерь: его держит движок `uploads.ts` (части, два файла одновременно, повтор, пауза, продолжение после закрытия
 	// страницы), он живёт в общем макете дела и не останавливается при переходе между разделами.
 	import type { CaseState } from '$lib/custom/case/casestore';
-	import { mb, money, naturalKey, size } from '$lib/custom/case/casepage';
+	import { mb, naturalKey, size } from '$lib/custom/case/casepage';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import {
@@ -38,7 +38,6 @@
 	// загрузки, которые сервер принимает или не принял (их части уже переданы)
 	$: other = server.filter((u) => u.status !== 'receiving' && !uploads.isActive(u.id) && $uploads);
 	$: listed = $uploads.active.length + other.length;
-	$: estimate = $data?.estimate;
 
 	let pickFiles: HTMLInputElement;
 	let pickDir: HTMLInputElement;
@@ -275,7 +274,7 @@
 	</section>
 {/if}
 
-{#if listed || estimate?.usd != null}
+{#if listed}
 	<section class="card list" data-testid="case-uploads">
 		<div class="row g12 listhead">
 			<h2>{S.upload_list_title}</h2>
@@ -355,25 +354,8 @@
 					>{S.upload_goes_to_volumes_link}</a
 				>{volumesLink.after}
 			</p>
-			<!-- пояснение «Она появляется…» — продолжение фразы об оценке: без оценки не показывается -->
-			{#if estimate?.usd != null}
-				<p class="sm mut" data-testid="case-upload-estimate">
-					{fmt(S.upload_estimate, { usd: money(estimate.usd), pages: estimate.pages })}
-					{S.upload_estimate_hint}
-				</p>
-			{/if}
 		</div>
 	</section>
-{/if}
-
-<!-- «Потрачено по делу» живёт в разделе «Таблицы и проходы»; если он выключен настройкой — здесь, под оценкой -->
-{#if $data?.spent && !$boot?.sections.includes('tables')}
-	<p class="sm mut" data-testid="case-spent">
-		{fmt(S.spent_line, {
-			processing: money($data.spent.processing),
-			work: money($data.spent.work)
-		})}
-	</p>
 {/if}
 
 <style>

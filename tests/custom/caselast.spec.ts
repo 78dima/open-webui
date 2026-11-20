@@ -81,13 +81,27 @@ test.describe('«Удаление дела»', () => {
 	});
 });
 
-test('«Потрачено по делу»: раздел таблиц выключен настройкой — строка в «Загрузить материалы»; включён — там её нет', async ({ page }) => {
-	const spent = fixture('case-overview').spent;
+test('Г-1: оценка распознавания и «Потрачено» (при выключенных таблицах) видны в «Обзоре» и роли «только чтение»; в «Загрузить» их нет', async ({ page }) => {
+	const ov = fixture('case-overview');
+	const spent = ov.spent;
 	const line = `Потрачено по делу: обработка ${String(spent.processing).replace('.', ',')} USD, работа ${String(spent.work).replace('.', ',')} USD`;
-	await openSection(page, { section: 'upload', boot: { sections: BOOT.sections.filter((s: string) => s !== 'tables') } });
+	// только чтение, таблицы выключены — в «Обзоре» видны и оценка, и «Потрачено»
+	await openSection(page, {
+		boot: { can_write: false, sections: BOOT.sections.filter((s: string) => s !== 'tables') }
+	});
+	await expect(page.getByTestId('case-upload-estimate')).toContainText(S.upload_estimate_hint);
 	await expect(page.getByTestId('case-spent')).toHaveText(line);
-	await openSection(page, { section: 'upload' });
+	// таблицы включены — в «Обзоре» оценка есть, «Потрачено» нет (оно в «Таблицах»)
+	await openSection(page, { boot: { can_write: false } });
+	await expect(page.getByTestId('case-upload-estimate')).toContainText(S.upload_estimate_hint);
+	await expect(page.getByTestId('case-spent')).toHaveCount(0);
+	// в «Загрузить материалы» ни оценки, ни «Потрачено» нет
+	await openSection(page, {
+		section: 'upload',
+		boot: { sections: BOOT.sections.filter((s: string) => s !== 'tables') }
+	});
 	await expect(page.getByTestId('case-drop')).toBeVisible();
+	await expect(page.getByTestId('case-upload-estimate')).toHaveCount(0);
 	await expect(page.getByTestId('case-spent')).toHaveCount(0);
 });
 

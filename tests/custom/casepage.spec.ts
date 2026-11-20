@@ -181,7 +181,7 @@ test.describe('каркас, 1280', () => {
 test.describe('«Обзор», 1280', () => {
 	test.use({ viewport: { width: 1280, height: 1100 } });
 
-	test('дело в работе: ход распознавания, плитки, ближайшие сроки, состав дела, шапка из паспорта; денег нет', async ({ page }) => {
+	test('дело в работе: ход распознавания, плитки, ближайшие сроки, состав дела, шапка из паспорта, оценка распознавания', async ({ page }) => {
 		await open(page, { data: processing });
 		await expect(summary(page).locator('.pill')).toHaveText([S.overview_state_processing]);
 		await expect(summary(page).getByRole('heading')).toHaveText('Распознано 363 из 669 страниц');
@@ -218,8 +218,9 @@ test.describe('«Обзор», 1280', () => {
 		await expect(head).toContainText('Арбитражный суд города Москвы');
 		await expect(head).toContainText(S.overview_head_note);
 		await expect(head.locator('a.ref').first()).toHaveAttribute('href', /\/legal-tools\/case\/.+\/p\/\d+/);
-		// денег в обзоре нет
-		await expect(page.locator('.main')).not.toContainText('USD');
+		// Г-1: оценка распознавания видна в обзоре; «Потрачено» нет, когда раздел таблиц включён
+		await expect(page.getByTestId('case-upload-estimate')).toContainText('Оценка распознавания принятых файлов: около 1,84 USD за 669 страниц.');
+		await expect(page.getByTestId('case-spent')).toHaveCount(0);
 	});
 
 	test('шапка из паспорта перечитывается с обзором, не чаще раза в 20 с: паспорт, построенный после открытия страницы, появляется сам', async ({ page }) => {
@@ -568,8 +569,7 @@ test.describe('«Загрузить материалы», 1280', () => {
 		await expect(page.getByTestId('case-upload-server').locator('.pill')).toHaveText([
 			S.upload_status_intake, S.upload_status_received, 'не принят: архив больше пределов распаковки — разделите его на части', S.upload_status_done_nofile_g
 		]);
-		await expect(page.getByTestId('case-uploads')).toContainText('Оценка распознавания принятых файлов: около 1,84 USD за 669 страниц.');
-		await expect(page.getByTestId('case-upload-estimate')).toContainText(S.upload_estimate_hint);
+		await expect(page.getByTestId('case-upload-estimate')).toHaveCount(0);
 		await expect(page.getByTestId('case-uploads').getByRole('link', { name: S.upload_goes_to_volumes_link })).toHaveAttribute('href', /s=volumes$/);
 
 		await page.getByTestId('case-pick-files').setInputFiles(['1.jpg', '2.jpg', '3.jpg'].map((name) => ({ name, mimeType: 'image/jpeg', buffer: Buffer.alloc(1000) })));
@@ -604,12 +604,11 @@ test.describe('«Загрузить материалы», 1280', () => {
 		await expect.poll(() => log.filter((l) => l === 'GET /1.jpg').length).toBe(1); // продолжение спросило, что уже передано
 	});
 
-	test('оценки ещё нет: пояснение к ней («Она появляется…») без самой оценки не показывается', async ({ page }) => {
+	test('оценки ещё нет: пояснение к ней («Она появляется…») без самой оценки не показывается в обзоре', async ({ page }) => {
 		const d = processing();
-		await open(page, { section: 'upload', data: () => ({ ...d, estimate: { usd: null, pages: 0 } }) });
-		await expect(page.getByTestId('case-uploads')).toBeVisible();
+		await open(page, { data: () => ({ ...d, estimate: { usd: null, pages: 0 } }) });
+		await expect(page.getByTestId('case-summary')).toBeVisible();
 		await expect(page.getByTestId('case-upload-estimate')).toHaveCount(0);
-		await expect(page.getByTestId('case-uploads')).not.toContainText(S.upload_estimate_hint);
 	});
 
 	test('продолжение после перезагрузки страницы: тот же файл досылает недостающие части; отмена незавершённой', async ({ page }) => {

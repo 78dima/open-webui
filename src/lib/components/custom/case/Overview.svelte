@@ -9,6 +9,7 @@
 		ecaseFiles,
 		filesState,
 		fileStuck,
+		money,
 		sectionOpen,
 		since,
 		summary,
@@ -397,6 +398,25 @@
 		<div class="note" data-testid="case-engine-note">
 			<Icon name="eye" klass="l" />
 			<p>{S.case_engine_note}</p>
+		</div>
+	{/if}
+
+	{#if d.estimate?.usd != null || (d.spent && !b.sections.includes('tables'))}
+		<div class="col g4" data-testid="case-overview-money">
+			{#if d.estimate?.usd != null}
+				<p class="sm mut" data-testid="case-upload-estimate">
+					{fmt(S.upload_estimate, { usd: money(d.estimate.usd), pages: d.estimate.pages })}
+					{S.upload_estimate_hint}
+				</p>
+			{/if}
+			{#if d.spent && !b.sections.includes('tables')}
+				<p class="sm mut" data-testid="case-spent">
+					{fmt(S.spent_line, {
+						processing: money(d.spent.processing),
+						work: money(d.spent.work)
+					})}
+				</p>
+			{/if}
 		</div>
 	{/if}
 {/if}
