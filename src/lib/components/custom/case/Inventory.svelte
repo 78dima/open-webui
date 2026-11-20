@@ -217,7 +217,7 @@
 			const b = ids.indexOf(d.last_page_id);
 			const inside = a >= 0 && b > a ? pages.slice(a + 1, b + 1) : [];
 			if (!inside.length) {
-				caseToast(S.doc_split_at, true); // документ из одного листа делить нечем
+				caseToast(S.doc_split_single, true); // документ из одного листа делить нечем
 				return;
 			}
 			splitAt = String(inside[0].id);
