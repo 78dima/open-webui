@@ -58,7 +58,7 @@ html .cg textarea{color-scheme:inherit}
   --accent:#1b1b29;--accent-fg:#ffffff;--link:#4b47a8;
   --info-bg:#ecebfa;--info:#4b47a8;
   --warn-bg:#fdf0d5;--warn:#7a5200;--warn-fg:#5f4000;
-  --stop-bg:#fbe6ee;--stop:#a52a5c;
+  --stop-bg:#fbe6ee;--stop:#a52a5c;--stop-fg:#ffffff;
   --mark:#fff0a8;--markline:#e2b714;
   --t1:#f6dfe7;--t2:#ecdaec;--t3:#dedcf3;--t4:#d6dcf3;
   --paper:#fdfdfb;--ink1:#dcdce5;--ink2:#bdbdcc;
@@ -81,7 +81,7 @@ html.dark .cg{
   --accent:#ececf3;--accent-fg:#15151d;--link:#b3b0f5;
   --info-bg:#2a2947;--info:#b3b0f5;
   --warn-bg:#3a2f14;--warn:#f0c868;--warn-fg:#f0d9a0;
-  --stop-bg:#3d1f2c;--stop:#f29bbd;
+  --stop-bg:#3d1f2c;--stop:#f29bbd;--stop-fg:#15151d;
   --mark:#4a3f10;--markline:#b8962a;
   --t1:#3b2933;--t2:#34293d;--t3:#2c2a47;--t4:#262d48;
   --paper:#d9d9d2;--ink1:#b9b9b4;--ink2:#8d8d8a;
@@ -173,7 +173,7 @@ html.dark .cg{
 :where(.cg) .btn.s{min-height:34px;padding:0 12px;font-size:13.5px}
 :where(.cg) .btn.t{min-height:34px;padding:0 4px;border-color:transparent;background:none;color:var(--link)}
 :where(.cg) .btn.d{border-color:var(--stop);color:var(--stop)}
-:where(.cg) .btn.dp{border-color:transparent;background:var(--stop);color:#ffffff}
+:where(.cg) .btn.dp{border-color:transparent;background:var(--stop);color:var(--stop-fg)}
 :where(.cg) .btn[disabled]{opacity:.5;cursor:default}
 :where(.cg) .in{height:40px;padding:0 14px;border:1px solid var(--btn-line);border-radius:999px;background:var(--card);font-family:inherit;font-size:16px;color:var(--fg)}
 :where(.cg) .in.s{height:36px;padding:0 10px;font-size:14.5px}
@@ -243,7 +243,7 @@ html.dark .cg{
 :where(.cg) .scrim{display:flex;align-items:flex-start;justify-content:center;padding:48px 24px;border-radius:14px;background:rgba(20,20,30,.45)}
 :where(.cg) .dlg{width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px;padding:24px;border-radius:18px;background:var(--card);box-shadow:var(--big)}
 :where(.cg) .toast{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:8px 20px 8px 14px;border-radius:999px;background:var(--fg);color:var(--card);font-size:14.5px;font-weight:500;box-shadow:var(--big)}
-:where(.cg) .toast.s{background:var(--stop);color:#ffffff}
+:where(.cg) .toast.s{background:var(--stop);color:var(--stop-fg)}
 
 /* лист */
 :where(.cg) .sheet2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
