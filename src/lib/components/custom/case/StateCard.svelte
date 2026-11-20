@@ -54,13 +54,13 @@
 		font-size: 22px;
 		line-height: 1.3;
 		font-weight: 400;
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.state p {
 		max-width: 460px;
 		font-size: 15px;
 		color: var(--muted2);
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.state :global(.act) {
 		margin-top: 6px;

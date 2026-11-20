@@ -490,7 +490,7 @@
 	}
 	.date {
 		flex: 0 0 170px;
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.copy {
 		padding: 10px 12px;

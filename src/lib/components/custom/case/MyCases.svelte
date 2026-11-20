@@ -858,7 +858,7 @@
 	.mc-note p {
 		font-size: 15px;
 		color: var(--muted2);
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.mc-scroll {
 		overflow-x: auto;
@@ -895,13 +895,13 @@
 	.path {
 		font-size: 12.5px;
 		color: var(--muted);
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.mc-row .title {
 		font-size: 15.5px;
 		font-weight: 500;
 		line-height: 1.35;
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.none {
 		color: var(--muted);
@@ -1031,7 +1031,7 @@
 		font-size: 15px;
 		font-weight: 500;
 		line-height: 1.35;
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.mc-folder .mc-btn,
 	.mc-folder .mc-pill {
@@ -1287,7 +1287,7 @@
 			font-size: 16px;
 			font-weight: 500;
 			line-height: 1.3;
-			overflow-wrap: anywhere;
+			overflow-wrap: break-word;
 		}
 		.mc-line .meta {
 			font-size: 13.5px;

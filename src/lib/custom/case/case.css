@@ -92,7 +92,7 @@ html.dark .cg{
 .cg *,.cg *::before,.cg *::after{box-sizing:border-box}
 .cg a{color:inherit;text-decoration:none}
 .cg h1,.cg h2,.cg h3,.cg p,.cg ul,.cg fieldset{margin:0}
-.cg h1{font-size:30px;line-height:1.2;font-weight:400;letter-spacing:-.01em;overflow-wrap:anywhere}
+.cg h1{font-size:30px;line-height:1.2;font-weight:400;letter-spacing:-.01em;overflow-wrap:break-word}
 .cg h2{font-size:21px;line-height:1.3;font-weight:400}
 .cg h3{font-size:16.5px;line-height:1.3;font-weight:500}
 .cg fieldset{padding:0;border:0;min-width:0}
@@ -142,11 +142,12 @@ html.dark .cg{
 :where(.cg) .grow{flex:1 1 0;min-width:0}:where(.cg) .fix{flex:0 0 auto}
 :where(.cg) .mut{color:var(--muted)}:where(.cg) .fg2{color:var(--fg2)}:where(.cg) .c-stop{color:var(--stop)}:where(.cg) .c-warn{color:var(--warn)}
 :where(.cg) .xs{font-size:12.5px}:where(.cg) .sm{font-size:13.5px}:where(.cg) .md{font-size:14.5px}:where(.cg) .lg{font-size:16px}:where(.cg) .b{font-weight:500}:where(.cg) .bb{font-weight:600}
-:where(.cg) .num{font-variant-numeric:tabular-nums}:where(.cg) .aw{overflow-wrap:anywhere}:where(.cg) .nob{white-space:nowrap}
+:where(.cg) .num{font-variant-numeric:tabular-nums}:where(.cg) .aw{overflow-wrap:break-word}:where(.cg) .nob{white-space:nowrap}
 :where(.cg) .hid{opacity:.55}
 
 /* карточки */
 :where(.cg) .card{display:flex;flex-direction:column;padding:22px 24px;border-radius:14px;background:var(--card);box-shadow:var(--shadow)}
+:where(.cg) .card>*{min-width:0}
 :where(.cg) .card.flat{border:1px solid var(--line);background:transparent;box-shadow:none}
 :where(.cg) .card.dash{border:1.5px dashed var(--btn-line);background:var(--shell);box-shadow:none;align-items:center;text-align:center}
 :where(.cg) .sep{padding-top:12px;margin-top:12px;border-top:1px solid var(--line2)}
@@ -207,14 +208,20 @@ html.dark .cg{
 :where(.cg) .li{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line2)}
 :where(.cg) .li.t{align-items:flex-start}
 :where(.cg) .tr{display:grid;column-gap:16px;align-items:center;padding:10px 0;border-top:1px solid var(--line2)}
+:where(.cg) .tr>*,:where(.cg) .grid>*{min-width:0;max-width:100%;overflow-wrap:break-word}
+:where(.cg) .tr>*>*,:where(.cg) .grid>*>*{max-width:100%}
 :where(.cg) .tr.t{align-items:start}
 :where(.cg) .th{border-top:0;font-size:13px;color:var(--muted)}
-:where(.cg) .t-comp .tr{grid-template-columns:170px 250px minmax(0,1fr) 110px;min-height:58px}
-:where(.cg) .t-chk .tr{grid-template-columns:220px minmax(0,1fr) 150px}
-:where(.cg) .t-inv .tr{grid-template-columns:26px 170px minmax(0,1fr) 120px 130px 60px 150px}
-:where(.cg) .t-vol .tr{grid-template-columns:minmax(0,1fr) 230px 120px 110px}
-:where(.cg) .t-run .tr{grid-template-columns:minmax(0,1fr) 150px 150px 100px}
-:where(.cg) .t-amt .tr{grid-template-columns:230px minmax(0,1fr) 170px 150px}
+:where(.cg) .t-comp,:where(.cg) .t-chk,:where(.cg) .t-inv,:where(.cg) .t-vol,:where(.cg) .t-run,:where(.cg) .t-amt{display:grid;column-gap:16px}
+:where(.cg) .t-comp>*,:where(.cg) .t-chk>*,:where(.cg) .t-inv>*,:where(.cg) .t-vol>*,:where(.cg) .t-run>*,:where(.cg) .t-amt>*{grid-column:1/-1}
+:where(.cg) .t-comp .tr,:where(.cg) .t-chk .tr,:where(.cg) .t-inv .tr,:where(.cg) .t-vol .tr,:where(.cg) .t-run .tr,:where(.cg) .t-amt .tr{grid-template-columns:subgrid}
+:where(.cg) .t-comp{grid-template-columns:minmax(0,1fr) min-content minmax(0,2fr) min-content}
+:where(.cg) .t-comp .tr{min-height:58px}
+:where(.cg) .t-chk{grid-template-columns:minmax(0,1fr) minmax(0,3fr) min-content}
+:where(.cg) .t-inv{grid-template-columns:min-content minmax(0,1fr) minmax(0,3fr) minmax(0,1fr) min-content min-content min-content}
+:where(.cg) .t-vol{grid-template-columns:minmax(0,2fr) minmax(0,1.2fr) min-content min-content}
+:where(.cg) .t-run{grid-template-columns:minmax(0,2fr) min-content min-content min-content}
+:where(.cg) .t-amt{grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) minmax(0,1fr) min-content}
 :where(.cg) .scroll{overflow-x:auto}
 :where(.cg) .grid{display:grid;border-top:1px solid var(--line2)}
 :where(.cg) .grid>*{padding:12px 14px 12px 0;border-bottom:1px solid var(--line2);min-width:0}
@@ -224,7 +231,7 @@ html.dark .cg{
 :where(.cg) .kv>dt{color:var(--muted);font-size:13.5px}:where(.cg) .kv>dd{margin:0}
 :where(.cg) .q{padding:2px 0 2px 12px;border-left:3px solid var(--line);font-size:14px;color:var(--fg2)}
 /* цитата таблицы и находки — с переносами строк листа, как на прежней странице (в разметке — без пробелов вокруг текста) */
-:where(.cg) .q.pw{white-space:pre-wrap;overflow-wrap:anywhere}
+:where(.cg) .q.pw{white-space:pre-wrap;overflow-wrap:break-word}
 :where(.cg) .ref{font-weight:500;color:var(--link)}
 :where(.cg) .fn{font-size:12.5px;font-weight:400;color:var(--muted)}
 :where(.cg) .chipl{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:1px solid var(--btn-line);border-radius:999px;background:var(--card);font-size:14px;font-weight:500;color:var(--link)}
@@ -284,6 +291,7 @@ html.dark .cg{
 	:where(.cg) .li>.grow{flex-basis:100%}
 	:where(.cg) .head>.grow{flex-basis:100%}
 	:where(.cg) .head .btn.big{flex:1 1 auto}
+	:where(.cg) .t-comp,:where(.cg) .t-chk,:where(.cg) .t-inv,:where(.cg) .t-vol,:where(.cg) .t-run,:where(.cg) .t-amt{display:block}
 	:where(.cg) .tr{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:14px 0}
 	:where(.cg) .th{display:none}
 	:where(.cg) .tr>[data-l]::before{content:attr(data-l) ": ";font-size:13px;font-weight:400;color:var(--muted)}

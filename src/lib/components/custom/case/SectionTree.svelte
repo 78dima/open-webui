@@ -79,7 +79,7 @@
 	}
 	.name span {
 		min-width: 0;
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.sec.on .name {
 		font-weight: 500;

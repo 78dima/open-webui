@@ -234,8 +234,8 @@
 		font-size: 15px;
 	}
 	/* в макете столбцов три (третий — отметка «проверено», второй этап): пока её нет, замечание занимает её место */
-	.rows .tr {
-		grid-template-columns: 220px minmax(0, 1fr);
+	.t-chk.rows {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
 	}
 	@media (max-width: 720px) {
 		.group {

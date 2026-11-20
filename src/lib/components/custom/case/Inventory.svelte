@@ -528,8 +528,8 @@
 	.tools {
 		padding-bottom: 12px;
 	}
-	.t-inv.ro .tr {
-		grid-template-columns: 170px minmax(0, 1fr) 120px 130px 60px 150px;
+	.t-inv.ro {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 3fr) minmax(0, 1fr) min-content min-content min-content;
 	}
 	.wide {
 		grid-column: 2 / -1;

@@ -294,3 +294,54 @@ test('запасное название документа описи (title_inv
 		title_as_written: 'Протокол осмотра места происшествия'
 	});
 });
+
+test('перенос слов в таблице: обычное слово не рвётся, сверхдлинное ломается без прокрутки вбок', async ({ page }) => {
+	const base = documents();
+	const longWord = 'Оченьдлинноесловобезпробеловкотороезаведомоширелюбойячейки1234567890';
+	const items = [
+		{ ...base.documents[0], id: 'doc-w1', title: 'Исковое заявление о взыскании задолженности' },
+		{ ...base.documents[1], id: 'doc-w2', title: longWord },
+		{ ...base.documents[2], id: 'doc-w3', title: null, title_inventory: null }
+	];
+	await openSection(page, {
+		section: 'inventory',
+		routes: {
+			'documents?**': (r: any) => r.fulfill({ json: { ...base, documents: items, total: items.length, end: true } }),
+			'pages?**': pages()
+		}
+	});
+	const rows = page.getByTestId('case-doc');
+	await expect(rows).toHaveCount(3);
+	for (const width of [1280, 1024, 360]) {
+		await page.setViewportSize({ width, height: 900 });
+		const check = await page.evaluate((lw) => {
+			const wordRects = (el: Element | null, word: string) => {
+				if (!el?.firstChild) return 0;
+				const t = el.firstChild.textContent || '';
+				const i = t.indexOf(word);
+				if (i < 0) return 0;
+				const r = document.createRange();
+				r.setStart(el.firstChild, i);
+				r.setEnd(el.firstChild, i + word.length);
+				return r.getClientRects().length;
+			};
+			const docRows = [...document.querySelectorAll('[data-testid="case-doc"]')];
+			const card = document.querySelector('.card')!;
+			const allRows = [...document.querySelectorAll('.t-inv .tr')];
+			const col4Xs = allRows.map((tr) => Math.round(tr.children[3]?.getBoundingClientRect().x ?? 0));
+			return {
+				normalLines: wordRects(docRows[0]?.querySelector('.b'), 'задолженности'),
+				longLines: wordRects(docRows[1]?.querySelector('.b'), lw),
+				cardOverflow: card.scrollWidth - card.clientWidth,
+				col4Xs
+			};
+		}, longWord);
+		expect(check.normalLines, `ширина ${width}: «задолженности» в одну строку`).toBe(1);
+		expect(check.longLines, `ширина ${width}: сверхдлинное слово перенесено`).toBeGreaterThan(1);
+		expect(check.cardOverflow, `ширина ${width}: без прокрутки карточки`).toBeLessThanOrEqual(0);
+		if (width > 720) {
+			expect(new Set(check.col4Xs).size, `ширина ${width}: столбцы выровнены по строкам`).toBe(1);
+		}
+		await noSideScroll(page);
+	}
+});

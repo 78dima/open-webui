@@ -29,7 +29,7 @@
 		min-height: 52px;
 		padding: 10px 20px 10px 14px;
 		gap: 12px;
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 		pointer-events: auto;
 	}
 	.cg-toast .toast.s {
