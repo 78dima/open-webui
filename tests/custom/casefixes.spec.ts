@@ -177,7 +177,7 @@ test.describe('ревью 20.11', () => {
 		// 2: документ из одного листа (в счёте листов — 1): кнопка есть; делить нечем — так и сказано
 		await expect(rows.first().getByRole('button', { name: S.doc_split })).toHaveCount(1);
 		await rows.first().getByRole('button', { name: S.doc_split }).click();
-		await expect(page.getByText(S.doc_split_at).last()).toBeVisible();
+		await expect(page.getByText(S.doc_split_single).last()).toBeVisible();
 		// 32: «Показать ещё» — без повторов строк
 		const errors: string[] = [];
 		page.on('pageerror', (e) => errors.push(String(e)));
