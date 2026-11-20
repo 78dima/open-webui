@@ -200,14 +200,16 @@
 		{#if phase === 'ready' && sections.length}
 			<div class="mc-hr"></div>
 			<span class="mc-cap">{S.my_cases_sections}</span>
-			<SectionTree
-				{sections}
-				selected={section}
-				{collapsed}
-				labels={{ expand: S.expand, collapse: S.collapse }}
-				onSelect={pick}
-				onToggle={toggle}
-			/>
+			<div class="mc-tree">
+				<SectionTree
+					{sections}
+					selected={section}
+					{collapsed}
+					labels={{ expand: S.expand, collapse: S.collapse }}
+					onSelect={pick}
+					onToggle={toggle}
+				/>
+			</div>
 		{/if}
 	</nav>
 
@@ -585,15 +587,19 @@
 		padding-bottom: 8px;
 	}
 
-	/* меню */
+	/* меню: ширина — по содержимому его пунктов, не уже 232 px; дерево папок переносится внутри себя */
 	.mc-nav {
-		flex: 1 0 232px;
-		min-width: 0;
+		flex: 0 0 auto;
+		min-width: 232px;
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
 		padding: 28px 18px;
 		border-right: 1px solid var(--line);
+	}
+	.mc-tree {
+		width: 0;
+		min-width: 100%;
 	}
 	.mc-brand {
 		padding: 0 14px 22px;
@@ -613,6 +619,7 @@
 		font-size: 14.5px;
 		color: var(--fg2);
 		text-align: left;
+		white-space: nowrap;
 		cursor: pointer;
 	}
 	.mc-item.on {

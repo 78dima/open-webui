@@ -315,6 +315,40 @@ test.describe('компьютер, 1280', () => {
 		await expect(page.getByTestId('case-list')).toContainText(S.my_cases_none_here);
 	});
 
+	test('Г-6: «Общие со мной» при двузначном счётчике не переносится; длинный раздел в дереве не раздувает меню', async ({ page }) => {
+		const base = fixture('my-cases');
+		const shared = Array.from({ length: 12 }, (_, i) => ({
+			...base.shared[0],
+			folder_id: `sh-${i}`,
+			title: `Общее дело ${i + 1}`
+		}));
+		const longSec = { id: 'sec-long', name: 'Очень длинное название раздела из чата которое должно переноситься внутри меню', parent_id: null };
+		const child = { id: base.own[0].folder_id, name: base.own[0].title, parent_id: 'sec-long' };
+		await open(page, {
+			listing: (r) => r.fulfill({ json: { own: base.own, shared } }),
+			folders: [longSec, child],
+			shared: []
+		});
+		await ready(page);
+		const metrics = await page.evaluate(() => {
+			const nav = document.querySelector('.mc-nav')!.getBoundingClientRect();
+			const btn = document.querySelector('[data-testid="case-scope-shared"]')!;
+			const label = btn.querySelector('.grow')!;
+			const range = document.createRange();
+			range.selectNodeContents(label);
+			return {
+				navW: Math.round(nav.width),
+				btnW: Math.round(btn.getBoundingClientRect().width),
+				labelLines: range.getClientRects().length
+			};
+		});
+		console.log('G6_METRICS', JSON.stringify(metrics));
+		expect(metrics.navW).toBeGreaterThanOrEqual(232);
+		expect(metrics.navW).toBeLessThan(320);
+		expect(metrics.labelLines).toBe(1);
+		await noSideScroll(page);
+	});
+
 	for (const [name, answer, title, text] of [
 		['чат не отвечает (503)', { status: 503, detail: 'Open WebUI временно не отвечает — список папок не получить' }, S.my_cases_error_title, S.my_cases_error_chat],
 		['нет связи', null, S.my_cases_error_network_title, S.my_cases_error_network],
