@@ -53,9 +53,22 @@ def signin(base, email, password):
     return d["token"], d["id"]
 
 
-def owui(base, state_file):
+def owui(base, state_file, events_file=None):
     wait(base + "/health")
     admin, _ = signin(base, *ADMIN)
+    if events_file:
+        with open(events_file, encoding="utf-8") as fh:
+            content = fh.read()
+        call("POST", base + "/api/v1/functions/create", admin, {
+            "id": "case_events", "name": "Дело: события папок", "content": content,
+            "meta": {"description": "События папок дела (Д-2)"}}, ok=(200, 201, 400))
+        call("POST", base + "/api/v1/functions/id/case_events/valves/update", admin, {
+            "TOOLS_URL": "http://legal-tools-api:8000", "EVENTS_SECRET": "live-events-secret-0123456789"})
+        fn = call("GET", base + "/api/v1/functions/id/case_events", admin)
+        if not fn.get("is_active"):
+            call("POST", base + "/api/v1/functions/id/case_events/toggle", admin)
+        if not fn.get("is_global"):
+            call("POST", base + "/api/v1/functions/id/case_events/toggle/global", admin)
     tok, uid = {}, {}
     for key, name in USERS.items():
         email = f"{key}@live.example.com"
@@ -106,4 +119,8 @@ def cases(base, state_file):
 
 
 if __name__ == "__main__":
-    {"owui": owui, "cases": cases}[sys.argv[1]](sys.argv[2].rstrip("/"), sys.argv[3])
+    cmd = sys.argv[1]
+    if cmd == "owui":
+        owui(sys.argv[2].rstrip("/"), sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None)
+    else:
+        cases(sys.argv[2].rstrip("/"), sys.argv[3])

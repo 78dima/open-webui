@@ -125,7 +125,7 @@ trap cleanup EXIT
 BASE="http://127.0.0.1:$LIVE_PORT"
 echo "живая проверка $LIVE_NAME ($LIVE_SUBNET): $BASE; Open WebUI = $LIVE_OWUI_IMAGE, $FRONT; legal-tools = $LIVE_TOOLS_IMAGE"
 "${COMPOSE[@]}" up -d --pull never --quiet-pull pg redis minio prov owui caddy >/dev/null 2>&1
-python3 -I "$HERE/setup.py" owui "$BASE" "$WORK/state.json"
+python3 -I "$HERE/setup.py" owui "$BASE" "$WORK/state.json" "$TOOLS_REPO/owui/functions/case_events.py"
 export LIVE_RELEASE_GROUP=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["group"])' "$WORK/state.json")
 for _ in $(seq 30); do "${COMPOSE[@]}" run --rm --no-deps tools init-buckets >/dev/null 2>&1 && break; sleep 2; done
 "${COMPOSE[@]}" up -d --pull never --wait --wait-timeout 180 tools >/dev/null 2>&1 || { echo "FAIL legal-tools не поднялся"; "${COMPOSE[@]}" logs --no-color --tail 40 tools; exit 1; }
