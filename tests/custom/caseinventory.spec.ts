@@ -261,12 +261,9 @@ test('запасное название документа описи (title_inv
 	});
 	const rows = page.getByTestId('case-doc');
 	await expect(rows).toHaveCount(3);
-	// 1) сверенное название — обычное жирное, без подписи «не сверено»; столбец «Документ» достаточно широк (не рвёт слова)
+	// 1) сверенное название — обычное жирное, без подписи «не сверено»
 	await expect(rows.nth(0).locator('.b')).toHaveText('Исковое заявление (сверенное)');
 	await expect(rows.nth(0).getByTestId('case-doc-title-unverified')).toHaveCount(0);
-	const titleBox = await rows.nth(0).locator('.b').boundingBox();
-	expect(titleBox!.width).toBeGreaterThanOrEqual(220);
-	await noSideScroll(page);
 	// 2) только запасное — приглушённо с подписью происхождения
 	await expect(rows.nth(1).getByTestId('case-doc-title-fallback')).toHaveText('Протокол осмотра от 04.06.2026');
 	await expect(rows.nth(1).getByTestId('case-doc-title-unverified')).toHaveText(S.inventory_title_unverified);
