@@ -257,3 +257,169 @@ test('«Таблицы и проходы» и открытая таблица н
 	expect(label).toContain('Что это и что подтверждает');
 	await expect(page.getByTestId('case-table').locator('.hc').first()).toBeHidden();
 });
+
+test.describe('часть 3: изменения охвата (Т-5), ссылка «новее», цена catch_up, relation и other_reading', () => {
+	test.use({ viewport: { width: 1280, height: 1100 } });
+
+	test('список и открытая таблица: changes (Т-5), ссылка newer, цена catch_up (платно, >1 USD, бесплатно) и other_reading в ячейке', async ({
+		page
+	}) => {
+		const d = list();
+		const newerId = d.tables[0].id;
+		const oldId = d.tables[1].id;
+		d.tables[1] = {
+			...d.tables[1],
+			stale: true,
+			reader_stale: false,
+			changes: { added: 0, removed: 1, new_text: 0, documents: 3 },
+			newer: newerId
+		};
+		d.tables[2] = {
+			...d.tables[2],
+			stale: true,
+			reader_stale: false,
+			changes: { added: 2, removed: 0, new_text: 1, documents: 5 },
+			newer: null
+		};
+		await openSection(page, { section: 'tables', routes: { tables: d, 'tables/scope?**': scope(0.02) } });
+		const rows = page.getByTestId('case-table-row');
+		await expect(rows.nth(1).getByTestId('case-table-stale')).toHaveText(
+			'В охвате прохода после него: убрано — 1, строк, документ которых в описи теперь другой или убран, — 3.'
+		);
+		await expect(rows.nth(1).getByTestId('case-table-newer')).toHaveText(S.tables_newer);
+		await expect(rows.nth(1).getByTestId('case-table-newer')).toHaveAttribute(
+			'href',
+			new RegExp(`tables/${newerId}$`)
+		);
+		await expect(rows.nth(2).getByTestId('case-table-stale')).toHaveText(
+			'В охвате прохода после него: добавилось страниц — 2, с новым текстом — 1. Добавленные страницы и страницы с новым текстом проход не читал.'
+		);
+		await expect(rows.nth(2).getByTestId('case-table-newer')).toHaveCount(0);
+
+		// открытая таблица: catch_up (windows > 0, <= 1 USD -> без окна), other_reading в ячейке, переход по newer
+		const baseOpen = fixture('table-open');
+		const staleCheap = {
+			...baseOpen,
+			sweep: {
+				...baseOpen.sweep,
+				id: oldId,
+				stale: true,
+				reader_stale: false,
+				changes: { added: 1, removed: 0, new_text: 2, documents: 0 },
+				newer: newerId,
+				catch_up: { windows: 2, pages: 14, estimate_usd: 0.0031 },
+				rest: null,
+				reread: null
+			},
+			rows: baseOpen.rows.map((r: any, idx: number) =>
+				idx !== 0
+					? r
+					: {
+							...r,
+							cells: {
+								...r.cells,
+								what: {
+									...r.cells.what,
+									answers: r.cells.what.answers.map((a: any, ai: number) =>
+										ai === 0 ? { ...a, other_reading: true } : a
+									)
+								}
+							}
+						}
+			)
+		};
+		const freshNewer = { ...baseOpen, sweep: { ...baseOpen.sweep, id: newerId, title: 'Более новая таблица', newer: null, stale: false } };
+		let currentView: any = staleCheap;
+		const { calls } = await openSection(page, {
+			section: 'tables',
+			item: oldId,
+			routes: {
+				'tables/*?**': (r: any, c: any) =>
+					r.fulfill({ json: c.path.includes(newerId) ? freshNewer : currentView }),
+				'tables/*/catch-up**': (r: any) => r.fulfill({ status: 201, json: {} }),
+				tables: d,
+				'tables/scope?**': scope(0.02)
+			}
+		});
+		await expect(page.getByTestId('case-table-stale')).toContainText(
+			'Дочитать по изменившимся листам: частей — 2, страниц — 14, ≈ 0,0031 USD.'
+		);
+		await expect(page.getByTestId('case-table-action')).toHaveText([
+			'Дочитать по изменившимся листам — около 0,0031 USD'
+		]);
+		await expect(page.getByTestId('case-other-reading')).toHaveCount(1);
+		await expect(page.getByTestId('case-other-reading')).toHaveText(S.tables_other_reading);
+		// переход по ссылке «есть более новый проход» прямо из открытой таблицы загружает новый проход
+		await page.getByTestId('case-table-newer').getByRole('link').click();
+		await expect(page.getByTestId('case-table-head').getByRole('heading', { level: 1 })).toHaveText(
+			'Более новая таблица'
+		);
+
+		// catch_up бесплатный (windows: 0) — без окна подтверждения
+		currentView = {
+			...staleCheap,
+			sweep: { ...staleCheap.sweep, catch_up: { windows: 0, pages: 0, estimate_usd: 0 } }
+		};
+		await openSection(page, {
+			section: 'tables',
+			item: oldId,
+			routes: {
+				'tables/*?**': currentView,
+				'tables/*/catch-up**': (r: any) => r.fulfill({ status: 201, json: {} }),
+				tables: d,
+				'tables/scope?**': scope(0.02)
+			}
+		});
+		await expect(page.getByTestId('case-table-stale')).toContainText(S.tables_catch_up_free);
+		await expect(page.getByTestId('case-table-action')).toHaveText([S.runs_catch_up_free]);
+		await page.getByTestId('case-table-action').click();
+		await expect(dialog(page)).toHaveCount(0);
+		await expect(page.getByText(S.tables_started)).toBeVisible();
+
+		// catch_up дороже 1 USD — окно подтверждения с оценкой (не «оценки нет»)
+		currentView = {
+			...staleCheap,
+			sweep: { ...staleCheap.sweep, catch_up: { windows: 40, pages: 240, estimate_usd: 1.45 } }
+		};
+		await openSection(page, {
+			section: 'tables',
+			item: oldId,
+			routes: { 'tables/*?**': currentView, tables: d }
+		});
+		await page.getByTestId('case-table-action').click();
+		const dlg = dialog(page);
+		await expect(dlg.getByRole('heading')).toHaveText(S.runs_confirm_catch_up_title);
+		await expect(dlg.getByTestId('case-table-confirm-price')).toHaveText(
+			'Оценка цены прохода: около 1,45 USD.'
+		);
+		expect(calls.length).toBeGreaterThan(0);
+	});
+
+	test('места прохода: relation (прямо отвечает / без отметки / упоминает) в порядке сервера и other_reading', async ({
+		page
+	}) => {
+		const f = fixture('table-findings');
+		f.findings = [
+			{ ...f.findings[0], relation: 'answers', other_reading: true },
+			{ ...f.findings[1], relation: null, other_reading: false },
+			{ ...f.findings[2], relation: 'mentions', other_reading: false }
+		];
+		await openSection(page, {
+			section: 'tables',
+			item: f.sweep.id,
+			routes: { 'tables/*?**': f }
+		});
+		const items = page.getByTestId('case-finding');
+		await expect(items).toHaveCount(3);
+		await expect(items.nth(0).getByTestId('case-finding-relation')).toHaveText(S.tables_rel_answers);
+		await expect(items.nth(0).getByTestId('case-other-reading')).toHaveText(S.tables_other_reading);
+		await expect(items.nth(1).getByTestId('case-finding-relation')).toHaveCount(0);
+		await expect(items.nth(1).getByTestId('case-other-reading')).toHaveCount(0);
+		await expect(items.nth(2).getByTestId('case-finding-relation')).toHaveText(S.tables_rel_mentions);
+		await expect(items.nth(2).getByTestId('case-other-reading')).toHaveCount(0);
+		// порядок сервера сохранён
+		await expect(items.nth(0).locator('.q')).toHaveText(f.findings[0].quote);
+		await expect(items.nth(1).locator('.q')).toHaveText(f.findings[1].quote);
+		await expect(items.nth(2).locator('.q')).toHaveText(f.findings[2].quote);
+	});
+});
