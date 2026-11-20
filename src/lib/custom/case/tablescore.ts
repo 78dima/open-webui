@@ -59,6 +59,22 @@ const REF: Record<string, string> = {
 	no_volume: 'runs_ref_no_volume', // редакция «номер тома» (строка прежней страницы — tables_ref_no_volume)
 	too_long: 'tables_ref_too_long'
 };
+const RELATION: Record<string, string> = {
+	answers: 'tables_rel_answers',
+	mentions: 'tables_rel_mentions'
+};
+
+export type Changes = {
+	added?: number;
+	removed?: number;
+	new_text?: number;
+	documents?: number;
+};
+export type CatchUp = {
+	windows: number;
+	pages: number;
+	estimate_usd: number | string | null;
+};
 
 export type Rest = {
 	windows: number;
@@ -90,6 +106,8 @@ export type Sweep = {
 	windows_total?: number;
 	windows_done?: number;
 	stale?: boolean;
+	changes?: Changes | null;
+	newer?: string | null;
 	reader_stale?: boolean;
 	parent?: string | null;
 	created_at?: string;
@@ -98,6 +116,7 @@ export type Sweep = {
 	text_short_sheets?: Place[];
 	photo_sheets?: Place[];
 	rest?: Rest | null;
+	catch_up?: CatchUp | null;
 	reread?: { windows: number; pages: number; estimate_usd: number | string | null } | null;
 	found?: number | null;
 };
@@ -112,6 +131,7 @@ export type Answer = Place & {
 	value?: string;
 	also?: Place[];
 	numbers_unconfirmed?: boolean;
+	other_reading?: boolean;
 	quote?: string | null;
 };
 export type Copy = {
@@ -246,3 +266,36 @@ export function refParts(
 }
 export const scopeQuery = (preset: string, volumes: string[]): string =>
 	`?preset=${encodeURIComponent(preset)}${volumes.map((v) => `&volumes=${encodeURIComponent(v)}`).join('')}`;
+
+/** Факты устаревания прохода (Т-5) из `sweep.changes`: нулевые части не пишутся, `documents` — только у таблиц.
+ *  Для прежних ответов без `changes` остаётся общая строка `tables_stale`. */
+export function staleText(sw: Sweep, S: Strings): string {
+	const c = sw.changes;
+	if (c) {
+		const parts: string[] = [];
+		if (c.added) parts.push(fmt(S.tables_stale_added, { n: c.added }));
+		if (c.removed) parts.push(fmt(S.tables_stale_removed, { n: c.removed }));
+		if (c.new_text) parts.push(fmt(S.tables_stale_new_text, { n: c.new_text }));
+		if (sw.kind === 'table' && c.documents)
+			parts.push(fmt(S.tables_stale_documents, { n: c.documents }));
+		if (parts.length) {
+			const head = fmt(S.tables_stale_changes, { parts: parts.join(', ') });
+			return c.added || c.new_text ? `${head} ${S.tables_stale_unread}` : head;
+		}
+	}
+	return S.tables_stale;
+}
+
+/** Пояснение цены «Дочитать по изменившимся листам» (`sweep.catch_up`); при `windows === 0` — бесплатно. */
+export const catchUpNote = (cu: CatchUp, S: Strings): string =>
+	cu.windows === 0
+		? S.tables_catch_up_free
+		: fmt(S.tables_catch_up_note, {
+				windows: cu.windows,
+				pages: cu.pages,
+				usd: usd(cu.estimate_usd)
+			});
+
+/** Подпись отношения места прохода к вопросу (`answers` / `mentions`); `null` — без отметки. */
+export const relationWord = (relation: string | null | undefined, S: Strings): string =>
+	relation && RELATION[relation] ? (S[RELATION[relation]] ?? '') : '';

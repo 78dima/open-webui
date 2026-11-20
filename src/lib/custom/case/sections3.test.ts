@@ -32,13 +32,16 @@ import {
 } from './sections';
 import {
 	canCheck,
+	catchUpNote,
 	copyText,
 	coverage,
 	needsConfirm,
 	placeQuery,
 	refParts,
+	relationWord,
 	restText,
 	scopeQuery,
+	staleText,
 	stateText,
 	statusWord,
 	summaryText,
@@ -296,6 +299,60 @@ describe('таблицы и проходы', () => {
 			'л.д. 9 — лист с таким номером не найден',
 			''
 		]);
+	});
+	it('часть 3: устаревание по changes (Т-5), цена catch_up и подпись relation', () => {
+		expect(
+			staleText(
+				sweep({
+					kind: 'table',
+					stale: true,
+					changes: { added: 2, removed: 1, new_text: 3, documents: 4 }
+				}),
+				S
+			)
+		).toBe(
+			'В охвате прохода после него: добавилось страниц — 2, убрано — 1, с новым текстом — 3, строк, документ которых в описи теперь другой или убран, — 4. Добавленные страницы и страницы с новым текстом проход не читал.'
+		);
+		// нулевые части не пишутся; без added/new_text фразы «не читал» нет
+		expect(
+			staleText(
+				sweep({
+					kind: 'table',
+					stale: true,
+					changes: { added: 0, removed: 1, new_text: 0, documents: 3 }
+				}),
+				S
+			)
+		).toBe(
+			'В охвате прохода после него: убрано — 1, строк, документ которых в описи теперь другой или убран, — 3.'
+		);
+		// у прохода без столбцов (findings) часть про документы описи не пишется
+		expect(
+			staleText(
+				sweep({
+					kind: 'findings',
+					stale: true,
+					changes: { added: 2, removed: 0, new_text: 0, documents: 3 }
+				}),
+				S
+			)
+		).toBe(
+			'В охвате прохода после него: добавилось страниц — 2. Добавленные страницы и страницы с новым текстом проход не читал.'
+		);
+		// прежний ответ без changes — общая строка tables_stale
+		expect(staleText(sweep({ stale: true }), S)).toBe(S.tables_stale);
+		// цена catch_up (в т.ч. бесплатная пересборка при windows: 0)
+		expect(catchUpNote({ windows: 2, pages: 14, estimate_usd: 0.0031 }, S)).toBe(
+			'Дочитать по изменившимся листам: частей — 2, страниц — 14, ≈ 0,0031 USD.'
+		);
+		expect(catchUpNote({ windows: 0, pages: 0, estimate_usd: 0 }, S)).toBe(
+			S.tables_catch_up_free
+		);
+		// relation у мест прохода
+		expect(relationWord('answers', S)).toBe(S.tables_rel_answers);
+		expect(relationWord('mentions', S)).toBe(S.tables_rel_mentions);
+		expect(relationWord(null, S)).toBe('');
+		expect(relationWord(undefined, S)).toBe('');
 	});
 });
 
