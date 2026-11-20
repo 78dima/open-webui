@@ -228,28 +228,33 @@ test('«Опись» на телефоне 360: строки карточкам�
 		expect(await field.evaluate((e) => parseFloat(getComputedStyle(e).fontSize))).toBeGreaterThanOrEqual(16);
 });
 
-test('запасное название документа описи (title_inventory): три состояния и правка юристом без случайного сохранения', async ({
+test('запасное название документа описи (title_inventory) и пояснение над описью (columns_by_cards)', async ({
 	page
 }) => {
 	await page.setViewportSize({ width: 1280, height: 900 });
 	const base = fixture('case-documents');
+	// настоящая форма ответа сервиса (договор § 9): title_inventory есть только когда title пуст
 	const docs = [
 		{ ...base.documents[0], title: 'Исковое заявление (сверенное)' },
 		{ ...base.documents[1], title: null, title_inventory: 'Протокол осмотра от 04.06.2026' },
-		{ ...base.documents[2], title: null, title_inventory: null }
+		{ ...base.documents[2], title: null }
 	];
 	let savedTitle: string | null = null;
+	let byCards = true;
 	const { calls } = await openSection(page, {
 		section: 'inventory',
 		routes: {
 			'documents?**': (r: any) =>
 				r.fulfill({
 					json: {
-						documents: docs.map((d, i) =>
-							i === 1 && savedTitle ? { ...d, title: savedTitle, title_inventory: null, edited: true } : d
-						),
+						documents: docs.map((d, i) => {
+							if (i !== 1 || !savedTitle) return d;
+							const { title_inventory: _gone, ...rest } = d as any;
+							return { ...rest, title: savedTitle, edited: true };
+						}),
 						total: 3,
-						end: true
+						end: true,
+						columns_by_cards: byCards
 					}
 				}),
 			'documents/*': (r: any, c: any) => {
@@ -259,6 +264,9 @@ test('запасное название документа описи (title_inv
 			'pages?**': pages()
 		}
 	});
+	// пояснение над описью при columns_by_cards: true — строка для этапа с карточками
+	await expect(page.getByTestId('case-inventory-note')).toContainText(S.inventory_note_g_cards);
+
 	const rows = page.getByTestId('case-doc');
 	await expect(rows).toHaveCount(3);
 	// 1) сверенное название — обычное жирное, без подписи «не сверено»
@@ -293,6 +301,18 @@ test('запасное название документа описи (title_inv
 	expect(calls.find((c) => c.method === 'PATCH')!.body).toEqual({
 		title_as_written: 'Протокол осмотра места происшествия'
 	});
+
+	// при columns_by_cards: false — прежнее пояснение над описью
+	byCards = false;
+	await openSection(page, {
+		section: 'inventory',
+		routes: {
+			'documents?**': (r: any) =>
+				r.fulfill({ json: { documents: docs, total: 3, end: true, columns_by_cards: false } }),
+			'pages?**': pages()
+		}
+	});
+	await expect(page.getByTestId('case-inventory-note')).toContainText(S.inventory_note_g);
 });
 
 test('перенос слов в таблице: обычное слово не рвётся, сверхдлинное ломается без прокрутки вбок', async ({ page }) => {

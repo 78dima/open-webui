@@ -422,4 +422,46 @@ test.describe('часть 3: изменения охвата (Т-5), ссылк�
 		await expect(items.nth(1).locator('.q')).toHaveText(f.findings[1].quote);
 		await expect(items.nth(2).locator('.q')).toHaveText(f.findings[2].quote);
 	});
+
+	test('title_inventory в открытой таблице (rows[]) и в местах прохода (findings[]) — настоящая форма § 9', async ({
+		page
+	}) => {
+		const t = fixture('table-open');
+		t.rows = [
+			{ ...t.rows[0], title: 'Договор поставки (сверенный)' },
+			{ ...t.rows[1], title: null, title_inventory: 'Акт сверки от 01.03.2026' },
+			{ ...t.rows[2], title: null }
+		];
+		await openSection(page, {
+			section: 'tables',
+			item: t.sweep.id,
+			routes: { 'tables/*?**': t }
+		});
+		const docCells = page.getByTestId('case-table-doc');
+		await expect(docCells).toHaveCount(3);
+		await expect(docCells.nth(0).locator('a.doc')).toHaveText('Договор поставки (сверенный)');
+		await expect(docCells.nth(0).getByTestId('case-doc-title-unverified')).toHaveCount(0);
+		await expect(docCells.nth(1).locator('a.doc')).toHaveText('Акт сверки от 01.03.2026');
+		await expect(docCells.nth(1).getByTestId('case-doc-title-unverified')).toHaveText(S.inventory_title_unverified);
+		await expect(docCells.nth(2).locator('a.doc')).toHaveText(t.rows[2].label);
+		await expect(docCells.nth(2).getByTestId('case-doc-title-unverified')).toHaveCount(0);
+
+		const f = fixture('table-findings');
+		f.findings = [
+			{ ...f.findings[0], document: 'Сверенный иск' },
+			{ ...f.findings[1], document: null, title_inventory: 'Черновик расчёта' },
+			{ ...f.findings[2], document: null }
+		];
+		await openSection(page, {
+			section: 'tables',
+			item: f.sweep.id,
+			routes: { 'tables/*?**': f }
+		});
+		const items = page.getByTestId('case-finding');
+		await expect(items).toHaveCount(3);
+		await expect(items.nth(0)).toContainText('Сверенный иск');
+		await expect(items.nth(0)).not.toContainText(S.inventory_title_unverified);
+		await expect(items.nth(1)).toContainText(`Черновик расчёта (${S.inventory_title_unverified})`);
+		await expect(items.nth(2)).not.toContainText(S.inventory_title_unverified);
+	});
 });

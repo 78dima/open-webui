@@ -45,6 +45,7 @@
 		nextPage: 0,
 		end: true,
 		loaded: false,
+		columnsByCards: false,
 		selected: new Map<number, Doc>(),
 		version: undefined as number | undefined
 	});
@@ -53,13 +54,24 @@
 	let nextPage = kept.nextPage;
 	let end = kept.end;
 	let loaded = kept.loaded;
+	let columnsByCards = kept.columnsByCards;
 	let loading = false;
 	let error = '';
 	let selected = kept.selected;
 	let seq = 0;
 	volume = kept.volume;
 	onDestroy(() =>
-		Object.assign(kept, { volume, docs, total, nextPage, end, loaded, selected, version })
+		Object.assign(kept, {
+			volume,
+			docs,
+			total,
+			nextPage,
+			end,
+			loaded,
+			columnsByCards,
+			selected,
+			version
+		})
 	);
 
 	async function load(reset: boolean) {
@@ -72,6 +84,7 @@
 				total?: number;
 				next_page?: number | null;
 				end: boolean;
+				columns_by_cards?: boolean;
 			}>(casePath(state, `/documents${query({ page: String(nextPage), volume })}`));
 			if (mine !== seq) return;
 			// порция не повторяет уже показанное: состав описи мог сдвинуться между порциями
@@ -80,6 +93,7 @@
 			if (reset) selected = new Map();
 			total = Math.max(d.total ?? 0, docs.length);
 			end = d.end;
+			columnsByCards = Boolean(d.columns_by_cards);
 			nextPage = d.next_page || nextPage;
 			error = '';
 			loaded = true;
@@ -269,7 +283,7 @@
 
 <div class="note n" data-testid="case-inventory-note">
 	<Icon name="info" klass="l" />
-	<p>{S.inventory_note_g}</p>
+	<p>{columnsByCards ? S.inventory_note_g_cards : S.inventory_note_g}</p>
 </div>
 
 <section class="card inv" data-testid="case-inventory">

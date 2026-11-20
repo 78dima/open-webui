@@ -59,6 +59,29 @@ test.describe('«Копии и расхождения», 1280', () => {
 		await expect(page.getByTestId('case-copies-real')).toContainText(S.copies_empty);
 		await expect(page.getByTestId('case-copies-other').locator('.cnt')).toHaveText('4');
 	});
+	test('title_inventory в «Копиях и расхождениях» — настоящая форма § 9', async ({ page }) => {
+		const d = fixture('copies');
+		d.copies = [
+			{
+				...d.copies[0],
+				a: { ...d.copies[0].a, title: 'Сверенный договор' },
+				b: { ...d.copies[0].b, title: null, title_inventory: 'Копия договора по первой строке' }
+			},
+			{
+				...d.copies[1],
+				a: { ...d.copies[1].a, title: null, doc_type: null },
+				b: { ...d.copies[1].b, title: null, doc_type: 'счёт' }
+			}
+		];
+		await openSection(page, { section: 'copies', routes: { copies: d } });
+		const pairs = page.getByTestId('case-copy');
+		await expect(pairs).toHaveCount(2);
+		await expect(pairs.nth(0)).toContainText('Сверенный договор');
+		await expect(pairs.nth(0)).toContainText(`Копия договора по первой строке (${S.inventory_title_unverified})`);
+		await expect(pairs.nth(1)).toContainText(S.copies_untitled);
+		await expect(pairs.nth(1)).toContainText('счёт');
+		await expect(pairs.nth(1)).not.toContainText(S.inventory_title_unverified);
+	});
 });
 
 test('«Копии и расхождения» на телефоне 360: без прокрутки вбок, тёмная схема', async ({ page }) => {
