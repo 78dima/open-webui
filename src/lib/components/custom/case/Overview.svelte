@@ -391,6 +391,9 @@
 					</div>
 				{/if}
 			</div>
+			{#if volumes.length}<p class="sm soft compnote" data-testid="case-pages-note">
+					{S.overview_pages_note}
+				</p>{/if}
 		</section>
 	{/if}
 
@@ -449,6 +452,9 @@
 	}
 	.comphead {
 		padding-bottom: 12px;
+	}
+	.compnote {
+		padding: 10px 0 6px;
 	}
 	.end {
 		justify-self: end;

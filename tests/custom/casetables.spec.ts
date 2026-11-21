@@ -35,7 +35,7 @@ test.describe('«Таблицы и проходы», 1280', () => {
 		expect(await name.evaluate((e) => Math.round(e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight)))).toBeLessThanOrEqual(2);
 		await expect(name).toHaveAttribute('title', d.tables[2].question);
 		const spent = fixture('case-overview').spent;
-		await expect(page.getByTestId('case-spent')).toHaveText(`Потрачено по делу: обработка ${String(spent.processing).replace('.', ',')} USD, работа ${String(spent.work).replace('.', ',')} USD`);
+		await expect(page.getByTestId('case-spent')).toHaveText(`Потрачено по делу: распознавание и разбор ${String(spent.processing).replace('.', ',')} USD, проходы, таблицы и поиск ${String(spent.work).replace('.', ',')} USD`);
 	});
 
 	test('запуск набора: наборы страницы, охват по томам, факты охвата, цена на кнопке; до 1 USD — без подтверждения', async ({ page }) => {

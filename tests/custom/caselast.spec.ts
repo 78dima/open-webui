@@ -84,7 +84,7 @@ test.describe('«Удаление дела»', () => {
 test('Г-1: оценка распознавания и «Потрачено» (при выключенных таблицах) видны в «Обзоре» и роли «только чтение»; в «Загрузить» их нет', async ({ page }) => {
 	const ov = fixture('case-overview');
 	const spent = ov.spent;
-	const line = `Потрачено по делу: обработка ${String(spent.processing).replace('.', ',')} USD, работа ${String(spent.work).replace('.', ',')} USD`;
+	const line = `Потрачено по делу: распознавание и разбор ${String(spent.processing).replace('.', ',')} USD, проходы, таблицы и поиск ${String(spent.work).replace('.', ',')} USD`;
 	// только чтение, таблицы выключены — в «Обзоре» видны и оценка, и «Потрачено»
 	await openSection(page, {
 		boot: { can_write: false, sections: BOOT.sections.filter((s: string) => s !== 'tables') }

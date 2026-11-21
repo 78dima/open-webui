@@ -13,7 +13,10 @@ const LEGAL_TOOLS = [
 	'kplus_search', 'kplus_suggest', 'kplus_outline', 'kplus_read', 'kplus_editions',
 	'kplus_edition_on_date', 'kplus_related', 'kplus_positions', 'kplus_reopen',
 	'kplus_document_card', 'kplus_contract_materials', 'kplus_updates', 'kplus_changes',
-	'kplus_search_card', 'kplus_reference_value', 'days_between', 'make_xlsx'
+	'kplus_search_card', 'kplus_reference_value', 'days_between', 'make_xlsx',
+	// инструменты дела (tools/src/legal_tools/mcp/case_tools*.py, 2026-11-22)
+	'case_overview', 'case_search', 'case_read', 'case_facts', 'case_sweep', 'case_look',
+	'case_inventory_edit', 'case_deadline'
 ];
 const on = { hide: { tool_details: true } };
 const STATES = ['active', 'done', 'error', 'rejected', 'approval'] as const;
@@ -43,6 +46,11 @@ test('every legal-tools MCP tool has its own Russian labels without technical na
 	expect(toolKey('legal-tools_kplus_edition_on_date')).toBe('kplus_edition_on_date');
 	expect(toolStatusLabel('legal-tools_kplus_search', 'active')).toBe('Поиск в КонсультантПлюс…');
 	expect(toolStatusLabel('legal-tools_kplus_search', 'done')).toBe('Найдено в КонсультантПлюс');
+	expect(toolKey('legal-tools_case_read')).toBe('case_read');
+	expect(toolStatusLabel('legal-tools_case_search', 'active')).toBe('Поиск в материалах дела…');
+	expect(toolStatusLabel('legal-tools_case_sweep', 'done')).toBe(
+		'Просмотр материалов дела: результат получен'
+	);
 	expect(toolStatusLabel('legal-tools_kplus_read', 'active')).toBe('Чтение документа КонсультантПлюс…');
 	expect(toolStatusLabel('legal-tools_kplus_outline', 'active')).toBe('Оглавление документа…');
 	expect(toolStatusLabel('legal-tools_kplus_outline', 'error')).toBe('Не выполнено: оглавление документа');
