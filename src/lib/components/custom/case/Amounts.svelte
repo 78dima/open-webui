@@ -37,6 +37,7 @@
 		what?: string | null;
 		value_num?: string | number | null;
 		unchecked?: boolean;
+		quote_changed?: boolean;
 		unit?: string | null;
 		edited?: boolean;
 		hidden?: boolean;

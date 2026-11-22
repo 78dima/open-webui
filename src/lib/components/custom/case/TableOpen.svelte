@@ -76,6 +76,7 @@
 		quote: string;
 		relation?: string | null;
 		other_reading?: boolean;
+		quote_changed?: boolean;
 		also?: Place[];
 		refs?: Ref[];
 		refs_unparsed?: number;
@@ -565,6 +566,11 @@
 												><Icon name="al" />{S.tables_other_reading}</span
 											>
 										{/if}
+										{#if a.quote_changed}
+											<span class="pill w t box" data-testid="case-quote-changed"
+												><Icon name="al" />{S.quote_changed}</span
+											>
+										{/if}
 									{/each}
 									{#each cell.copies ?? [] as copy}
 										{#if copy.first_page_id != null}
@@ -644,6 +650,13 @@
 							<div class="row">
 								<span class="pill w t box" data-testid="case-other-reading"
 									><Icon name="al" />{S.tables_other_reading}</span
+								>
+							</div>
+						{/if}
+						{#if f.quote_changed}
+							<div class="row">
+								<span class="pill w t box" data-testid="case-quote-changed"
+									><Icon name="al" />{S.quote_changed}</span
 								>
 							</div>
 						{/if}

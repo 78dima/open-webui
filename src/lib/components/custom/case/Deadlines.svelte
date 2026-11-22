@@ -37,6 +37,7 @@
 			url?: string | null;
 			quote?: string | null;
 			quote_rest?: number | null;
+			quote_changed?: boolean;
 		};
 		calc?: string | null;
 		norm?: string | null;
@@ -186,6 +187,9 @@
 				<dt>{S.deadline_kv_basis}</dt>
 				<dd class="col g6">
 					<SheetRef label={x.basis.label} href={x.basis.url} />
+					{#if x.basis.quote_changed}<span class="pill w t as" data-testid="case-quote-changed"
+							><Icon name="al" />{S.quote_changed}</span
+						>{/if}
 					{#if x.basis.quote}
 						<p class="q">
 							{x.basis.quote}{#if quoteMore(x.basis.quote_rest, S)}{' '}<span class="mut"

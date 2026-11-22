@@ -41,6 +41,9 @@
 			{#if f.near_accepted}<span class="pill t w" data-testid="case-fact-near-accepted"
 					>{S.map_fact_near_accepted}</span
 				>{/if}
+			{#if f.quote_changed}<span class="pill t w" data-testid="case-quote-changed"
+					>{S.quote_changed}</span
+				>{/if}
 			{#if f.kind || f.persons.length}
 				<span class="sm mut aw">{[f.kind, f.persons.join(', ')].filter(Boolean).join(' · ')}</span>
 			{/if}

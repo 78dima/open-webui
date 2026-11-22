@@ -32,6 +32,9 @@
 	<div class="col g6 as">
 		{#if a.label}<SheetRef label={a.label} href={a.url} />{/if}
 		{#if a.unchecked}<span class="pill w t"><Icon name="al" />{S.map_amount_unchecked}</span>{/if}
+		{#if a.quote_changed}<span class="pill w t" data-testid="case-quote-changed"
+				><Icon name="al" />{S.quote_changed}</span
+			>{/if}
 		{#if a.unit === 'elsewhere'}<span class="pill t">{S.map_amount_unit_elsewhere}</span>{/if}
 		{#if a.unit === 'missing'}<span class="pill t">{S.map_amount_unit_missing}</span>{/if}
 		{#if a.in_table}<span class="pill t" data-testid="case-amount-in-table"
