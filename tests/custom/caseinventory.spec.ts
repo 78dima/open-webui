@@ -28,7 +28,7 @@ test.describe('«Опись», 1280', () => {
 
 	test('строки: листы ссылкой, номер и автор второй строкой, пометки, «исправлено юристом»; «Показать ещё» порцией сервиса', async ({ page }) => {
 		const { calls } = await openSection(page, { section: 'inventory', routes: { 'documents?**': docsRoute } });
-		await expect(page.getByTestId('case-inventory-note')).toHaveText(S.inventory_note_g);
+		await expect(page.getByTestId('case-inventory-note')).toHaveText(S.inventory_note_g_cards); // п. 37: название, дата, автор — всегда из карточек
 		await expect(page.locator('.head .cnt')).toHaveText('22 документа');
 		const rows = page.getByTestId('case-doc');
 		await expect(rows).toHaveCount(8);
@@ -302,7 +302,7 @@ test('запасное название документа описи (title_inv
 		title_as_written: 'Протокол осмотра места происшествия'
 	});
 
-	// при columns_by_cards: false — прежнее пояснение над описью
+	// п. 37 захода 22.11: писатель названия, даты и автора — всегда карточки; пояснение одно и при columns_by_cards: false
 	byCards = false;
 	await openSection(page, {
 		section: 'inventory',
@@ -312,7 +312,7 @@ test('запасное название документа описи (title_inv
 			'pages?**': pages()
 		}
 	});
-	await expect(page.getByTestId('case-inventory-note')).toContainText(S.inventory_note_g);
+	await expect(page.getByTestId('case-inventory-note')).toContainText(S.inventory_note_g_cards);
 });
 
 test('перенос слов в таблице: обычное слово не рвётся, сверхдлинное ломается без прокрутки вбок', async ({ page }) => {

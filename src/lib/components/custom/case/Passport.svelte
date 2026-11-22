@@ -50,11 +50,11 @@
 		more_places?: Place[];
 		roles?: Role[];
 	};
-	type Field = { key: string; title?: string; items: Item[]; edited?: boolean; lawyer_only?: boolean };
+	type Field = { key: string; items: Item[]; edited?: boolean; lawyer_only?: boolean };
 	type Answer = {
 		fields: Field[];
 		// поля, которых сервис не отдал (модель не заполнила, юрист не правил) — их можно добавить (п. 18 захода 22.11)
-		absent?: { key: string; title?: string }[];
+		absent?: { key: string }[];
 		built?: { cards: number; cards_total: number; missing?: number } | null;
 		state?: MapState | null;
 		can_write?: boolean;
@@ -76,10 +76,11 @@
 	$: canWrite = !!$answer?.can_write;
 	$: absent = ($answer?.absent ?? []).filter((a) => !OWN_CARD.has(a.key));
 	let adding = '';
-	const fieldName = (f: { key: string; title?: string }) => f.title || passportName(S, f.key);
+	// подпись поля — одна, своя таблица страницы (у сводки кода — «названные в документах»; ревью 22.11 Б-5)
+	const fieldName = (f: { key: string }) => passportName(S, f.key);
 	function addField() {
 		const a = absent.find((x) => x.key === adding);
-		if (a) edit({ key: a.key, title: a.title, items: [] });
+		if (a) edit({ key: a.key, items: [] });
 		adding = '';
 	}
 

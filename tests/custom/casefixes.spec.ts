@@ -25,7 +25,7 @@ test.describe('ревью 20.11', () => {
 		await openSection(page, {
 			section: 'amounts',
 			routes: {
-				amounts: (r: any) =>
+				'amounts**': (r: any) =>
 					mode === 'html'
 						? r.fulfill({ status: 502, contentType: 'text/html', body: '<html>Bad Gateway</html>' })
 						: mode === 'down'
@@ -218,7 +218,7 @@ test.describe('ревью 20.11', () => {
 			routes: {
 				facts: facts,
 				'facts?**': (r: any, c: any) => r.fulfill({ json: /page=1/.test(c.path) ? more : facts }),
-				amounts: fixture('amounts')
+				'amounts**': fixture('amounts')
 			}
 		});
 		const period = page.getByTestId('case-facts-period');
@@ -275,7 +275,7 @@ test.describe('ревью 20.11', () => {
 					if (/preset=positions/.test(c.path)) await new Promise<void>((res) => (release = res));
 					return r.fulfill({ json: scope(/preset=positions/.test(c.path) ? 3.7 : 0.02) });
 				},
-				amounts: fixture('amounts')
+				'amounts**': fixture('amounts')
 			}
 		});
 		const form = page.getByTestId('case-tables-new');
@@ -372,7 +372,7 @@ test.describe('ревью 20.11', () => {
 		await page.getByTestId('case-table-action').first().click();
 		await expect(dialog(page).getByRole('heading')).toHaveText(S.runs_confirm_reread_title);
 		await expect(dialog(page).getByTestId('case-table-confirm-price')).toHaveText(
-			fmt(S.runs_confirm_price, { usd: '2,40' })
+			fmt(S.runs_confirm_price_only, { usd: '2,40' }) // предела в ответе нет — только оценка
 		);
 		await dialog(page).getByRole('button', { name: S.cancel }).click();
 		view = {

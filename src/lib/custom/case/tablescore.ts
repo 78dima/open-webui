@@ -96,6 +96,7 @@ export type Sweep = {
 	question: string;
 	title?: string | null;
 	status: string;
+	max_usd?: number | null;
 	finished?: boolean;
 	stop?: string | null;
 	scope?: string;
@@ -194,6 +195,14 @@ export function coverage(sw: Sweep, S: Strings, noSheets = false): string {
 
 /** Платное действие дороже 1 USD — перед ним своё окно подтверждения (решение владельца); до 1 USD цены на кнопке
  *  достаточно. Цена неизвестна — подтверждение нужно. */
+/** Окно подтверждения: «оценка ≈ X USD; предел прохода — Y USD» (ревью 22.11 Бп-4) — два факта рядом; предела нет
+ *  (прежний сервис) — только оценка. */
+export const priceText = (S: Strings, estimate: unknown, limit: unknown): string => {
+	const n = Number(limit);
+	return limit == null || limit === '' || !Number.isFinite(n)
+		? fmt(S.runs_confirm_price_only, { usd: usd(estimate as number) })
+		: fmt(S.runs_confirm_price, { usd: usd(estimate as number), limit: usd(n) });
+};
 export const needsConfirm = (estimate: unknown): boolean => {
 	const n = Number(estimate);
 	return estimate == null || !Number.isFinite(n) || n > 1;

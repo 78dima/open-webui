@@ -20,6 +20,7 @@
 		coverage,
 		needsConfirm,
 		placeQuery,
+		priceText,
 		refParts,
 		relationWord,
 		restText,
@@ -633,8 +634,9 @@
 									data-testid="case-finding-relation">{relationWord(f.relation, S)}</span
 								>
 							{/if}
-							{#if f.document}<span class="mut aw">· {f.document}</span>{:else if f.title_inventory}<span
-									class="mut aw">· {f.title_inventory} ({S.inventory_title_unverified})</span
+							{#if f.document}<span class="mut aw">· {f.document}</span
+								>{:else if f.title_inventory}<span class="mut aw"
+									>· {f.title_inventory} ({S.inventory_title_unverified})</span
 								>{/if}
 						</div>
 						<p class="q pw">{f.quote}</p>
@@ -700,7 +702,11 @@
 		<p class="md bb" data-testid="case-table-confirm-price">
 			{pending.estimate == null || !Number.isFinite(Number(pending.estimate))
 				? S.runs_confirm_no_price
-				: fmt(S.runs_confirm_price, { usd: usd(pending.estimate) })}
+				: priceText(
+						S,
+						pending.estimate,
+						pending.warn && sw?.rest?.raise_to_usd != null ? sw.rest.raise_to_usd : sw?.max_usd
+					)}
 		</p>
 	{/if}
 </FormDialog>

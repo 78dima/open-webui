@@ -414,7 +414,13 @@ await step('паспорт', async () => {
 	await go(page, 'passport');
 	await page.getByTestId('case-passport-about').waitFor({ timeout: 120000 });
 	const stage = page.locator('[data-testid="case-passport-field"][data-field="instance"]');
-	await stage.getByRole('button', { name: S.map_edit, exact: true }).click();
+	// п. 18 захода 22.11: пустого поля модели в паспорте нет — оно заводится «Добавить поле»
+	if (await stage.count()) await stage.getByRole('button', { name: S.map_edit, exact: true }).click();
+	else {
+		const add = page.getByTestId('case-passport-add');
+		await add.locator('select').selectOption('instance');
+		await add.getByRole('button', { name: S.map_passport_add }).click();
+	}
 	await dlg(page).getByRole('textbox').fill('апелляция');
 	await dlg(page).getByRole('button', { name: S.save }).click();
 	const set = await stage.getByText('апелляция', { exact: true }).waitFor({ timeout: 30000 }).then(() => true, () => false);
@@ -679,7 +685,9 @@ await step('только чтение', async () => {
 	await signIn(p, 'colleague', CASE);
 	await p.getByTestId('case-summary').waitFor({ timeout: 30000 });
 	const WRITE = [S.volume_edit_label_g, S.file_attach, S.file_attach_other, S.file_kind_change, S.file_detach, S.remove_file, S.file_confirm, S.doc_edit, S.doc_split, S.doc_merge, S.map_edit, S.map_hide, S.map_unhide,
-		S.map_deadline_add, S.map_deadline_confirm, S.map_deadline_unconfirm, S.whatsnew_replace, S.folder_file_add, S.delete_case, S.upload_start, S.client_role_set, S.tables_start, S.create_case];
+		S.map_deadline_add, S.map_deadline_confirm, S.map_deadline_unconfirm, S.whatsnew_replace, S.folder_file_add, S.delete_case, S.upload_start, S.client_role_set, S.tables_start, S.create_case,
+		// новые действия пакета Б 22.11 (ревью Б-2): принятие события, «Добавить поле», отметка строки и столбца, таблица из другого дела
+		S.map_fact_accept, S.map_fact_unaccept, S.map_passport_add, S.tables_check_row, S.tables_check_column, S.tables_from_other, S.tables_from_other_start].filter(Boolean);
 	const slugs = (await p.locator('nav.nav a[data-testid^="case-nav-"]').evaluateAll((list) => list.map((a) => a.dataset.testid.replace('case-nav-', '')))).filter((s) => s !== 'overview');
 	const bad = [];
 	const seen = [];

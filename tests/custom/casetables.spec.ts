@@ -82,7 +82,7 @@ test.describe('«Таблицы и проходы», 1280', () => {
 		const dlg = dialog(page);
 		await expect(dlg.getByRole('heading')).toHaveText(S.runs_confirm_title);
 		await expect(dlg).toContainText('«Извещения», охват — всё дело: документов — 264, страниц — 3120.');
-		await expect(dlg).toContainText('Оценка цены прохода: около 1,84 USD.');
+		await expect(dlg).toContainText('Оценка цены прохода ≈ 1,84 USD.');
 		expect(writes(calls)).toEqual([]);
 		await dlg.getByRole('button', { name: S.cancel }).click();
 		expect(writes(calls)).toEqual([]);
@@ -199,7 +199,7 @@ test.describe('открытая таблица, 1280', () => {
 		await expect(page.getByTestId('case-table-facts')).toContainText('Потрачено 1,50 USD из предела прохода 1,50 USD.');
 		await action.click();
 		const dlg = dialog(page);
-		await expect(dlg).toContainText('Оценка цены прохода: около 1,20 USD.');
+		await expect(dlg).toContainText('Оценка цены прохода ≈ 1,20 USD; предел прохода — 3,00 USD.');
 		await dlg.getByRole('button', { name: 'Дочитать с новым пределом — около 1,20 USD' }).click();
 		await expect(dlg).toHaveCount(0);
 		expect(calls.filter((c) => c.method === 'POST').at(-1)!.path).toBe(`/tables/${OPEN}/catch-up?raise_limit=true`);
@@ -390,7 +390,7 @@ test.describe('часть 3: изменения охвата (Т-5), ссылк�
 		const dlg = dialog(page);
 		await expect(dlg.getByRole('heading')).toHaveText(S.runs_confirm_catch_up_title);
 		await expect(dlg.getByTestId('case-table-confirm-price')).toHaveText(
-			'Оценка цены прохода: около 1,45 USD.'
+			'Оценка цены прохода ≈ 1,45 USD.'
 		);
 		expect(calls.length).toBeGreaterThan(0);
 	});

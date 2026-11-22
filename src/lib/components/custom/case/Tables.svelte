@@ -16,6 +16,7 @@
 		coverage,
 		kindWord,
 		needsConfirm,
+		priceText,
 		scopeQuery,
 		staleText,
 		statusTone,
@@ -46,6 +47,7 @@
 		documents: number;
 		windows: number;
 		estimate_usd: number | string | null;
+		limit_usd?: number | null;
 	};
 
 	const { boot, data } = state;
@@ -116,13 +118,19 @@
 	let otherOpen = false;
 	let otherCases: CaseFolder[] = [];
 	let otherCase = '';
-	let otherTables: { id: string; question: string; columns: { key: string; title?: string | null }[] }[] = [];
+	let otherTables: {
+		id: string;
+		question: string;
+		columns: { key: string; title?: string | null }[];
+	}[] = [];
 	let otherTable = '';
 	async function openOther() {
 		otherOpen = !otherOpen;
 		if (!otherOpen || otherCases.length) return;
 		try {
-			otherCases = readListing(await state.api.get('api/cases')).filter((c) => c.id !== state.folderId);
+			otherCases = readListing(await state.api.get('api/cases')).filter(
+				(c) => c.id !== state.folderId
+			);
 		} catch (e) {
 			caseToast(errorText(S, e), true);
 		}
@@ -140,8 +148,42 @@
 			caseToast(errorText(S, e), true);
 		}
 	}
+	// запуск из другого дела — тем же путём, что набор (ревью 22.11 Б-3): оценка охвата вопросом и столбцами источника,
+	// цена на кнопке, окно подтверждения при оценке больше 1 USD или без неё
+	let otherScope: Scope | null = null;
+	let otherConfirm = false;
+	let otherBusy = false;
+	async function estimateOther() {
+		otherScope = null;
+		if (!otherCase || !otherTable) return;
+		try {
+			const q = volumes.length
+				? '?' + volumes.map((v) => `volumes=${encodeURIComponent(v)}`).join('&')
+				: '';
+			otherScope = await state.api.get<Scope>(
+				casePath(state, `/tables/from/${otherCase}/${otherTable}/scope${q}`)
+			);
+		} catch (e) {
+			caseToast(errorText(S, e), true);
+		}
+	}
+	// охват (тома) сменился при выбранной таблице — оценка заново
+	$: if (otherOpen && otherTable) void (volumes, estimateOther());
+	$: otherPriced =
+		!!otherScope &&
+		otherScope.estimate_usd != null &&
+		Number.isFinite(Number(otherScope.estimate_usd));
+	async function pressOther() {
+		if (otherBusy || !otherTable) return;
+		if (!otherScope || (otherScope.pages && needsConfirm(otherScope.estimate_usd))) {
+			otherConfirm = true;
+			return;
+		}
+		await startOther();
+	}
 	async function startOther() {
 		if (!otherCase || !otherTable) return;
+		otherBusy = true;
 		try {
 			const r = await state.api.post<{ cached?: boolean }>(
 				casePath(state, `/tables/from/${otherCase}/${otherTable}`),
@@ -152,6 +194,8 @@
 			void loader.refresh(true);
 		} catch (e) {
 			caseToast(errorText(S, e), true);
+		} finally {
+			otherBusy = false;
 		}
 	}
 	async function press() {
@@ -311,8 +355,8 @@
 					data-testid="case-tables-start">{startText}</button
 				>
 			</div>
-			<div class="col g8 sep" data-testid="case-tables-other">
-				<button type="button" class="btn t as" aria-expanded={otherOpen} on:click={openOther}
+			<div class="col g8 sep other" data-testid="case-tables-other">
+				<button type="button" class="btn t as wrap" aria-expanded={otherOpen} on:click={openOther}
 					>{S.tables_from_other}<Icon name={otherOpen ? 'u' : 'd'} /></button
 				>
 				{#if otherOpen}
@@ -324,7 +368,9 @@
 								on:change={pickOther}
 							>
 								<option value=""></option>
-								{#each otherCases as c (c.id)}<option value={c.id}>{c.title || S.folder_untitled}</option>{/each}
+								{#each otherCases as c (c.id)}<option value={c.id}
+										>{c.title || S.folder_untitled}</option
+									>{/each}
 							</select></label
 						>
 						{#if otherTables.length}
@@ -337,8 +383,15 @@
 								</select></label
 							>
 						{:else if otherCase}<span class="sm mut">{S.tables_from_other_none}</span>{/if}
-						<button type="button" class="btn s" disabled={!otherTable} on:click={startOther}
-							>{S.tables_from_other_start}</button
+						<button
+							type="button"
+							class="btn s"
+							disabled={!otherTable || otherBusy}
+							data-testid="case-tables-other-start"
+							on:click={pressOther}
+							>{otherScope?.pages && otherPriced
+								? fmt(S.runs_start_usd, { usd: usd(otherScope.estimate_usd) })
+								: S.tables_from_other_start}</button
 						>
 					</div>
 					<p class="xs mut">{S.tables_from_other_hint}</p>
@@ -353,6 +406,30 @@
 		{fmt(S.spent_line, { processing: usd(spent.processing), work: usd(spent.work) })}
 	</p>
 {/if}
+
+<FormDialog
+	bind:open={otherConfirm}
+	title={S.runs_confirm_title}
+	{S}
+	submit={startOther}
+	submitText={otherScope?.pages && otherPriced
+		? fmt(S.runs_start_usd, { usd: usd(otherScope.estimate_usd) })
+		: S.runs_start_no_price}
+	testid="case-tables-other-confirm"
+>
+	{#if otherScope?.pages}<p class="md">
+			{fmt(S.runs_scope_facts, {
+				documents: otherScope.documents,
+				pages: otherScope.pages,
+				windows: otherScope.windows
+			})}
+		</p>{/if}
+	<p class="md bb">
+		{otherPriced && otherScope
+			? priceText(S, otherScope.estimate_usd, otherScope.limit_usd)
+			: S.runs_confirm_no_price}
+	</p>
+</FormDialog>
 
 <FormDialog
 	bind:open={confirmOpen}
@@ -375,11 +452,26 @@
 				pages: scope.pages
 			})}
 		</p>
-		<p class="md bb">{fmt(S.runs_confirm_price, { usd: usd(scope.estimate_usd) })}</p>
+		<p class="md bb">
+			{priceText(S, scope.estimate_usd, scope.limit_usd)}
+		</p>
 	{/if}
 </FormDialog>
 
 <style>
+	/* выбор дела и таблицы: длинный вопрос таблицы не раздвигает карточку */
+	.other :global(.lbl),
+	.other select {
+		max-width: 100%;
+		min-width: 0;
+	}
+	/* длинная подпись «Взять вопрос и столбцы…» на телефоне переносится, а не уходит вбок */
+	.btn.wrap {
+		white-space: normal;
+		text-align: left;
+		max-width: 100%;
+		height: auto;
+	}
 	.list {
 		padding: 10px 24px;
 	}

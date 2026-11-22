@@ -26,6 +26,8 @@ const PASSPORT_KEYS: Record<string, string> = {
 	stage: 'map_pf_stage',
 	subject: 'map_pf_subject',
 	claims: 'map_pf_claims',
+	charge: 'map_pf_charge',
+	measure: 'map_pf_measure',
 	key_dates: 'map_pf_key_dates',
 	key_amounts: 'map_pf_key_amounts'
 };

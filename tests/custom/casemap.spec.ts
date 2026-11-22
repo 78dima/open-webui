@@ -172,9 +172,9 @@ test.describe('«Суммы», 1280', () => {
 		await expect(rows.nth(0).getByRole('link')).toHaveAttribute('href', /\/p\/\d+/);
 		await rows.nth(0).getByRole('button', { name: S.quote_toggle }).click();
 		await expect(rows.nth(0).locator('.q')).toBeVisible();
-		expect(calls.find((c) => c.path.startsWith('/amounts'))!.path).toBe('/amounts');
+		expect(calls.find((c) => c.path.startsWith('/amounts'))!.path).toBe('/amounts?groups=true'); // группы строк таблиц — новый форк
 		await page.getByRole('checkbox', { name: S.map_amounts_hidden }).check();
-		await expect.poll(() => calls.filter((c) => c.path.startsWith('/amounts')).at(-1)!.path).toBe('/amounts?hidden=true');
+		await expect.poll(() => calls.filter((c) => c.path.startsWith('/amounts')).at(-1)!.path).toBe('/amounts?hidden=true&groups=true');
 		await rows.nth(0).getByRole('button', { name: S.map_edit }).click();
 		const dlg = dialog(page);
 		await expect(dlg.getByRole('heading')).toHaveText(S.map_amount_edit_title);
@@ -238,9 +238,9 @@ test.describe('«Хронология», 1280', () => {
 		const filter = page.getByTestId('case-facts-filter');
 		await filter.getByRole('searchbox', { name: S.map_filter_words }).fill(' накладная ');
 		await filter.getByRole('searchbox', { name: S.map_filter_person }).fill('Карпов');
-		expect(calls.filter((c) => c.path.startsWith('/facts')).map((c) => c.path)).toEqual(['/facts']);
+		expect(calls.filter((c) => c.path.startsWith('/facts')).map((c) => c.path)).toEqual(['/facts?groups=true']);
 		await page.keyboard.press('Enter');
-		await expect.poll(() => calls.filter((c) => c.path.startsWith('/facts')).at(-1)!.path).toBe(`/facts?person=${encodeURIComponent('Карпов')}&words=${encodeURIComponent('накладная')}`);
+		await expect.poll(() => calls.filter((c) => c.path.startsWith('/facts')).at(-1)!.path).toBe(`/facts?person=${encodeURIComponent('Карпов')}&words=${encodeURIComponent('накладная')}&groups=true`);
 		await filter.getByRole('button', { name: S.map_line_process }).click();
 		await expect.poll(() => new URLSearchParams(calls.filter((c) => c.path.startsWith('/facts')).at(-1)!.path.split('?')[1]).get('chronology')).toBe('process');
 		await expect(page.getByTestId('case-facts-period')).toHaveCount(0);
@@ -251,7 +251,7 @@ test.describe('«Хронология», 1280', () => {
 		await period.getByRole('checkbox', { name: S.map_filter_hidden }).check();
 		await filter.getByRole('button', { name: S.map_find }).click();
 		await expect.poll(() => Object.fromEntries(new URLSearchParams(calls.filter((c) => c.path.startsWith('/facts')).at(-1)!.path.split('?')[1]))).toEqual({
-			chronology: 'process', person: 'Карпов', words: 'накладная', date_from: '2025-01-01', date_to: '2025-12-31', hidden: 'true'
+			chronology: 'process', person: 'Карпов', words: 'накладная', date_from: '2025-01-01', date_to: '2025-12-31', hidden: 'true', groups: 'true'
 		});
 		await page.getByTestId('case-facts-more').click();
 		await expect(rows).toHaveCount(5);

@@ -22,12 +22,19 @@
 		type MapState
 	} from '$lib/custom/case/mapcore';
 	import { casePath, errorText, query, reasonText } from '$lib/custom/case/sections';
+	import {
+		dayOf,
+		groupText as groupLine,
+		recordsTotal,
+		rowKey as rowKeyOf
+	} from '$lib/custom/case/facts';
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon from './Icon.svelte';
 	import SheetRef from './SheetRef.svelte';
+	import FactRow from './FactRow.svelte';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
@@ -77,6 +84,7 @@
 	type Answer = {
 		facts: (Fact | Group)[];
 		total: number;
+		total_records?: number;
 		undated?: number;
 		next_page?: number | null;
 		state?: MapState | null;
@@ -114,8 +122,14 @@
 	let nextPage: number | null = null;
 	const loader = createLoader(
 		async () => {
-			const d = await state.api.get<Answer>(casePath(state, `/facts${query({ ...asked, groups: true })}`));
+			const d = await state.api.get<Answer>(
+				casePath(state, `/facts${query({ ...asked, groups: true })}`)
+			);
 			extra = [];
+			if (asked.hidden) gone = new Set(); // «с убранными» — убранные снова видны
+			// свежая порция ленты — сама новее правок на месте; у строк раскрытых групп правка на месте остаётся
+			const fresh = new Set(d.facts.filter((x) => !x.group).map((x) => (x as Fact).id));
+			patched = Object.fromEntries(Object.entries(patched).filter(([k]) => !fresh.has(Number(k))));
 			nextPage = d.next_page ?? null;
 			return d;
 		},
@@ -124,7 +138,9 @@
 	const { data: answer, error } = loader;
 	$: ($data, void loader.refresh());
 	onDestroy(() => loader.stop());
-	$: rows = [...($answer?.facts ?? []), ...extra];
+	$: rows = [...($answer?.facts ?? []), ...extra]
+		.filter((f) => f.group || !gone.has(f.id))
+		.map((f) => (!f.group && patched[f.id]) || f);
 	$: canWrite = !!$answer?.can_write;
 
 	function find() {
@@ -158,36 +174,48 @@
 		}
 	}
 
-	const rowKey = (f: Fact | Group) => (f.group ? `g${f.document_id}` : `f${f.id}`);
-	const dayOf = (v?: string | null) => (v ? new Date(v).toLocaleDateString('ru-RU') : '');
-	const groupText = (g: Group) =>
-		fmt(S.map_table_group, {
-			document: g.document || S.court_untitled,
-			n: g.n,
-			period:
-				g.date_from && g.date_to && g.date_from !== g.date_to
-					? fmt(S.map_table_period, { from: dayOf(g.date_from), to: dayOf(g.date_to) })
-					: g.date_from
-						? fmt(S.map_table_day, { day: dayOf(g.date_from) })
-						: ''
-		});
-	// раскрытые группы: записи документа (все его записи — выборка по документу)
-	let groupRows: Record<string, Fact[]> = {};
-	async function flipGroup(g: Group) {
+	const rowKey = (f: Fact | Group) => rowKeyOf(f);
+	const groupText = (g: Group) => groupLine(g, S);
+
+	// раскрытые группы: записи группы документа порциями до конца (ревью 22.11 Б-1), тем же видом строки, что в ленте
+	type Open = { rows: Fact[]; next: number | null; busy: boolean };
+	let groupRows: Record<string, Open> = {};
+	async function loadGroup(g: Group, page: number) {
+		const k = `g${g.document_id}`;
+		const cur = groupRows[k] ?? { rows: [], next: null, busy: false };
+		groupRows = { ...groupRows, [k]: { ...cur, busy: true } };
+		try {
+			const d = await state.api.get<Answer>(
+				casePath(
+					state,
+					`/facts${query({
+						document: String(g.document_id),
+						table_group: true,
+						chronology: asked.chronology,
+						hidden: asked.hidden,
+						page: String(page)
+					})}`
+				)
+			);
+			const seen = new Set(cur.rows.map((x) => x.id));
+			const got = d.facts.filter((x): x is Fact => !x.group && !seen.has(x.id));
+			groupRows = {
+				...groupRows,
+				[k]: { rows: [...cur.rows, ...got], next: d.next_page ?? null, busy: false }
+			};
+		} catch (e) {
+			groupRows = { ...groupRows, [k]: { ...cur, busy: false } };
+			caseToast(errorText(S, e), true);
+		}
+	}
+	function flipGroup(g: Group) {
 		const k = `g${g.document_id}`;
 		if (groupRows[k]) {
 			const { [k]: _gone, ...rest } = groupRows;
 			groupRows = rest;
 			return;
 		}
-		try {
-			const d = await state.api.get<Answer>(
-				casePath(state, `/facts${query({ document: String(g.document_id), hidden: asked.hidden })}`)
-			);
-			groupRows = { ...groupRows, [k]: d.facts.filter((f): f is Fact => !f.group) };
-		} catch (e) {
-			caseToast(errorText(S, e), true);
-		}
+		void loadGroup(g, 0);
 	}
 
 	let filterOpen = false;
@@ -201,37 +229,27 @@
 		asked.date_to ||
 		asked.hidden
 	);
-	let opened = new Set<number>();
-	const flip = (id: number) => {
-		const next = new Set(opened);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		opened = next;
-	};
-	let acts = new Set<number>(); // телефон: у каких записей раскрыты действия
-	const flipActs = (id: number) => {
-		const next = new Set(acts);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		acts = next;
+	// после действия — лента и раскрытые группы заново: принятая или правленая запись уходит из группы в ленту
+	// действие над записью — запись заменяется на месте ответом сервиса (ревью 22.11 Б-1): юрист, дочитавший ленту или
+	// группу до середины, остаётся там же; состав групп и счёт — при следующем обновлении ленты
+	let patched: Record<number, Fact> = {};
+	type Patched = { fact?: Fact };
+	// убранная запись без «с убранными» уходит из ленты сразу; ответа с записью нет — лента заново, как прежде
+	let gone = new Set<number>();
+	const put = (r: unknown) => {
+		const nf = (r as Patched | null)?.fact;
+		if (!nf || typeof nf.id !== 'number') return void loader.refresh(true);
+		if (nf.hidden && !asked.hidden) gone = new Set([...gone, nf.id]);
+		patched = { ...patched, [nf.id]: nf };
 	};
 	const accept = (f: Fact) =>
-		state.api.request('PATCH', casePath(state, `/facts/${f.id}`), { accepted: !f.accepted }).then(
-			() => loader.refresh(true),
-			(e) => caseToast(errorText(S, e), true)
-		);
-	// кто и когда принял: имя — из Open WebUI (нет — без имени), дата — день принятия
-	const acceptedText = (f: Fact) => {
-		const when = f.accepted_at ? new Date(f.accepted_at).toLocaleDateString('ru-RU') : '';
-		return f.accepted_name
-			? fmt(S.map_fact_accepted, { who: f.accepted_name, when })
-			: fmt(S.map_fact_accepted_when, { when });
-	};
+		state.api
+			.request('PATCH', casePath(state, `/facts/${f.id}`), { accepted: !f.accepted })
+			.then(put, (e) => caseToast(errorText(S, e), true));
 	const hide = (f: Fact) =>
-		state.api.request('PATCH', casePath(state, `/facts/${f.id}`), { hidden: !f.hidden }).then(
-			() => loader.refresh(true),
-			(e) => caseToast(errorText(S, e), true)
-		);
+		state.api
+			.request('PATCH', casePath(state, `/facts/${f.id}`), { hidden: !f.hidden })
+			.then(put, (e) => caseToast(errorText(S, e), true));
 
 	let editing: Fact | null = null;
 	let editOpen = false;
@@ -263,7 +281,7 @@
 	}
 	async function save() {
 		if (!editing) return;
-		await state.api.request('PATCH', casePath(state, `/facts/${editing.id}`), {
+		const r = await state.api.request('PATCH', casePath(state, `/facts/${editing.id}`), {
 			summary: fields.summary.trim(),
 			chronology: fields.chronology,
 			status: fields.status,
@@ -275,7 +293,7 @@
 				.map((x) => x.trim())
 				.filter(Boolean)
 		});
-		await loader.refresh(true);
+		put(r);
 	}
 	let historyId: number | null = null;
 	let historyOpen = false;
@@ -384,7 +402,7 @@
 {:else}
 	<section class="card list" data-testid="case-facts">
 		<div class="col g2 totals">
-			<p class="sm mut">{fmt(S.map_facts_total, { n: $answer.total })}</p>
+			<p class="sm mut">{fmt(S.map_facts_total, { n: recordsTotal($answer) })}</p>
 			{#if $answer.undated}<p class="sm mut">{fmt(S.map_undated, { n: $answer.undated })}</p>{/if}
 		</div>
 		{#if !rows.length}<p class="mut" data-testid="case-facts-empty">{S.map_facts_empty}</p>{/if}
@@ -407,120 +425,50 @@
 								/></button
 							>
 						</div>
-						{#each groupRows[rowKey(f)] ?? [] as r (r.id)}
-							{@const rd = dateParts(r, S)}
-							<div class="row g8 sm sub">
-								<span class="mut">{rd.text}</span>
-								<span class="aw grow">{r.summary}</span>
-								{#if r.label}<SheetRef label={r.label} href={r.url} />{/if}
+						{#if groupRows[rowKey(f)]}
+							<div class="col sub" data-testid="case-fact-group-rows">
+								{#each groupRows[rowKey(f)].rows.filter((x) => !gone.has(x.id)) as r (r.id)}
+									<FactRow
+										f={patched[r.id] ?? r}
+										{S}
+										{canWrite}
+										onAccept={accept}
+										onEdit={edit}
+										onHide={hide}
+										onHistory={(x) => {
+											historyId = x.id;
+											historyOpen = true;
+										}}
+									/>
+								{/each}
+								{#if groupRows[rowKey(f)].next != null}
+									<button
+										type="button"
+										class="btn as"
+										disabled={groupRows[rowKey(f)].busy}
+										data-testid="case-fact-group-more"
+										on:click={() => f.group && loadGroup(f, groupRows[rowKey(f)].next ?? 0)}
+										>{fmt(S.shown_of, { n: groupRows[rowKey(f)].rows.length, total: f.n })} ·
+										{S.map_show_more}</button
+									>
+								{/if}
 							</div>
-						{/each}
+						{/if}
 					</div>
 				</div>
 			{:else}
-			{@const date = dateParts(f, S)}
-			{@const note = dateNote(f, S)}
-			<div class="li t" class:hid={f.hidden} data-testid="case-fact">
-				<span class="b date" class:mut={date.none}
-					>{date.text}{#if date.value}{' '}<span class="sm mut plain">({date.value})</span
-						>{/if}</span
-				>
-				<div class="col g6 grow body">
-					<span class="b aw">{f.summary}</span>
-					<div class="row g6">
-						<span class="pill t">{statusWord(S, f.status)}</span>
-						<span class="pill t">{lineWord(S, f.chronology)}</span>
-						{#if f.edited}<span class="pill t"
-								>{f.hidden ? S.map_fact_hidden : S.map_fact_edited}</span
-							>{/if}
-						{#if f.accepted}<span class="pill t" data-testid="case-fact-accepted"
-								>{acceptedText(f)}</span
-							>{/if}
-						{#if f.near_accepted}<span class="pill t w" data-testid="case-fact-near-accepted"
-								>{S.map_fact_near_accepted}</span
-							>{/if}
-						{#if f.kind || f.persons.length}
-							<span class="sm mut aw"
-								>{[f.kind, f.persons.join(', ')].filter(Boolean).join(' · ')}</span
-							>
-						{/if}
-					</div>
-					{#if note}<p class="sm c-warn">{note}</p>{/if}
-					<div class="row g8 sm">
-						{#if f.label}<SheetRef label={f.label} href={f.url} />{/if}
-						{#if f.document}<span class="mut aw">· {f.document}</span>{/if}
-						{#if f.quote}
-							<button
-								type="button"
-								class="btn t"
-								aria-expanded={opened.has(f.id)}
-								on:click={() => flip(f.id)}
-								>{S.quote_toggle}<Icon name={opened.has(f.id) ? 'u' : 'd'} /></button
-							>
-						{/if}
-					</div>
-					{#if f.quote && opened.has(f.id)}
-						<p class="q">
-							{f.quote}{#if quoteMore(f.quote_rest, S)}{' '}<span class="mut"
-									>{quoteMore(f.quote_rest, S)}</span
-								>{/if}
-						</p>
-					{/if}
-					{#if f.copies?.length}
-						<div class="note copy">
-							<Icon name="al" klass="l" />
-							<p class="sm">
-								{fmt(S.map_fact_copy, { labels: f.copies.map((c) => c.label).join('; ') })}
-							</p>
-						</div>
-					{/if}
-					{#if f.more}
-						<p class="sm mut">
-							{fmt(S.map_next_sheet, { label: '' })}<SheetRef
-								label={f.more.label}
-								href={f.more.url}
-							/>
-						</p>
-						{#if f.more.quote && opened.has(f.id)}
-							<p class="q">
-								{f.more.quote}{#if quoteMore(f.more.quote_rest, S)}{' '}<span class="mut"
-										>{quoteMore(f.more.quote_rest, S)}</span
-									>{/if}
-							</p>
-						{/if}
-					{:else if f.cut}
-						<p class="sm c-warn">{S.map_cut}</p>
-					{/if}
-				</div>
-				<div class="only-n">
-					<button
-						type="button"
-						class="btn s"
-						aria-expanded={acts.has(f.id)}
-						on:click={() => flipActs(f.id)}
-						>{S.file_actions}<Icon name={acts.has(f.id) ? 'u' : 'd'} /></button
-					>
-				</div>
-				<span class="row g4 acts" class:shown={acts.has(f.id)}>
-					{#if canWrite}
-						<button type="button" class="btn t" on:click={() => accept(f)}
-							>{f.accepted ? S.map_fact_unaccept : S.map_fact_accept}</button
-						>
-						<button type="button" class="btn t" on:click={() => edit(f)}>{S.map_edit}</button>
-						<button type="button" class="btn t" on:click={() => hide(f)}
-							>{f.hidden ? S.map_unhide : S.map_hide}</button
-						>
-					{/if}
-					<button
-						type="button"
-						class="btn t"
-						on:click={() => {
-							historyId = f.id;
-							historyOpen = true;
-						}}>{S.map_history}</button
-					>
-				</span>
-			</div>
+				<FactRow
+					{f}
+					{S}
+					{canWrite}
+					onAccept={accept}
+					onEdit={edit}
+					onHide={hide}
+					onHistory={(x) => {
+						historyId = x.id;
+						historyOpen = true;
+					}}
+				/>
 			{/if}
 		{/each}
 		{#if nextPage != null}
@@ -591,15 +539,17 @@
 	{S}
 	entity="fact"
 	id={historyId}
-	onReverted={() => loader.refresh(true)}
+	onReverted={() => {
+		patched = {};
+		gone = new Set();
+		groupRows = {};
+		void loader.refresh(true);
+	}}
 />
 
 <style>
 	.list {
 		padding: 8px 24px;
-	}
-	.plain {
-		font-weight: 400;
 	}
 	form .in.grow {
 		min-width: 160px;
@@ -611,9 +561,6 @@
 	.date {
 		flex: 0 0 170px;
 		overflow-wrap: break-word;
-	}
-	.copy {
-		padding: 10px 12px;
 	}
 	.sub {
 		padding-left: 12px;
@@ -637,9 +584,6 @@
 		resize: vertical;
 	}
 	@media (max-width: 720px) {
-		.acts:not(.shown) {
-			display: none;
-		}
 		.date {
 			flex-basis: 100%;
 		}

@@ -16,15 +16,23 @@
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon from './Icon.svelte';
 	import SheetRef from './SheetRef.svelte';
+	import AmountRow from './AmountRow.svelte';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
 
 	// суммы из строк таблицы документа одной строкой (п. 8 захода 22.11); раскрывается выборкой по документу
-	type Group = { group: true; document_id: number | null; document?: string | null; n: number; label?: string };
+	type Group = {
+		group: true;
+		document_id: number | null;
+		document?: string | null;
+		n: number;
+		label?: string;
+	};
 	type Amount = {
 		group?: undefined;
 		id: number;
+		in_table?: boolean;
 		value_as_written: string;
 		what?: string | null;
 		value_num?: string | number | null;
@@ -60,19 +68,17 @@
 	]);
 	$: ($data, void loader.refresh());
 	onDestroy(() => loader.stop());
-	$: rows = $answer?.amounts ?? [];
+	$: rows = ($answer?.amounts ?? [])
+		.filter((a) => a.group || !gone.has(a.id))
+		.map((a) => (!a.group && patched[a.id]) || a);
 	$: canWrite = !!$answer?.can_write;
 
 	const STEP = 30; // строк до «Показать ещё»
 	let limit = STEP;
-	let opened = new Set<number>();
-	const flip = (id: number) => {
-		const next = new Set(opened);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		opened = next;
+	const toggleHidden = () => {
+		gone = new Set(); // «с убранными» — убранные снова видны
+		void loader.refresh(true);
 	};
-	const toggleHidden = () => void loader.refresh(true);
 	const rowKey = (a: Amount | Group) => (a.group ? `g${a.document_id}` : `a${a.id}`);
 	let groupRows: Record<string, Amount[]> = {};
 	async function flipGroup(g: Group) {
@@ -84,18 +90,31 @@
 		}
 		try {
 			const d = await state.api.get<{ amounts: (Amount | Group)[] }>(
-				casePath(state, `/amounts${query({ document: String(g.document_id), hidden })}`)
+				casePath(
+					state,
+					`/amounts${query({ document: String(g.document_id), table_group: true, hidden })}`
+				)
 			);
 			groupRows = { ...groupRows, [k]: d.amounts.filter((a): a is Amount => !a.group) };
 		} catch (e) {
 			caseToast(errorText(S, e), true);
 		}
 	}
+	// действие над суммой — сумма заменяется на месте ответом сервиса (ревью 22.11 Б-1): место в списке и раскрытая
+	// группа сохраняются; состав групп — при следующем обновлении
+	let patched: Record<number, Amount> = {};
+	// убранная сумма без «с убранными» уходит из списка сразу; ответа с суммой нет — список заново, как прежде
+	let gone = new Set<number>();
+	const put = (r: unknown) => {
+		const na = (r as { amount?: Amount } | null)?.amount;
+		if (!na || typeof na.id !== 'number') return void loader.refresh(true);
+		if (na.hidden && !hidden) gone = new Set([...gone, na.id]);
+		patched = { ...patched, [na.id]: na };
+	};
 	const hide = (a: Amount) =>
-		state.api.request('PATCH', casePath(state, `/amounts/${a.id}`), { hidden: !a.hidden }).then(
-			() => loader.refresh(true),
-			(e) => caseToast(errorText(S, e), true)
-		);
+		state.api
+			.request('PATCH', casePath(state, `/amounts/${a.id}`), { hidden: !a.hidden })
+			.then(put, (e) => caseToast(errorText(S, e), true));
 
 	let editing: Amount | null = null;
 	let editOpen = false;
@@ -111,12 +130,12 @@
 	}
 	async function save() {
 		if (!editing) return;
-		await state.api.request('PATCH', casePath(state, `/amounts/${editing.id}`), {
+		const r = await state.api.request('PATCH', casePath(state, `/amounts/${editing.id}`), {
 			value_as_written: form.written.trim(),
 			what: form.what.trim() || null,
 			value_num: form.num.trim() || null
 		});
-		await loader.refresh(true);
+		put(r);
 	}
 	let historyId: number | null = null;
 	let historyOpen = false;
@@ -168,21 +187,16 @@
 						<div class="tr t" data-testid="case-amount-group">
 							<div class="col g2">
 								<span class="b aw"
-									>{fmt(S.map_a_table_group, { document: a.document || S.court_untitled, n: a.n })}</span
+									>{fmt(S.map_a_table_group, {
+										document: a.document || S.court_untitled,
+										n: a.n
+									})}</span
 								>
 							</div>
-							<div class="col g4">
-								{#each groupRows[rowKey(a)] ?? [] as r (r.id)}
-									<span class="sm aw"
-										>{r.value_as_written}{r.what ? ` — ${r.what}` : ''}{#if r.label}{' '}<SheetRef
-												label={r.label}
-												href={r.url}
-											/>{/if}</span
-									>
-								{/each}
-							</div>
+							<div class="col g4"></div>
 							<div class="col g6 as">
-								{#if a.label}<span class="sm mut">{fmt(S.map_table_from, { label: a.label })}</span>{/if}
+								{#if a.label}<span class="sm mut">{fmt(S.map_table_from, { label: a.label })}</span
+									>{/if}
 							</div>
 							<span class="row g4">
 								<button
@@ -194,65 +208,31 @@
 								>
 							</span>
 						</div>
-					{:else}
-					<div class="tr t" class:hid={a.hidden} data-testid="case-amount">
-						<div class="col g2">
-							<span class="b lg num aw">{a.value_as_written}</span>
-							<span class="sm mut num"
-								>{a.value_num != null
-									? fmt(S.map_amount_value, { v: rub(a.value_num) })
-									: S.map_amount_no_value}</span
-							>
-						</div>
-						<div class="col g4">
-							{#if a.what}<span class="md aw">{a.what}</span>{/if}
-							{#if a.document}<span class="sm mut aw">{a.document}</span>{/if}
-						</div>
-						<div class="col g6 as">
-							{#if a.label}<SheetRef label={a.label} href={a.url} />{/if}
-							{#if a.unchecked}<span class="pill w t"
-									><Icon name="al" />{S.map_amount_unchecked}</span
-								>{/if}
-							{#if a.unit === 'elsewhere'}<span class="pill t">{S.map_amount_unit_elsewhere}</span
-								>{/if}
-							{#if a.unit === 'missing'}<span class="pill t">{S.map_amount_unit_missing}</span>{/if}
-							{#if a.edited}<span class="pill t"
-									>{a.hidden ? S.map_amount_hidden : S.map_amount_edited}</span
-								>{/if}
-							{#if a.quote}
-								<button
-									type="button"
-									class="btn t"
-									aria-expanded={opened.has(a.id)}
-									on:click={() => flip(a.id)}
-									>{S.quote_toggle}<Icon name={opened.has(a.id) ? 'u' : 'd'} /></button
-								>
-							{/if}
-						</div>
-						<span class="row g4">
-							{#if canWrite}
-								<button type="button" class="btn t" on:click={() => edit(a)}>{S.map_edit}</button>
-								<button type="button" class="btn t" on:click={() => hide(a)}
-									>{a.hidden ? S.map_unhide : S.map_hide}</button
-								>
-							{/if}
-							<button
-								type="button"
-								class="btn t"
-								on:click={() => {
-									historyId = a.id;
+						{#each (groupRows[rowKey(a)] ?? []).filter((x) => !gone.has(x.id)) as r (r.id)}
+							<AmountRow
+								a={patched[r.id] ?? r}
+								{S}
+								{canWrite}
+								onEdit={edit}
+								onHide={hide}
+								onHistory={(x) => {
+									historyId = x.id;
 									historyOpen = true;
-								}}>{S.map_history}</button
-							>
-						</span>
-						{#if a.quote && opened.has(a.id)}
-							<p class="q">
-								{a.quote}{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
-										>{quoteMore(a.quote_rest, S)}</span
-									>{/if}
-							</p>
-						{/if}
-					</div>
+								}}
+							/>
+						{/each}
+					{:else}
+						<AmountRow
+							{a}
+							{S}
+							{canWrite}
+							onEdit={edit}
+							onHide={hide}
+							onHistory={(x) => {
+								historyId = x.id;
+								historyOpen = true;
+							}}
+						/>
 					{/if}
 				{/each}
 				{#if rows.length > limit}
@@ -308,7 +288,12 @@
 	{S}
 	entity="amount"
 	id={historyId}
-	onReverted={() => loader.refresh(true)}
+	onReverted={() => {
+		patched = {};
+		gone = new Set();
+		groupRows = {};
+		void loader.refresh(true);
+	}}
 />
 
 <style>
@@ -318,14 +303,10 @@
 	.bar1 {
 		padding-bottom: 8px;
 	}
-	.tr > .q {
-		margin-top: 8px;
-	}
 
 	.t-amt {
 		padding-top: 8px;
 	}
-	.tr > .q,
 	.more {
 		grid-column: 1 / -1;
 	}
