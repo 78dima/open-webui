@@ -25,6 +25,7 @@
 		type Sweep
 	} from '$lib/custom/case/tablescore';
 	import { caseToast } from '$lib/custom/case/toast';
+	import { readListing, type CaseFolder } from '$lib/custom/case/mycases';
 	import FormDialog from './FormDialog.svelte';
 	import Icon from './Icon.svelte';
 
@@ -110,6 +111,48 @@
 		});
 		caseToast(r?.cached ? S.tables_cached : S.tables_started);
 		void loader.refresh(true);
+	}
+	// вопрос и столбцы таблицы другого моего дела (п. 28 захода 22.11): права на дело-источник проверяет сервис
+	let otherOpen = false;
+	let otherCases: CaseFolder[] = [];
+	let otherCase = '';
+	let otherTables: { id: string; question: string; columns: { key: string; title?: string | null }[] }[] = [];
+	let otherTable = '';
+	async function openOther() {
+		otherOpen = !otherOpen;
+		if (!otherOpen || otherCases.length) return;
+		try {
+			otherCases = readListing(await state.api.get('api/cases')).filter((c) => c.id !== state.folderId);
+		} catch (e) {
+			caseToast(errorText(S, e), true);
+		}
+	}
+	async function pickOther() {
+		otherTables = [];
+		otherTable = '';
+		if (!otherCase) return;
+		try {
+			const d = await state.api.get<{ tables: typeof otherTables }>(
+				casePath(state, `/tables/from/${otherCase}`)
+			);
+			otherTables = d.tables;
+		} catch (e) {
+			caseToast(errorText(S, e), true);
+		}
+	}
+	async function startOther() {
+		if (!otherCase || !otherTable) return;
+		try {
+			const r = await state.api.post<{ cached?: boolean }>(
+				casePath(state, `/tables/from/${otherCase}/${otherTable}`),
+				{ volumes }
+			);
+			caseToast(r?.cached ? S.tables_cached : S.tables_started);
+			otherOpen = false;
+			void loader.refresh(true);
+		} catch (e) {
+			caseToast(errorText(S, e), true);
+		}
 	}
 	async function press() {
 		if (starting || estimating) return;
@@ -267,6 +310,39 @@
 					on:click={press}
 					data-testid="case-tables-start">{startText}</button
 				>
+			</div>
+			<div class="col g8 sep" data-testid="case-tables-other">
+				<button type="button" class="btn t as" aria-expanded={otherOpen} on:click={openOther}
+					>{S.tables_from_other}<Icon name={otherOpen ? 'u' : 'd'} /></button
+				>
+				{#if otherOpen}
+					<div class="row g8">
+						<label class="lbl"
+							>{S.tables_from_other_case}<select
+								class="in s"
+								bind:value={otherCase}
+								on:change={pickOther}
+							>
+								<option value=""></option>
+								{#each otherCases as c (c.id)}<option value={c.id}>{c.title || S.folder_untitled}</option>{/each}
+							</select></label
+						>
+						{#if otherTables.length}
+							<label class="lbl"
+								>{S.tables_from_other_table}<select class="in s" bind:value={otherTable}>
+									<option value=""></option>
+									{#each otherTables as t (t.id)}<option value={t.id}
+											>{t.question} ({t.columns.map((c) => c.title || c.key).join(', ')})</option
+										>{/each}
+								</select></label
+							>
+						{:else if otherCase}<span class="sm mut">{S.tables_from_other_none}</span>{/if}
+						<button type="button" class="btn s" disabled={!otherTable} on:click={startOther}
+							>{S.tables_from_other_start}</button
+						>
+					</div>
+					<p class="xs mut">{S.tables_from_other_hint}</p>
+				{/if}
 			</div>
 		</section>
 	{/if}

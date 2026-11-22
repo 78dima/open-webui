@@ -12,7 +12,6 @@ export type Boot = {
 	is_owner: boolean;
 	user_id: string;
 	sections: string[];
-	stage: number;
 	part_size: number;
 	max_file_mb: number;
 	case_id: string | null;
@@ -46,7 +45,14 @@ export type FileFacts = {
 	suggest?: Suggest | null;
 	image?: boolean;
 };
-export type CourtInventory = { n_court: number; n_model: number; diffs?: string[] };
+/** Сверка с внутренней описью тома: расхождения и факты сверки словами сервиса; skipped — по листам не сверялось. */
+export type CourtInventory = {
+	n_court: number;
+	n_model: number;
+	diffs?: string[];
+	facts?: string[];
+	skipped?: boolean;
+};
 export type Volume = {
 	id: number;
 	label: string | null;
@@ -134,6 +140,8 @@ export type CaseData = {
 	volumes_extra?: Record<string, VolumeExtra>;
 	page_nos?: Record<string, number>;
 	spent?: { processing: string; work: string };
+	/** до паузы платных шагов (п. 27а захода 22.11): меньший из пределов, «≈» — без резервов в полёте */
+	until_pause?: { usd: number; by: string } | null;
 	uploads?: Upload[];
 	counts?: Record<string, number>;
 	deadlines_next?: Deadline[];

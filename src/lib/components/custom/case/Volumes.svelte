@@ -324,8 +324,9 @@
 							>{fmt(S.court_counts, { n_court: court.n_court, n_model: court.n_model })}</span
 						>
 					</div>
+					{#each court.facts ?? [] as t}<p class="sm aw" data-testid="case-court-fact">{t}</p>{/each}
 					{#if !court.diffs?.length}
-						<p class="sm mut">{S.court_no_diffs}</p>
+						{#if !court.skipped}<p class="sm mut">{S.court_no_diffs}</p>{/if}
 					{:else}
 						<div class="row g8 nw as">
 							<button
@@ -535,8 +536,9 @@
 									>{fmt(S.court_counts, { n_court: court.n_court, n_model: court.n_model })}</span
 								>
 							</div>
+							{#each court.facts ?? [] as t}<p class="sm aw" data-testid="case-court-fact">{t}</p>{/each}
 							{#if !court.diffs?.length}
-								<p class="sm mut">{S.court_no_diffs}</p>
+								{#if !court.skipped}<p class="sm mut">{S.court_no_diffs}</p>{/if}
 							{:else}
 								<div class="row g8 nw as">
 									<button

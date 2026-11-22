@@ -31,6 +31,8 @@
 		a: DocSide;
 		b: DocSide;
 		same_document: boolean;
+		copy_basis?: string | null;
+		copy_basis_key?: string | null;
 		order?: boolean;
 		counts?: { numeric?: number };
 		more?: number;
@@ -68,6 +70,8 @@
 	const labels = (list: { label: string }[]) => list.map((p) => p.label).join('; ');
 	function facts(c: Pair): string {
 		const out = [fmt(S.copies_similarity, { pct: Math.round(c.similarity * 100) })];
+		// основание «копия» (п. 7 захода 22.11): расхождений нет или совпали дата и номер по описи — словами сервиса
+		if (c.copy_basis_key && S[c.copy_basis_key]) out.unshift(S[c.copy_basis_key]);
 		out.push(fmt(S.copies_diffs, { n: shownOf(c).length, numeric: c.counts?.numeric ?? 0 }));
 		if (c.order) out.push(S.copies_order);
 		if (c.only_a.length) out.push(fmt(S.copies_only_a, { labels: labels(c.only_a) }));

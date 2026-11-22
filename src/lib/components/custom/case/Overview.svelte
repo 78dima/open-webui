@@ -420,6 +420,11 @@
 					})}
 				</p>
 			{/if}
+			{#if d.until_pause}
+				<p class="sm mut" data-testid="case-until-pause">
+					{fmt(S.until_pause_line, { usd: usd(d.until_pause.usd) })}
+				</p>
+			{/if}
 		</div>
 	{/if}
 {/if}

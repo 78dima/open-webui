@@ -28,7 +28,6 @@ const BOOT = {
 	is_owner: true,
 	user_id: 'u1',
 	sections: ['volumes', 'passport', 'deadlines', 'tables'],
-	stage: 2,
 	part_size: 1024,
 	max_file_mb: 100,
 	case_id: 'c1'

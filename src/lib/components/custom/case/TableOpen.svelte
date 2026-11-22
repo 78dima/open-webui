@@ -301,6 +301,21 @@
 		row.cells[col.key].check = r.check;
 		rows = rows;
 	}
+	// «проверено» строке или столбцу целиком (Р5-7 захода 22.11): сервис ставит отметку каждой ячейке тем же путём
+	async function checkMany(body: { document_id?: number; column_key?: string }) {
+		try {
+			const r = await state.api.request<{ set: number; skipped: number }>(
+				'PUT',
+				path('/checks/bulk'),
+				{ ...body, checked: true },
+				{ refresh: false }
+			);
+			caseToast(fmt(S.tables_check_many_done, { n: r.set, skipped: r.skipped }), false);
+			await load(0);
+		} catch (e) {
+			caseToast(errorText(S, e), true);
+		}
+	}
 	async function toggleCheck(row: Row, col: Column, ev: Event) {
 		const box = ev.currentTarget as HTMLInputElement;
 		try {
@@ -474,6 +489,12 @@
 					{#each columns as c (c.key)}
 						<div class="hc" title={c.question || undefined}>
 							<span class="b colname">{c.title}</span><br />{summaryText(view.summary?.[c.key], S)}
+							{#if canWrite && sw?.finished}<br /><button
+									type="button"
+									class="btn t xs"
+									data-testid="case-table-check-column"
+									on:click={() => checkMany({ column_key: c.key })}>{S.tables_check_column}</button
+								>{/if}
 						</div>
 					{/each}
 					{#each rows as r (r.document_id)}
@@ -498,6 +519,13 @@
 										href={sheetHref(state, r.first_page_id)}
 									/>{#each [r.doc_type, r.date].filter(Boolean) as t}{' · '}{t}{/each}</span
 								>
+								{#if canWrite && sw?.finished}<button
+										type="button"
+										class="btn t xs as"
+										data-testid="case-table-check-row"
+										on:click={() => checkMany({ document_id: r.document_id })}
+										>{S.tables_check_row}</button
+									>{/if}
 							{/if}
 						</div>
 						{#each columns as c (c.key)}

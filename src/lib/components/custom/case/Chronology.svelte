@@ -3,6 +3,7 @@
 	// ai-dvokat: «Хронология» (макет K-chronology; опись § 2.9): события дела с датой слева, статусом и линией —
 	// чтение модели; цитата — дословный текст листа под «Цитата». Фильтр в одну строку (линия, слова, лицо), период и
 	// убранные — по кнопке; порции сервиса под «Показать ещё»; правка, «Убрать» / «Вернуть», история и откат.
+	// «Принять» / «Снять принятие» и отбор «принятые / все» — п. 25 захода 22.11: кто и когда принял, пишет сервис.
 	// Ручки `GET …/facts?…`, `PATCH …/facts/<id>`. Перечитывается вместе с обзором, не чаще раза в 20 с и не пока
 	// открыто окно. Поведение — прежний `sections/mapcore.js` (`chronology`, `drawFacts`, `factItem`, `editFact`).
 	import { onDestroy } from 'svelte';
@@ -37,8 +38,19 @@
 		quote?: string | null;
 		quote_rest?: number | null;
 	};
+	// строка ленты «записи из строк таблицы документа» (п. 8 захода 22.11): раскрывается выборкой по документу
+	type Group = {
+		group: true;
+		document_id: number | null;
+		document?: string | null;
+		n: number;
+		date_from?: string | null;
+		date_to?: string | null;
+		label?: string;
+	};
 	type Fact = {
 		id: number;
+		group?: undefined;
 		summary: string;
 		chronology: string;
 		status: string;
@@ -49,6 +61,10 @@
 		date_note?: string | null;
 		edited?: boolean;
 		hidden?: boolean;
+		accepted?: boolean;
+		near_accepted?: boolean;
+		accepted_name?: string | null;
+		accepted_at?: string | null;
 		label?: string;
 		url?: string | null;
 		document?: string | null;
@@ -59,7 +75,7 @@
 		cut?: boolean;
 	};
 	type Answer = {
-		facts: Fact[];
+		facts: (Fact | Group)[];
 		total: number;
 		undated?: number;
 		next_page?: number | null;
@@ -73,6 +89,7 @@
 		date_from: string;
 		date_to: string;
 		hidden: boolean;
+		accepted: boolean;
 	};
 
 	const { data } = state;
@@ -85,18 +102,19 @@
 			words: '',
 			date_from: '',
 			date_to: '',
-			hidden: false
+			hidden: false,
+			accepted: false
 		} as Query,
 		asked: null as Query | null
 	});
 	let form: Query = { ...kept.form };
 	let asked: Query = { ...(kept.asked ?? form) };
 	onDestroy(() => Object.assign(kept, { form: { ...form }, asked: { ...asked } }));
-	let extra: Fact[] = []; // следующие порции той же выборки
+	let extra: (Fact | Group)[] = []; // следующие порции той же выборки
 	let nextPage: number | null = null;
 	const loader = createLoader(
 		async () => {
-			const d = await state.api.get<Answer>(casePath(state, `/facts${query(asked)}`));
+			const d = await state.api.get<Answer>(casePath(state, `/facts${query({ ...asked, groups: true })}`));
 			extra = [];
 			nextPage = d.next_page ?? null;
 			return d;
@@ -117,22 +135,58 @@
 		form.chronology = v;
 		find();
 	};
+	const pickAccepted = (v: boolean) => {
+		form.accepted = v;
+		find();
+	};
 	let moreBusy = false;
 	async function more() {
 		if (nextPage == null || moreBusy) return;
 		moreBusy = true;
 		try {
 			const d = await state.api.get<Answer>(
-				casePath(state, `/facts${query({ ...asked, page: String(nextPage) })}`)
+				casePath(state, `/facts${query({ ...asked, groups: true, page: String(nextPage) })}`)
 			);
 			// порция не повторяет уже показанное: состав выборки мог сдвинуться между порциями (правка, новые записи)
-			const seen = new Set(rows.map((f) => f.id));
-			extra = [...extra, ...d.facts.filter((f) => !seen.has(f.id))];
+			const seen = new Set(rows.map(rowKey));
+			extra = [...extra, ...d.facts.filter((f) => !seen.has(rowKey(f)))];
 			nextPage = d.next_page ?? null;
 		} catch (e) {
 			caseToast(errorText(S, e), true);
 		} finally {
 			moreBusy = false;
+		}
+	}
+
+	const rowKey = (f: Fact | Group) => (f.group ? `g${f.document_id}` : `f${f.id}`);
+	const dayOf = (v?: string | null) => (v ? new Date(v).toLocaleDateString('ru-RU') : '');
+	const groupText = (g: Group) =>
+		fmt(S.map_table_group, {
+			document: g.document || S.court_untitled,
+			n: g.n,
+			period:
+				g.date_from && g.date_to && g.date_from !== g.date_to
+					? fmt(S.map_table_period, { from: dayOf(g.date_from), to: dayOf(g.date_to) })
+					: g.date_from
+						? fmt(S.map_table_day, { day: dayOf(g.date_from) })
+						: ''
+		});
+	// раскрытые группы: записи документа (все его записи — выборка по документу)
+	let groupRows: Record<string, Fact[]> = {};
+	async function flipGroup(g: Group) {
+		const k = `g${g.document_id}`;
+		if (groupRows[k]) {
+			const { [k]: _gone, ...rest } = groupRows;
+			groupRows = rest;
+			return;
+		}
+		try {
+			const d = await state.api.get<Answer>(
+				casePath(state, `/facts${query({ document: String(g.document_id), hidden: asked.hidden })}`)
+			);
+			groupRows = { ...groupRows, [k]: d.facts.filter((f): f is Fact => !f.group) };
+		} catch (e) {
+			caseToast(errorText(S, e), true);
 		}
 	}
 
@@ -160,6 +214,18 @@
 		if (next.has(id)) next.delete(id);
 		else next.add(id);
 		acts = next;
+	};
+	const accept = (f: Fact) =>
+		state.api.request('PATCH', casePath(state, `/facts/${f.id}`), { accepted: !f.accepted }).then(
+			() => loader.refresh(true),
+			(e) => caseToast(errorText(S, e), true)
+		);
+	// кто и когда принял: имя — из Open WebUI (нет — без имени), дата — день принятия
+	const acceptedText = (f: Fact) => {
+		const when = f.accepted_at ? new Date(f.accepted_at).toLocaleDateString('ru-RU') : '';
+		return f.accepted_name
+			? fmt(S.map_fact_accepted, { who: f.accepted_name, when })
+			: fmt(S.map_fact_accepted_when, { when });
 	};
 	const hide = (f: Fact) =>
 		state.api.request('PATCH', casePath(state, `/facts/${f.id}`), { hidden: !f.hidden }).then(
@@ -248,6 +314,21 @@
 				>
 			{/each}
 		</div>
+		<div class="seg" role="group" aria-label={S.map_filter_accepted}>
+			<button
+				type="button"
+				class:on={!form.accepted}
+				aria-pressed={!form.accepted}
+				on:click={() => pickAccepted(false)}>{S.map_filter_accepted_all}</button
+			>
+			<button
+				type="button"
+				class:on={form.accepted}
+				aria-pressed={form.accepted}
+				data-testid="case-facts-accepted"
+				on:click={() => pickAccepted(true)}>{S.map_filter_accepted_only}</button
+			>
+		</div>
 		<input
 			class="in s grow"
 			type="search"
@@ -307,7 +388,36 @@
 			{#if $answer.undated}<p class="sm mut">{fmt(S.map_undated, { n: $answer.undated })}</p>{/if}
 		</div>
 		{#if !rows.length}<p class="mut" data-testid="case-facts-empty">{S.map_facts_empty}</p>{/if}
-		{#each rows as f (f.id)}
+		{#each rows as f (rowKey(f))}
+			{#if f.group}
+				<div class="li t" data-testid="case-fact-group">
+					<span class="b date">{dayOf(f.date_from) || S.map_date_none}</span>
+					<div class="col g6 grow body">
+						<span class="b aw">{groupText(f)}</span>
+						<div class="row g8 sm">
+							{#if f.label}<span class="mut">{fmt(S.map_table_from, { label: f.label })}</span>{/if}
+							<button
+								type="button"
+								class="btn t"
+								aria-expanded={!!groupRows[rowKey(f)]}
+								data-testid="case-fact-group-open"
+								on:click={() => f.group && flipGroup(f)}
+								>{groupRows[rowKey(f)] ? S.map_table_close : S.map_table_open}<Icon
+									name={groupRows[rowKey(f)] ? 'u' : 'd'}
+								/></button
+							>
+						</div>
+						{#each groupRows[rowKey(f)] ?? [] as r (r.id)}
+							{@const rd = dateParts(r, S)}
+							<div class="row g8 sm sub">
+								<span class="mut">{rd.text}</span>
+								<span class="aw grow">{r.summary}</span>
+								{#if r.label}<SheetRef label={r.label} href={r.url} />{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
+			{:else}
 			{@const date = dateParts(f, S)}
 			{@const note = dateNote(f, S)}
 			<div class="li t" class:hid={f.hidden} data-testid="case-fact">
@@ -322,6 +432,12 @@
 						<span class="pill t">{lineWord(S, f.chronology)}</span>
 						{#if f.edited}<span class="pill t"
 								>{f.hidden ? S.map_fact_hidden : S.map_fact_edited}</span
+							>{/if}
+						{#if f.accepted}<span class="pill t" data-testid="case-fact-accepted"
+								>{acceptedText(f)}</span
+							>{/if}
+						{#if f.near_accepted}<span class="pill t w" data-testid="case-fact-near-accepted"
+								>{S.map_fact_near_accepted}</span
 							>{/if}
 						{#if f.kind || f.persons.length}
 							<span class="sm mut aw"
@@ -387,6 +503,9 @@
 				</div>
 				<span class="row g4 acts" class:shown={acts.has(f.id)}>
 					{#if canWrite}
+						<button type="button" class="btn t" on:click={() => accept(f)}
+							>{f.accepted ? S.map_fact_unaccept : S.map_fact_accept}</button
+						>
 						<button type="button" class="btn t" on:click={() => edit(f)}>{S.map_edit}</button>
 						<button type="button" class="btn t" on:click={() => hide(f)}
 							>{f.hidden ? S.map_unhide : S.map_hide}</button
@@ -402,6 +521,7 @@
 					>
 				</span>
 			</div>
+			{/if}
 		{/each}
 		{#if nextPage != null}
 			<div class="li">
@@ -494,6 +614,9 @@
 	}
 	.copy {
 		padding: 10px 12px;
+	}
+	.sub {
+		padding-left: 12px;
 	}
 	.chk.hidden {
 		min-height: 40px;

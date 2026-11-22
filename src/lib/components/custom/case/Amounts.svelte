@@ -20,7 +20,10 @@
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
 
+	// суммы из строк таблицы документа одной строкой (п. 8 захода 22.11); раскрывается выборкой по документу
+	type Group = { group: true; document_id: number | null; document?: string | null; n: number; label?: string };
 	type Amount = {
+		group?: undefined;
 		id: number;
 		value_as_written: string;
 		what?: string | null;
@@ -39,8 +42,8 @@
 	let hidden = false;
 	const loader = createLoader(
 		() =>
-			state.api.get<{ amounts: Amount[]; can_write?: boolean; state?: MapState | null }>(
-				casePath(state, `/amounts${query({ hidden })}`)
+			state.api.get<{ amounts: (Amount | Group)[]; can_write?: boolean; state?: MapState | null }>(
+				casePath(state, `/amounts${query({ hidden, groups: true })}`)
 			),
 		{ gap: 20000 }
 	);
@@ -70,6 +73,24 @@
 		opened = next;
 	};
 	const toggleHidden = () => void loader.refresh(true);
+	const rowKey = (a: Amount | Group) => (a.group ? `g${a.document_id}` : `a${a.id}`);
+	let groupRows: Record<string, Amount[]> = {};
+	async function flipGroup(g: Group) {
+		const k = `g${g.document_id}`;
+		if (groupRows[k]) {
+			const { [k]: _gone, ...rest } = groupRows;
+			groupRows = rest;
+			return;
+		}
+		try {
+			const d = await state.api.get<{ amounts: (Amount | Group)[] }>(
+				casePath(state, `/amounts${query({ document: String(g.document_id), hidden })}`)
+			);
+			groupRows = { ...groupRows, [k]: d.amounts.filter((a): a is Amount => !a.group) };
+		} catch (e) {
+			caseToast(errorText(S, e), true);
+		}
+	}
 	const hide = (a: Amount) =>
 		state.api.request('PATCH', casePath(state, `/amounts/${a.id}`), { hidden: !a.hidden }).then(
 			() => loader.refresh(true),
@@ -142,7 +163,38 @@
 						>{S.amounts_col_sheet}</span
 					><span></span>
 				</div>
-				{#each rows.slice(0, limit) as a (a.id)}
+				{#each rows.slice(0, limit) as a (rowKey(a))}
+					{#if a.group}
+						<div class="tr t" data-testid="case-amount-group">
+							<div class="col g2">
+								<span class="b aw"
+									>{fmt(S.map_a_table_group, { document: a.document || S.court_untitled, n: a.n })}</span
+								>
+							</div>
+							<div class="col g4">
+								{#each groupRows[rowKey(a)] ?? [] as r (r.id)}
+									<span class="sm aw"
+										>{r.value_as_written}{r.what ? ` — ${r.what}` : ''}{#if r.label}{' '}<SheetRef
+												label={r.label}
+												href={r.url}
+											/>{/if}</span
+									>
+								{/each}
+							</div>
+							<div class="col g6 as">
+								{#if a.label}<span class="sm mut">{fmt(S.map_table_from, { label: a.label })}</span>{/if}
+							</div>
+							<span class="row g4">
+								<button
+									type="button"
+									class="btn t"
+									aria-expanded={!!groupRows[rowKey(a)]}
+									on:click={() => a.group && flipGroup(a)}
+									>{groupRows[rowKey(a)] ? S.map_table_close : S.map_table_open}</button
+								>
+							</span>
+						</div>
+					{:else}
 					<div class="tr t" class:hid={a.hidden} data-testid="case-amount">
 						<div class="col g2">
 							<span class="b lg num aw">{a.value_as_written}</span>
@@ -201,6 +253,7 @@
 							</p>
 						{/if}
 					</div>
+					{/if}
 				{/each}
 				{#if rows.length > limit}
 					<div class="tr">

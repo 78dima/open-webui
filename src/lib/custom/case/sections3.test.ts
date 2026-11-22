@@ -356,7 +356,7 @@ describe('таблицы и проходы', () => {
 		expect(staleText(sweep({ stale: true }), S)).toBe(S.tables_stale);
 		// цена catch_up (в т.ч. бесплатная пересборка при windows: 0)
 		expect(catchUpNote({ windows: 2, pages: 14, estimate_usd: 0.0031 }, S)).toBe(
-			'Дочитать по изменившимся листам: частей — 2, страниц — 14, ≈ 0,0031 USD.'
+			'Дочитать по изменившимся листам: частей — 2, страниц — 14, не больше ≈ 0,0031 USD.'
 		);
 		expect(catchUpNote({ windows: 0, pages: 0, estimate_usd: 0 }, S)).toBe(
 			S.tables_catch_up_free

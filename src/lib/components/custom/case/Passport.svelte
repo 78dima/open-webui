@@ -42,6 +42,7 @@
 		date_note?: string | null;
 		unit?: string | null;
 		handwritten?: number;
+		in_table?: boolean;
 		records?: number;
 		documents?: number;
 		quote?: string | null;
@@ -49,9 +50,11 @@
 		more_places?: Place[];
 		roles?: Role[];
 	};
-	type Field = { key: string; items: Item[]; edited?: boolean; lawyer_only?: boolean };
+	type Field = { key: string; title?: string; items: Item[]; edited?: boolean; lawyer_only?: boolean };
 	type Answer = {
 		fields: Field[];
+		// поля, которых сервис не отдал (модель не заполнила, юрист не правил) — их можно добавить (п. 18 захода 22.11)
+		absent?: { key: string; title?: string }[];
 		built?: { cards: number; cards_total: number; missing?: number } | null;
 		state?: MapState | null;
 		can_write?: boolean;
@@ -71,6 +74,14 @@
 	$: parties = fields.find((f) => f.key === 'parties');
 	$: lists = fields.filter((f) => f.key === 'key_dates' || f.key === 'key_amounts');
 	$: canWrite = !!$answer?.can_write;
+	$: absent = ($answer?.absent ?? []).filter((a) => !OWN_CARD.has(a.key));
+	let adding = '';
+	const fieldName = (f: { key: string; title?: string }) => f.title || passportName(S, f.key);
+	function addField() {
+		const a = absent.find((x) => x.key === adding);
+		if (a) edit({ key: a.key, title: a.title, items: [] });
+		adding = '';
+	}
 
 	const PARTIES = 4; // участников до «Показать ещё»
 	const ROWS = 3; // записей в «Ключевых датах» и «Ключевых суммах» до «Показать ещё»
@@ -93,6 +104,7 @@
 	function pills(it: Item): Pill[] {
 		const out: Pill[] = [];
 		if (it.source === 'lawyer') out.push({ text: S.map_passport_lawyer, warn: false });
+		if (it.in_table) out.push({ text: S.map_passport_table_party, warn: false });
 		if (it.unchecked) out.push({ text: S.export_amount_unchecked, warn: true });
 		if (it.date_note === 'document') out.push({ text: S.map_passport_date_document, warn: false });
 		if (it.unit === 'elsewhere') out.push({ text: S.map_amount_unit_elsewhere, warn: false });
@@ -185,7 +197,7 @@
 			<div class="li t" data-testid="case-passport-field" data-field={f.key}>
 				<div class="kv grow">
 					<dt class="col g4">
-						<span class="b fname">{passportName(S, f.key)}</span>
+						<span class="b fname">{fieldName(f)}</span>
 						<!-- у пустого поля, которое задаёт юрист («Роль клиента»), вместо «Править» — кнопка «Указать роль» в
 						     значении; «История» остаётся: иначе очистку поля со страницы не откатить -->
 						<span class="row g4">
@@ -261,6 +273,19 @@
 				</div>
 			</div>
 		{/each}
+		{#if canWrite && absent.length}
+			<div class="row g8 li" data-testid="case-passport-add">
+				<label class="lbl"
+					>{S.map_passport_add_pick}<select class="in s" bind:value={adding}>
+						<option value=""></option>
+						{#each absent as a (a.key)}<option value={a.key}>{fieldName(a)}</option>{/each}
+					</select></label
+				>
+				<button type="button" class="btn s" disabled={!adding} on:click={addField}
+					>{S.map_passport_add}</button
+				>
+			</div>
+		{/if}
 	</section>
 
 	{#if parties}
@@ -294,6 +319,11 @@
 			</div>
 			{#if parties.items.some((it) => it.source === 'cards')}
 				<p class="xs mut">{S.map_passport_parties_hint}</p>
+			{/if}
+			{#if parties.items.some((it) => it.in_table)}
+				<p class="xs mut" data-testid="case-passport-table-parties">
+					{fmt(S.map_passport_table_parties, { n: parties.items.filter((it) => it.in_table).length })}
+				</p>
 			{/if}
 			{#if parties.edited}<span class="pill t as">{S.map_passport_edited}</span>{/if}
 			<div class="col">
@@ -385,7 +415,7 @@
 		<section class="card g4 tight" data-testid="case-passport-field" data-field={f.key}>
 			<div class="row sp g12">
 				<div class="row g12">
-					<h2>{passportName(S, f.key)}</h2>
+					<h2>{fieldName(f)}</h2>
 					{#if f.key === 'key_amounts'}<a class="ref sm" href={hrefOf('amounts')}
 							>{S.passport_all_amounts}</a
 						>{/if}
