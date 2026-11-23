@@ -52,11 +52,14 @@ export function toolState(flags: {
 	return 'active';
 }
 
-/** Group summary such as «Выполнено: поиск в КонсультантПлюс (2), оглавление документа». */
+/** Group summary such as «Выполнено: поиск в КонсультантПлюс (2), оглавление документа».
+ * `preparing` — the calls of the group are done while the message itself is not finished yet (the model is
+ * working on the answer): «Выполнено, готовлю ответ: …» instead of a final-looking «Выполнено: …». */
 export function toolGroupText(
 	names: unknown[],
 	active: boolean,
-	error = false
+	error = false,
+	preparing = false
 ): { prefix: string; detail: string } {
 	const counts = new Map<string, number>();
 	for (const name of names) {
@@ -69,7 +72,13 @@ export function toolGroupText(
 		)
 		.join(', ');
 	return {
-		prefix: active ? text.group.active : error ? text.group.error : text.group.done,
+		prefix: active
+			? text.group.active
+			: error
+				? text.group.error
+				: preparing
+					? text.group.preparing
+					: text.group.done,
 		detail
 	};
 }

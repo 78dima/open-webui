@@ -16,7 +16,9 @@ const LEGAL_TOOLS = [
 	'kplus_search_card', 'kplus_reference_value', 'days_between', 'make_xlsx',
 	// инструменты дела (tools/src/legal_tools/mcp/case_tools*.py, 2026-11-22)
 	'case_overview', 'case_search', 'case_read', 'case_facts', 'case_sweep', 'case_look',
-	'case_inventory_edit', 'case_deadline'
+	'case_inventory_edit', 'case_deadline',
+	// служебные вызовы (методички Open WebUI и сверка черновика стража) — свои слова вместо «обращение к инструменту»
+	'view_skill', 'read_skill_file', 'draft_check'
 ];
 const on = { hide: { tool_details: true } };
 const STATES = ['active', 'done', 'error', 'rejected', 'approval'] as const;
@@ -82,6 +84,32 @@ test('group summary counts by meaning and names no tools', () => {
 	});
 	expect(toolGroupText(names, true).prefix).toBe('Выполняется:');
 	expect(toolGroupText(names, false, true).prefix).toBe('Завершено с ошибкой:');
+	// вызовы выполнены, сообщение ещё не закончено; идущий вызов и ошибка — важнее
+	expect(toolGroupText(names, false, false, true).prefix).toBe('Выполнено, готовлю ответ:');
+	expect(toolGroupText(names, true, false, true).prefix).toBe('Выполняется:');
+	expect(toolGroupText(names, false, true, true).prefix).toBe('Завершено с ошибкой:');
+	expect(toolGroupText(['view_skill', 'read_skill_file', 'legal-tools_draft_check'], false).detail).toBe(
+		'методичка, материалы методички, сверка черновика'
+	);
+});
+
+test('вызовы выполнены, сообщение не закончено: признак хода и «готовлю ответ» вместо итоговой галки — только юристу', async ({ page }) => {
+	await open(page, 'user');
+	const going = page.getByTestId('group-preparing');
+	await expect(going).toContainText('Выполнено, готовлю ответ:');
+	await expect(going).toContainText('чтение листов дела, методичка, сверка черновика');
+	await expect(going.locator('[data-ai-dvokat-preparing]')).toHaveCount(1);
+	await expect(going.locator('.shimmer')).toHaveCount(1);
+	// законченное сообщение — вид прежний: «Выполнено:» без признака хода
+	const done = page.getByTestId('group');
+	await expect(done).toContainText('Выполнено:');
+	await expect(done).not.toContainText('готовлю ответ');
+	await expect(done.locator('[data-ai-dvokat-preparing]')).toHaveCount(0);
+	await expect(done.locator('.shimmer')).toHaveCount(0);
+	// администратор — штатный блок без изменений
+	await open(page, 'admin');
+	await expect(page.getByTestId('group-preparing')).not.toContainText('готовлю ответ');
+	await expect(page.getByTestId('group-preparing').locator('[data-ai-dvokat-preparing]')).toHaveCount(0);
 });
 
 const technical = /legal-tools|kplus_|other-server|secret_tool|make_xlsx|View Result|Input|Output|синтетический запрос|Синтетический результат/;

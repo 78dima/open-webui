@@ -40,3 +40,13 @@
 		</div>
 	</ConsecutiveDetailsGroup>
 </section>
+<!-- ai-dvokat: вызовы выполнены, сообщение ещё не закончено (модель работает над ответом) -->
+<section data-testid="group-preparing">
+	<ConsecutiveDetailsGroup
+		id="group-preparing"
+		messageDone={false}
+		tokens={[call('p1', 'legal-tools_case_read'), call('p2', 'view_skill'), call('p3', 'legal-tools_draft_check')].map((attributes) => ({ attributes, text: result }))}
+	>
+		<div slot="content"></div>
+	</ConsecutiveDetailsGroup>
+</section>

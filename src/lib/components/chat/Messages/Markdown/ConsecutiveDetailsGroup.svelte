@@ -183,7 +183,10 @@
 	$: prefixText = hasActiveDetails ? $i18n.t('Exploring') : $i18n.t('Explored');
 	// ai-dvokat: Russian summary without tool names
 	$: plain = plainToolStatus($config?.custom_ui, $user?.role);
-	$: plainGroup = plain && toolCallCount > 0 ? toolGroupText(tokens.filter((t) => t?.attributes?.type === 'tool_calls').map((t) => t?.attributes?.name), hasActiveDetails, hasError || hasRejected) : null;
+	// ai-dvokat: вызовы группы выполнены, а сообщение ещё не закончено (модель работает над ответом) — не итоговая
+	// зелёная галка «Выполнено», а признак хода и «Выполнено, готовлю ответ». Признак — факт страницы (`messageDone`).
+	$: plainPreparing = plain && toolCallCount > 0 && !hasActiveDetails && !hasError && !hasRejected && !messageDone;
+	$: plainGroup = plain && toolCallCount > 0 ? toolGroupText(tokens.filter((t) => t?.attributes?.type === 'tool_calls').map((t) => t?.attributes?.name), hasActiveDetails, hasError || hasRejected, plainPreparing) : null;
 </script>
 
 <div {id} class="w-full min-w-0">
@@ -208,8 +211,8 @@
 		>
 			<div class="flex items-center gap-1.5 min-w-0">
 				<!-- Status icon -->
-				{#if hasActiveDetails}
-					<div>
+				{#if hasActiveDetails || plainPreparing}
+					<div data-ai-dvokat-preparing={plainPreparing ? '' : undefined}>
 						<Spinner className="size-4" />
 					</div>
 				{:else if hasRejected}
@@ -232,7 +235,7 @@
 
 				<!-- Summary text -->
 				<div class="flex-1 line-clamp-1">
-					<span class="text-gray-600 dark:text-gray-300 {hasActiveDetails ? 'shimmer' : ''}"
+					<span class="text-gray-600 dark:text-gray-300 {hasActiveDetails || plainPreparing ? 'shimmer' : ''}"
 						>{plainGroup?.prefix ?? prefixText}</span
 					>
 					{#if plainGroup?.detail ?? summaryText}
