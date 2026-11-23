@@ -203,3 +203,43 @@ test.describe('Д-6: знак «не прочитан» у вложения ча
 		expect(item.match(/<CustomFileUnread error=\{item\?\.error\} \/>/g)?.length).toBe(2); // оба вида вложения
 	});
 });
+
+// ---- Д-11: «Отметить столбец проверенным» не налезает на соседний столбец ----
+test.describe('Д-11: подписи шапки столбцов таблицы прохода', () => {
+	const tableWith = (n: number, long: boolean) => {
+		const t = fixture('table-open');
+		const base = t.columns[0];
+		t.columns = Array.from({ length: n }, (_, i) => ({
+			...base,
+			key: `c${i}`,
+			title: long ? `Очень длинное название столбца номер ${i + 1} о представленных доказательствах` : `Столбец ${i + 1}`
+		}));
+		t.summary = Object.fromEntries(t.columns.map((c: any) => [c.key, Object.values(t.summary)[0]]));
+		t.rows = t.rows.map((r: any) => ({ ...r, cells: Object.fromEntries(t.columns.map((c: any) => [c.key, Object.values(r.cells)[0]])) }));
+		return t;
+	};
+	for (const width of [1280, 900]) {
+		for (const [n, long] of [[2, false], [5, false], [5, true], [7, true]] as const) {
+			test(`${width} px, столбцов ${n}${long ? ', длинные названия' : ''}: кнопка шапки — внутри своей ячейки`, async ({ page }) => {
+				await page.setViewportSize({ width, height: 900 });
+				const t = tableWith(n, long);
+				await openSection(page, { section: 'tables', item: t.sweep.id, routes: { 'tables/*?**': t, tables: { tables: [t.sweep] } } });
+				const buttons = page.getByTestId('case-table-check-column');
+				await expect(buttons).toHaveCount(n);
+				const boxes = await buttons.evaluateAll((list) =>
+					list.map((b) => {
+						const x = b.getBoundingClientRect();
+						const c = b.parentElement!.getBoundingClientRect();
+						// текст кнопки в одну строку вылезает за её рамку, не меняя рамки: мерим и сам текст
+						return { left: x.left, right: x.right, cellLeft: c.left, cellRight: c.right, text: b.scrollWidth, box: b.clientWidth };
+					})
+				);
+				for (const [i, b] of boxes.entries()) {
+					expect(b.right, `кнопка ${i + 1} не шире своей ячейки`).toBeLessThanOrEqual(b.cellRight + 0.5);
+					expect(b.text, `текст кнопки ${i + 1} помещается в неё`).toBeLessThanOrEqual(b.box + 1);
+					if (i) expect(b.left, `кнопка ${i + 1} не налезает на предыдущую`).toBeGreaterThanOrEqual(boxes[i - 1].right - 0.5);
+				}
+			});
+		}
+	}
+});

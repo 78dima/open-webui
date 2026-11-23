@@ -782,6 +782,21 @@
 	.colname {
 		color: var(--fg);
 	}
+	/* «Отметить столбец проверенным» в шапке столбца: кнопка в одну строку шире узкого столбца (от 190 px) и налезала
+	   на соседний (пакет 23.11, Д-11) — в шапке она переносится по словам и не выходит за свою ячейку */
+	.hc {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	.hc .btn {
+		max-width: 100%;
+		height: auto;
+		padding-top: 4px;
+		padding-bottom: 4px;
+		justify-content: flex-start;
+		white-space: normal;
+		text-align: left;
+	}
 
 	.doc {
 		color: inherit;
