@@ -24,6 +24,7 @@
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon, { type IconName } from './Icon.svelte';
 	import SheetRef from './SheetRef.svelte';
+	import { caseToast } from '$lib/custom/case/toast';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
