@@ -20,6 +20,8 @@ import {
 	WORK_PART,
 	isPausedFor,
 	navGroups,
+	volumeState,
+	type Volume,
 	pauseOf,
 	pollDelay,
 	processing,
@@ -123,6 +125,45 @@ describe('работа по делу (поле work обзора)', () => {
 		expect(marked({ ...ready, work: work({ read: 4 }) })).toContain('check'); // «Проверьте листы» растёт
 		expect(workParts(cards.work, SECTION_WORK.passport, {})).toEqual([]); // прежний сервис: строк нет — молчит
 		expect(workActive(cards, SECTION_WORK.tables)).toBe(false);
+	});
+
+	it('Д-11: работа раздела стоит (пауза, обработчик молчит) — у пункта меню значок паузы, а не часы', () => {
+		const items = (data: CaseData) =>
+			navGroups(boot, data)
+				.flatMap((g) => g.items)
+				.filter((i) => i.work);
+		const runs = items({ ...ready, work: work({ cards: 2 }) });
+		expect(runs.length).toBeGreaterThan(0);
+		expect(runs.every((i) => i.held === undefined)).toBe(true);
+		const stalled = items({ ...ready, work: work({ cards: 2 }, 0, true) });
+		expect(stalled.every((i) => i.held === 'stalled')).toBe(true);
+		// на паузе только чтение листов: у «Проверьте листы» (одно чтение) — пауза; у «Хронологии», где идут ещё и
+		// карточки, — часы
+		const part = items({ ...ready, work: { ...work({ cards: 2, read: 1 }), paused_groups: ['read'] } });
+		expect(part.find((i) => i.slug === 'check')?.held).toBe('paused');
+		expect(part.find((i) => i.slug === 'chronology')?.held).toBeUndefined();
+		const all = items({
+			...ready,
+			work: work({ cards: 2 }),
+			paused: { reason: 'manual', since: null } as CaseData['paused']
+		});
+		expect(all.every((i) => i.held === 'paused')).toBe(true);
+	});
+
+	it('Д-11: том распознан, а опись ждёт, на паузе или обработчик молчит — «распознан» без часов, а не «составляется опись»', () => {
+		const v = { id: 1, label: '1', status: 'indexed', pages: 10, files: [] } as unknown as Volume;
+		expect(volumeState(v).key).toBe('volume_state_indexed'); // прежний сервис — как было
+		expect(volumeState(v, { ...ready, work: work({ inventory: 1 }) })).toEqual({
+			tone: 'info',
+			key: 'volume_state_indexed'
+		});
+		const waiting = { ...work({}), waiting: { inventory: 1 } } as Work;
+		expect(volumeState(v, { ...ready, work: waiting })).toEqual({ tone: 'plain', key: 'file_state_indexed' });
+		expect(volumeState(v, { ...ready, work: work({ inventory: 1 }, 0, true) }).key).toBe('file_state_indexed');
+		expect(
+			volumeState(v, { ...ready, work: { ...work({ inventory: 1 }), paused_groups: ['inventory'] } }).key
+		).toBe('file_state_indexed');
+		expect((stringsJson as Record<string, string>).file_state_indexed).toBeTruthy();
 	});
 
 	it('состав работы без чисел: счёт тикает — ключ тот же; группа закончилась — другой', () => {

@@ -14,6 +14,9 @@ const LEGAL_TOOLS = [
 	'kplus_edition_on_date', 'kplus_related', 'kplus_positions', 'kplus_reopen',
 	'kplus_document_card', 'kplus_contract_materials', 'kplus_updates', 'kplus_changes',
 	'kplus_search_card', 'kplus_reference_value', 'days_between', 'make_xlsx',
+	// чтение К+ пакетами и файлы чата (сверено со списком инструментов MCP 23.11, Д-11 живой проверки: были без слов)
+	'kplus_read_norms', 'kplus_read_many', 'kplus_norm_package', 'kplus_paragraphs', 'kplus_read_practice',
+	'case_file_pages',
 	// инструменты дела (tools/src/legal_tools/mcp/case_tools*.py, 2026-11-22)
 	'case_overview', 'case_search', 'case_read', 'case_facts', 'case_sweep', 'case_look',
 	'case_inventory_edit', 'case_deadline',
@@ -54,6 +57,9 @@ test('every legal-tools MCP tool has its own Russian labels without technical na
 		'Просмотр материалов дела: результат получен'
 	);
 	expect(toolStatusLabel('legal-tools_kplus_read', 'active')).toBe('Чтение документа КонсультантПлюс…');
+	// длинное имя не уходит к короткому (kplus_read_norms — не kplus_read)
+	expect(toolKey('legal-tools_kplus_read_norms')).toBe('kplus_read_norms');
+	expect(toolStatusLabel('legal-tools_kplus_read_norms', 'done')).toBe('Нормы прочитаны');
 	expect(toolStatusLabel('legal-tools_kplus_outline', 'active')).toBe('Оглавление документа…');
 	expect(toolStatusLabel('legal-tools_kplus_outline', 'error')).toBe('Не выполнено: оглавление документа');
 });

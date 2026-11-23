@@ -400,7 +400,7 @@
 			<h2 class="comphead">{S.overview_composition}</h2>
 			<div class="t-comp">
 				{#each volumes as v (v.id)}
-					{@const st = volumeState(v)}
+					{@const st = volumeState(v, d)}
 					<div class="tr" data-testid="case-comp-volume">
 						<span class="b lg aw"
 							>{v.label ? fmt(S.volume_title, { label: v.label }) : S.volume_no_label_g}</span

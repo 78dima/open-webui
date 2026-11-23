@@ -220,6 +220,9 @@ export type NavItem = {
 	quiet?: boolean;
 	/** данные раздела сейчас пересобираются (`sectionWork`) — у пункта меню значок часов */
 	work?: boolean;
+	/** работа раздела стоит: на паузе или обработчик не отвечает — у пункта меню значок паузы, а не часы (Д-11),
+	 *  как у строки хода раздела (`workNote` → `waits`) */
+	held?: 'paused' | 'stalled';
 };
 export type NavGroup = { cap?: string; rule?: boolean; items: NavItem[] };
 
@@ -294,9 +297,16 @@ export function navGroups(
 			...g,
 			items: g.items
 				.filter((i) => sectionOpen(i.slug, boot, folderFiles, folderFilesFailed))
-				.map((i) =>
-					SECTION_WORK[i.slug] && workActive(data, SECTION_WORK[i.slug]) ? { ...i, work: true } : i
-				)
+				.map((i) => {
+					const groups = SECTION_WORK[i.slug];
+					if (!groups || !workActive(data, groups)) return i;
+					const held = data?.work?.stalled
+						? ('stalled' as const)
+						: isPausedFor(data, groups)
+							? ('paused' as const)
+							: undefined;
+					return held ? { ...i, work: true, held } : { ...i, work: true };
+				})
 		}))
 		.filter((g) => g.items.length);
 }
@@ -722,10 +732,18 @@ export function summary(data: CaseData): Summary {
 export type Tone = 'plain' | 'info' | 'warn' | 'stop';
 export type State = { tone: Tone; key: string; vars?: Record<string, unknown> };
 
-/** Слова состояния тома (решение владельца 19.11): «готов» — только когда у тома готово всё. */
-export function volumeState(v: Volume): State {
+/** Слова состояния тома (решение владельца 19.11): «готов» — только когда у тома готово всё. Том распознан, а опись
+ *  не составляется — ждёт внешнего условия, стоит на паузе или обработчик не отвечает (факт сервиса `work`), — просто
+ *  «распознан», без часов: «составляется опись» было бы неправдой, а почему стоит, говорит плашка обзора (Д-11). */
+export function volumeState(v: Volume, data?: Pick<CaseData, 'work' | 'paused'> | null): State {
 	if (v.status === 'inventory_ready') return { tone: 'plain', key: 'volume_state_ready' };
-	if (v.status === 'indexed') return { tone: 'info', key: 'volume_state_indexed' };
+	if (v.status === 'indexed') {
+		const inv = ['inventory'];
+		const held = workActive(data, inv)
+			? !!data?.work?.stalled || isPausedFor(data, inv)
+			: workWaiting(data, inv);
+		return held ? { tone: 'plain', key: 'file_state_indexed' } : { tone: 'info', key: 'volume_state_indexed' };
+	}
 	if (v.status === 'reading') {
 		const done = (v.files ?? []).reduce((a, f) => a + (f.pages_indexed ?? 0), 0);
 		return { tone: 'info', key: 'volume_state_reading', vars: { n: done, m: v.pages ?? 0 } };

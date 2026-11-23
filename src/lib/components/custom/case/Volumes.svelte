@@ -211,7 +211,7 @@
 	{/if}
 
 	{#each volumes as v (v.id)}
-		{@const st = volumeState(v)}
+		{@const st = volumeState(v, $data)}
 		{@const src = labelSource(v, $data.volumes_extra?.[String(v.id)], S)}
 		{@const note = numbering(v)}
 		{@const court = v.court_inventory}
