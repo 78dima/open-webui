@@ -220,7 +220,9 @@
 			: S.tables_start;
 	/** Готовый проход на нынешнем составе дела и нынешней версии чтения — им и пользуются: его название — ссылка,
 	 *  «Открыть» у него главная (макет K-tables); у идущих, неполных и устаревших — обычная. */
-	const current = (sw: Sweep) => sw.status === 'done' && !sw.stale && !sw.reader_stale;
+	// главная кнопка «Открыть» — у последнего прохода: у прежнего (есть более новый) она обычная (пакет 23.11, Д-7)
+	const current = (sw: Sweep) =>
+		sw.status === 'done' && !sw.stale && !sw.reader_stale && !sw.newer;
 	const percent = (sw: Sweep) =>
 		sw.windows_total ? Math.round((100 * (sw.windows_done ?? 0)) / sw.windows_total) : 0;
 </script>
@@ -260,6 +262,9 @@
 							><Icon name={tone === 'i' ? 'clock' : tone ? 'al' : 'ok'} />{statusWord(sw, S)}</span
 						>
 						{#if sw.parent}<span class="pill t">{S.tables_parent}</span>{/if}
+						{#if sw.newer && S.tables_prior_pill}<span class="pill t" data-testid="case-table-prior"
+								>{S.tables_prior_pill}</span
+							>{/if}
 					</div>
 					{#if sw.status === 'running'}
 						<div class="bar run" aria-hidden="true"><i style:width="{percent(sw)}%"></i></div>
@@ -288,7 +293,7 @@
 					{#if sw.newer}
 						<p class="sm">
 							<a class="ref" href={hrefOf(`tables/${sw.newer}`)} data-testid="case-table-newer"
-								>{S.tables_newer}</a
+								>{S.tables_newer_open || S.tables_newer}</a
 							>
 						</p>
 					{/if}

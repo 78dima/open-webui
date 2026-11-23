@@ -188,7 +188,10 @@
 	$: actions = !sw || !canWrite ? [] : sweepActions(sw);
 	function sweepActions(s: Sweep): Action[] {
 		const out: Action[] = [];
-		if (s.stale && s.finished && !s.reader_stale) {
+		// «Дочитать по изменившимся листам» — только у последнего прохода: у прежнего (есть более новый, `newer`) всё уже
+		// дочитано новым, повторное «Дочитать» завело бы третий такой же проход (пакет 23.11, Д-7); условие действует и
+		// при прежнем сервисе, который ещё присылает оценку
+		if (s.stale && s.finished && !s.reader_stale && !s.newer) {
 			const cu = s.catch_up;
 			if (cu != null) {
 				const free = cu.windows === 0;
@@ -431,17 +434,26 @@
 			</div>
 		{/if}
 		{#if sw.newer}
-			<div class="note i" data-testid="case-table-newer">
-				<Icon name="info" klass="l" />
-				<p class="sm grow">
-					<a class="ref" href={hrefOf(`tables/${sw.newer}`)}>{S.tables_newer}</a>
-				</p>
-			</div>
+			{#if S.tables_newer_note && S.tables_newer_open}
+				<div class="note row g12 act" data-testid="case-table-newer">
+					<p class="grow">{S.tables_newer_note}</p>
+					<a class="btn p" href={hrefOf(`tables/${sw.newer}`)} data-testid="case-table-newer-open"
+						>{S.tables_newer_open}</a
+					>
+				</div>
+			{:else}
+				<div class="note i" data-testid="case-table-newer">
+					<Icon name="info" klass="l" />
+					<p class="sm grow">
+						<a class="ref" href={hrefOf(`tables/${sw.newer}`)}>{S.tables_newer}</a>
+					</p>
+				</div>
+			{/if}
 		{/if}
 		{#if sw.stale}
 			<div class="note row g12 act" data-testid="case-table-stale">
 				<p class="grow">
-					{staleText(sw, S)}{#if sw.catch_up && !sw.reader_stale}{' '}{catchUpNote(
+					{staleText(sw, S)}{#if sw.catch_up && !sw.reader_stale && !sw.newer}{' '}{catchUpNote(
 							sw.catch_up,
 							S
 						)}{/if}

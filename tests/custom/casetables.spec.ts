@@ -286,7 +286,11 @@ test.describe('часть 3: изменения охвата (Т-5), ссылк�
 		await expect(rows.nth(1).getByTestId('case-table-stale')).toHaveText(
 			'В охвате прохода после него: убрано — 1, строк, документ которых в описи теперь другой или убран, — 3.'
 		);
-		await expect(rows.nth(1).getByTestId('case-table-newer')).toHaveText(S.tables_newer);
+		// у прежнего прохода (есть более новый) — пометка и ссылка на новый; главная «Открыть» — не у него (23.11, Д-7)
+		await expect(rows.nth(1).getByTestId('case-table-newer')).toHaveText(S.tables_newer_open);
+		await expect(rows.nth(1).getByTestId('case-table-prior')).toHaveText(S.tables_prior_pill);
+		await expect(rows.nth(1).getByTestId('case-table-open')).not.toHaveClass(/(^|\s)p(\s|$)/);
+		await expect(rows.nth(2).getByTestId('case-table-prior')).toHaveCount(0);
 		await expect(rows.nth(1).getByTestId('case-table-newer')).toHaveAttribute(
 			'href',
 			new RegExp(`tables/${newerId}$`)
@@ -306,7 +310,7 @@ test.describe('часть 3: изменения охвата (Т-5), ссылк�
 				stale: true,
 				reader_stale: false,
 				changes: { added: 1, removed: 0, new_text: 2, documents: 0 },
-				newer: newerId,
+				newer: null, // последний проход вопроса: ему и предлагается «Дочитать»
 				catch_up: { windows: 2, pages: 14, estimate_usd: 0.0031 },
 				rest: null,
 				reread: null
@@ -349,8 +353,28 @@ test.describe('часть 3: изменения охвата (Т-5), ссылк�
 		]);
 		await expect(page.getByTestId('case-other-reading')).toHaveCount(1);
 		await expect(page.getByTestId('case-other-reading')).toHaveText(S.tables_other_reading);
-		// переход по ссылке «есть более новый проход» прямо из открытой таблицы загружает новый проход
-		await page.getByTestId('case-table-newer').getByRole('link').click();
+		// прежний проход (есть более новый), даже если прежний сервис ещё прислал оценку «бесплатно»: «Дочитать» нет,
+		// есть пояснение и кнопка «Открыть более новый проход» — она загружает новый проход (пакет 23.11, Д-7)
+		currentView = {
+			...staleCheap,
+			sweep: { ...staleCheap.sweep, newer: newerId, catch_up: { windows: 0, pages: 0, estimate_usd: 0 } }
+		};
+		await openSection(page, {
+			section: 'tables',
+			item: oldId,
+			routes: {
+				'tables/*?**': (r: any, c: any) =>
+					r.fulfill({ json: c.path.includes(newerId) ? freshNewer : currentView }),
+				tables: d,
+				'tables/scope?**': scope(0.02)
+			}
+		});
+		await expect(page.getByTestId('case-table-newer')).toContainText(S.tables_newer_note);
+		await expect(page.getByTestId('case-table-action')).toHaveCount(0);
+		await expect(page.getByTestId('case-table-stale')).not.toContainText(S.tables_catch_up_free);
+		await expect(page.getByText(S.runs_catch_up_free)).toHaveCount(0);
+		await expect(page.getByTestId('case-table-newer-open')).toHaveText(S.tables_newer_open);
+		await page.getByTestId('case-table-newer-open').click();
 		await expect(page.getByTestId('case-table-head').getByRole('heading', { level: 1 })).toHaveText(
 			'Более новая таблица'
 		);
