@@ -1,7 +1,7 @@
 <script lang="ts">
 	// ai-dvokat: строка суммы — одна и та же в списке и в раскрытой группе строк таблиц документа (ревью 22.11 Б-1: у
 	// раскрытых сумм те же действия и пометки). Действия — колбэками раздела.
-	import { quoteMore, rub } from '$lib/custom/case/mapcore';
+	import { amountNumberText, quoteMore } from '$lib/custom/case/mapcore';
 	import { fmt } from '$lib/custom/case/strings';
 	import Icon from './Icon.svelte';
 	import QuoteText from './QuoteText.svelte';
@@ -20,11 +20,7 @@
 <div class="tr t" class:hid={a.hidden} data-testid="case-amount">
 	<div class="col g2">
 		<span class="b lg num aw">{a.value_as_written}</span>
-		<span class="sm mut num"
-			>{a.value_num != null
-				? fmt(S.map_amount_value, { v: rub(a.value_num) })
-				: S.map_amount_no_value}</span
-		>
+		<span class="sm mut num">{amountNumberText(a, S)}</span>
 	</div>
 	<div class="col g4">
 		{#if a.what}<span class="md aw">{a.what}</span>{/if}
@@ -96,7 +92,7 @@
 		</p>{/if}
 	{#if a.quote && quoteOpen}
 		<p class="q">
-			<QuoteText quote={a.quote} marks={a.quote_marks} {S} />{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
+			<QuoteText quote={a.quote} marks={a.quote_marks} base={a.place_base} {S} />{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
 					>{quoteMore(a.quote_rest, S)}</span
 				>{/if}
 		</p>

@@ -40,6 +40,7 @@
 		value_as_written: string;
 		what?: string | null;
 		value_num?: string | number | null;
+		parsed_num?: string | number | null;
 		unchecked?: boolean;
 		quote_changed?: boolean;
 		unit?: string | null;

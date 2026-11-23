@@ -228,6 +228,7 @@
  "map_amount_unchecked": "не подтверждено на листе",
  "map_amount_unit_elsewhere": "единица названа на листе в другом месте",
  "map_amount_unit_missing": "единица на листе не названа",
+ "map_amount_parsed_value": "числом: {v} (валюта не указана)",
  "map_amount_value": "числом: {v} руб.",
  "map_amounts_empty": "В карточках документов сумм пока нет.",
  "map_amounts_hidden": "показать убранные",

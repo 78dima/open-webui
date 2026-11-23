@@ -5,7 +5,9 @@
 	import { fmt } from '$lib/custom/case/strings';
 
 	export let quote = '';
-	export let marks: { start: number; end: number; a: string; b: string; url?: string }[] | undefined = undefined;
+	export let marks: { start: number; end: number; a: string; b: string; hl?: string }[] | undefined = undefined;
+	/** Начало адреса листа записи (`place_base` сервиса): адрес места — `…&hl=<место>&pick=1` — страница собирает сама. */
+	export let base: string | null | undefined = undefined;
 	export let S: Record<string, any> = {};
 
 	type Part = { text: string; mark?: { a: string; b: string; url?: string } };
@@ -15,13 +17,16 @@
 		for (const m of [...(list ?? [])].sort((x, y) => x.start - y.start)) {
 			if (m.start < pos || m.end > text.length || m.end <= m.start) continue; // вне текста или внахлёст — пропуск
 			if (m.start > pos) out.push({ text: text.slice(pos, m.start) });
-			out.push({ text: text.slice(m.start, m.end), mark: { a: m.a, b: m.b, url: m.url } });
+			out.push({
+				text: text.slice(m.start, m.end),
+				mark: { a: m.a, b: m.b, url: base && m.hl ? `${base}&hl=${m.hl}&pick=1` : undefined }
+			});
 			pos = m.end;
 		}
 		if (pos < text.length) out.push({ text: text.slice(pos) });
 		return out;
 	}
-	$: parts = split(quote ?? '', marks);
+	$: parts = (base, split(quote ?? '', marks));
 </script>
 
 <!-- место с адресом — ссылка на лист к этому месту, где выбирается верное прочтение (Д-15) -->

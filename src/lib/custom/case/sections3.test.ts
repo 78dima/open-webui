@@ -6,6 +6,7 @@ import { fileName } from './api';
 import { createLoader } from './loader';
 import { fmt } from './strings';
 import {
+	amountNumberText,
 	dateNote,
 	dateParts,
 	deadlineDates,
@@ -194,6 +195,13 @@ describe('карта дела', () => {
 		expect(rub('1597806.6')).toBe('1 597 806,60');
 		expect(rub(6931)).toBe('6 931,00');
 		expect(rub('не число')).toBe('не число');
+		expect(amountNumberText({ value_num: '300000.00', parsed_num: '300000.00' }, S)).toBe(
+			'числом: 300 000,00 руб.'
+		);
+		expect(amountNumberText({ value_num: null, parsed_num: '1250000.00' }, S)).toBe(
+			'числом: 1 250 000,00 (валюта не указана)'
+		);
+		expect(amountNumberText({ value_num: null, parsed_num: null }, S)).toBe('числом не разобрана');
 		expect(lines(' а \n\n б ')).toEqual(['а', 'б']);
 	});
 	it('слова правки для истории и подписи полей; строки состояния', () => {
