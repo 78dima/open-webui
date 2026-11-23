@@ -12,7 +12,9 @@ import {
 	SECTION_WORK,
 	WAIT_KEYS,
 	WORK_PART,
+	isPausedFor,
 	navGroups,
+	pauseOf,
 	pollDelay,
 	processing,
 	summary,
@@ -175,6 +177,24 @@ describe('работа по делу (поле work обзора)', () => {
 			expect(stringsJson).toHaveProperty(key);
 		}
 		expect(stringsJson).toHaveProperty('wait_unknown');
+	});
+
+	it('Р-2: rate не считается паузой; marks останавливает только read; общая пауза останавливает все группы', () => {
+		expect(pauseOf({ paused: { reason: 'rate', since: null, until: null } })).toBeNull();
+		const marks = { reason: 'marks', since: null, until: null, groups: ['read'] };
+		expect(isPausedFor({ paused: marks, work: work({ cards: 2 }) }, SECTION_WORK.chronology)).toBe(
+			false
+		);
+		expect(isPausedFor({ paused: marks, work: work({ read: 1 }) }, SECTION_WORK.inventory)).toBe(
+			true
+		);
+		expect(
+			isPausedFor({ paused: marks, work: work({ read: 1, cards: 2 }) }, SECTION_WORK.chronology)
+		).toBe(false);
+		const budget = { reason: 'budget', since: null, until: null, groups: null };
+		expect(isPausedFor({ paused: budget, work: work({ cards: 2 }) }, SECTION_WORK.chronology)).toBe(
+			true
+		);
 	});
 });
 

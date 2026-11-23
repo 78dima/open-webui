@@ -135,7 +135,7 @@ export type CaseData = {
 	rights?: { read: boolean; write: boolean; owner: boolean };
 	estimate?: { usd: string | null; pages: number } | null;
 	version?: number;
-	paused?: { reason: string; since: string | null; until: string | null } | null;
+	paused?: { reason: string; since: string | null; until: string | null; groups?: string[] | null } | null;
 	files?: Record<string, FileFacts>;
 	volumes_extra?: Record<string, VolumeExtra>;
 	page_nos?: Record<string, number>;
@@ -450,13 +450,28 @@ export const pollDelay = (data: CaseData | null, localRunning = false): number =
 
 /** Паузы, которые проходят сами (опись § 2.3); остальные ждут администратора. */
 const PAUSE_SELF = new Set(['daily', 'fuse', 'rate', 'marks', 'limiter']);
-/** Пауза обработки для показа: проходит ли сама, ключ фразы причины, с какого времени. Одна на «Обзор» и на разделы,
- *  где юрист ждёт обработки («Загрузить материалы», «Тома», «Таблицы и проходы»). */
+/** Пауза обработки для показа: проходит ли сама, ключ фразы причины, с какого времени, какие группы остановлены
+ *  (`groups: null` — общая пауза всех групп). `rate` (3 с ограничения скорости) паузой для юриста не считается. */
 export function pauseOf(
 	data: Pick<CaseData, 'paused'> | null | undefined
-): null | { self: boolean; key: string; since: string | null } {
+): null | { self: boolean; key: string; since: string | null; groups: string[] | null } {
 	const p = data?.paused;
-	return p ? { self: PAUSE_SELF.has(p.reason), key: pauseKey(p.reason), since: p.since } : null;
+	if (!p || p.reason === 'rate') return null;
+	const groups =
+		p.groups !== undefined ? p.groups : p.reason === 'marks' ? ['read'] : null;
+	if (Array.isArray(groups) && !groups.length) return null;
+	return { self: PAUSE_SELF.has(p.reason), key: pauseKey(p.reason), since: p.since, groups };
+}
+/** Остановлена ли паузой вся активная работа названных групп (частичная пауза `marks` — только `read`). */
+export function isPausedFor(
+	data: Pick<CaseData, 'paused' | 'work'> | null | undefined,
+	groups: string[] = WORK_PROCESSING
+): boolean {
+	const p = pauseOf(data);
+	if (!p) return false;
+	if (p.groups === null) return true;
+	const active = groups.filter((g) => workCount(data?.work, g) > 0);
+	return active.length > 0 && active.every((g) => p.groups!.includes(g));
 }
 const PAUSE_KEYS: Record<string, string> = {
 	manual: 'paused_manual',
@@ -480,8 +495,8 @@ export type Summary = {
 	kind: 'empty' | 'processing' | 'waiting' | 'ready';
 	indexed: number;
 	total: number;
-	/** Пауза обработки всех дел: self — пройдёт сама. */
-	paused: null | { self: boolean; key: string; since: string | null };
+	/** Пауза обработки всех дел: self — пройдёт сама; groups: null — общая пауза. */
+	paused: null | { self: boolean; key: string; since: string | null; groups: string[] | null };
 	volumes: number;
 	documents: number;
 	checks: number;

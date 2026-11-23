@@ -5,7 +5,7 @@
 	// «ждут», а не «идёт». Раздел сам перечитывается, когда работа закончилась (`workWatcher` в разделе).
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import {
-		pauseOf,
+		isPausedFor,
 		waitReasonsText,
 		workActive,
 		workParts,
@@ -24,9 +24,9 @@
 	$: on = workActive($data, groups);
 	$: waiting = !on && workWaiting($data, groups);
 	$: parts = on ? workParts($data?.work, groups, S).join(', ') : '';
-	$: paused = pauseOf($data);
+	$: paused = isPausedFor($data, groups);
 	$: stalled = !!$data?.work?.stalled && !!S.work_note_stalled;
-	$: waits = stalled || (!!paused && !!S.work_note_paused);
+	$: waits = stalled || (paused && !!S.work_note_paused);
 	$: waitReason = waiting ? waitReasonsText($data?.work, S) : '';
 	$: text = parts
 		? fmt(stalled ? S.work_note_stalled : paused && S.work_note_paused ? S.work_note_paused : S[key], {

@@ -181,13 +181,13 @@ describe('обработка и состояние сводки', () => {
 	it('пауза: какие пройдут сами; незнакомая причина — нейтральная фраза', () => {
 		const paused = (reason: string) =>
 			summary({ ...work, paused: { reason, since: null, until: null } }).paused;
-		expect(['daily', 'fuse', 'rate', 'marks', 'limiter'].map((r) => paused(r)?.self)).toEqual([
-			true,
+		expect(['daily', 'fuse', 'marks', 'limiter'].map((r) => paused(r)?.self)).toEqual([
 			true,
 			true,
 			true,
 			true
 		]);
+		expect(paused('rate')).toBeNull();
 		expect(
 			['budget', 'floor', 'manual', 'models_off', 'credits_unknown', 'sweep', 'новая'].map(
 				(r) => paused(r)?.self
@@ -250,7 +250,8 @@ describe('обработка и состояние сводки', () => {
 		).toEqual({
 			self: true,
 			key: 'paused_daily',
-			since: '2026-11-20T10:00:00Z'
+			since: '2026-11-20T10:00:00Z',
+			groups: null
 		});
 		expect(pauseOf({ paused: null })).toBeNull();
 	});

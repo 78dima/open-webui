@@ -9,6 +9,7 @@
 		ecaseFiles,
 		filesState,
 		fileStuck,
+		isPausedFor,
 		sectionOpen,
 		since,
 		summary,
@@ -43,6 +44,7 @@
 	$: failed = uploads.filter((u) => u.phase === 'failed' || u.phase === 'intake_failed').length;
 	$: pending = volumes.some((v) => v.status !== 'inventory_ready');
 	$: paused = sum?.paused ?? null;
+	$: pausedHere = !!paused && (paused.groups === null || isPausedFor(d, WORK_PROCESSING));
 	$: pausedText = paused ? cap(fmt(S[paused.key], { time: when(paused.since) })) : '';
 	$: percent = sum && sum.total ? Math.round((100 * sum.indexed) / sum.total) : 0;
 	// что сейчас в очереди и в работе по делу (поле `work` сервиса) — словами, под ходом распознавания
@@ -191,13 +193,13 @@
 							<span class="pill"><Icon name="ok" />{S.overview_state_ready}</span>
 						{:else if sum.kind === 'waiting'}
 							<span class="pill" data-testid="case-state-waiting">{S.overview_state_waiting}</span>
-						{:else if paused && paused.self}
+						{:else if pausedHere && paused && paused.self}
 							<span class="pill w"
 								><Icon name="pause" />{fmt(S.overview_state_paused, {
 									time: since(paused.since)
 								})}</span
 							>
-						{:else if paused}
+						{:else if pausedHere && paused}
 							<span class="pill s"><Icon name="al" />{S.overview_state_stopped}</span>
 						{:else}
 							<span class="pill i"><Icon name="clock" />{S.overview_state_processing}</span>
@@ -245,12 +247,19 @@
 					{/if}
 					{#if workLine}
 						<p class="md soft" data-testid="case-work-line">
-							{fmt(d.work?.stalled && S.work_stalled ? S.work_stalled : S.overview_work_line, {
-								parts: workLine
-							})}
+							{fmt(
+								d.work?.stalled && S.work_stalled
+									? S.work_stalled
+									: pausedHere && (S.overview_work_paused || S.work_note_paused)
+										? S.overview_work_paused || S.work_note_paused
+										: S.overview_work_line,
+								{
+									parts: workLine
+								}
+							)}
 						</p>
 					{/if}
-					<p class="md soft">{paused ? pausedText : S.overview_can_close}</p>
+					<p class="md soft">{pausedHere ? pausedText : S.overview_can_close}</p>
 				{/if}
 				{#if sum.kind !== 'empty' && !b.can_write}<p class="md soft">
 						{S.overview_readonly_text}
