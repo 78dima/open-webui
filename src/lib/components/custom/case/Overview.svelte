@@ -225,6 +225,11 @@
 							? ` ${fmt(S.overview_ready_check, { checks: count(sum.checks, S.overview_tile_check_forms) })}`
 							: ''}
 					</p>
+					{#if (d.cards_failed ?? 0) > 0 && S.map_state_failed}
+						<p class="md soft" data-testid="case-ready-failed">
+							{fmt(S.map_state_failed, { n: d.cards_failed })}
+						</p>
+					{/if}
 				{:else if sum.kind === 'waiting'}
 					{#if sum.total && sum.indexed < sum.total}
 						<h2 class="big">{fmt(S.overview_recognized, { n: sum.indexed, m: sum.total })}</h2>

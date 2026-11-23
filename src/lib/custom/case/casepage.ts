@@ -147,6 +147,8 @@ export type CaseData = {
 	deadlines_next?: Deadline[];
 	/** какая работа по делу идёт сейчас (сервис, `work.of_case`); прежний сервис поля не отдаёт */
 	work?: Work | null;
+	/** документов, которые модель не разобрала или разобрала не целиком (partial + failed из `cards.state`, Р-7) */
+	cards_failed?: number;
 };
 /** Работа по делу — факты очереди сервиса: `groups` — готовых и взятых задач группы, `running` — из них взято
  *  обработчиком, `waiting` — задачи, ждущие внешнего условия (`wait:` + `next_at > now()`), `wait_reasons` — их причины,
