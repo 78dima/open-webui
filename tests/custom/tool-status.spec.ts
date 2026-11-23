@@ -93,8 +93,15 @@ test('group summary counts by meaning and names no tools', () => {
 	);
 });
 
-test('вызовы выполнены, сообщение не закончено: признак хода и «готовлю ответ» вместо итоговой галки — только юристу', async ({ page }) => {
+test('вызовы выполнены, сообщение не закончено: признак хода и «готовлю ответ» только у последней группы и только юристу', async ({ page }) => {
 	await open(page, 'user');
+	// первая из двух групп в незаконченном сообщении — уже «Выполнено:», без признака хода (Р-6)
+	const earlier = page.getByTestId('group-preparing-earlier');
+	await expect(earlier).toContainText('Выполнено:');
+	await expect(earlier).not.toContainText('готовлю ответ');
+	await expect(earlier.locator('[data-ai-dvokat-preparing]')).toHaveCount(0);
+	await expect(earlier.locator('.shimmer')).toHaveCount(0);
+	// последняя группа в незаконченном сообщении — «Выполнено, готовлю ответ:» с признаком хода
 	const going = page.getByTestId('group-preparing');
 	await expect(going).toContainText('Выполнено, готовлю ответ:');
 	await expect(going).toContainText('чтение листов дела, методичка, сверка черновика');

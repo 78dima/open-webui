@@ -153,6 +153,14 @@
 	} text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition`;
 
 	$: displayTokens = getDisplayTokens(tokens);
+	// ai-dvokat: индекс последней группы вызовов, после которой ещё нет текста ответа (для «Выполнено, готовлю ответ»)
+	$: lastDetailGroupIdx = (() => {
+		for (let i = displayTokens.length - 1; i >= 0; i--) {
+			if (displayTokens[i]?.type === 'space') continue;
+			return displayTokens[i]?.type === 'detail_group' ? i : -1;
+		}
+		return -1;
+	})();
 	$: renderHtml = tokens.some((token) => token.type === 'html') ? markdown?.renderHtml : undefined;
 	$: singlePlainBlock =
 		displayTokens.length === 1 &&
@@ -473,6 +481,7 @@
 			id={`${id}-${tokenIdx}-detail-group`}
 			tokens={token.items}
 			messageDone={done}
+			isLast={top && tokenIdx === lastDetailGroupIdx}
 			{compactPreview}
 			{allowEmbeds}
 			resolvable={!!chatId && !!messageId && save}

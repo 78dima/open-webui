@@ -37,6 +37,7 @@
 	}> = [];
 
 	export let messageDone = true;
+	export let isLast = true; // ai-dvokat: признак «готовлю ответ» — только у последней группы вызовов
 	export let allowEmbeds = false;
 	export let compactPreview = false;
 	export let resolvable = false;
@@ -183,9 +184,9 @@
 	$: prefixText = hasActiveDetails ? $i18n.t('Exploring') : $i18n.t('Explored');
 	// ai-dvokat: Russian summary without tool names
 	$: plain = plainToolStatus($config?.custom_ui, $user?.role);
-	// ai-dvokat: вызовы группы выполнены, а сообщение ещё не закончено (модель работает над ответом) — не итоговая
-	// зелёная галка «Выполнено», а признак хода и «Выполнено, готовлю ответ». Признак — факт страницы (`messageDone`).
-	$: plainPreparing = plain && toolCallCount > 0 && !hasActiveDetails && !hasError && !hasRejected && !messageDone;
+	// ai-dvokat: вызовы последней группы выполнены, а сообщение ещё не закончено (модель работает над ответом) — не
+	// итоговая зелёная галка «Выполнено», а признак хода и «Выполнено, готовлю ответ».
+	$: plainPreparing = plain && isLast && toolCallCount > 0 && !hasActiveDetails && !hasError && !hasRejected && !messageDone;
 	$: plainGroup = plain && toolCallCount > 0 ? toolGroupText(tokens.filter((t) => t?.attributes?.type === 'tool_calls').map((t) => t?.attributes?.name), hasActiveDetails, hasError || hasRejected, plainPreparing) : null;
 </script>
 

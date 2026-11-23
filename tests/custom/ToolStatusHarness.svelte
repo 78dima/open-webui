@@ -40,11 +40,23 @@
 		</div>
 	</ConsecutiveDetailsGroup>
 </section>
+<!-- ai-dvokat: две группы вызовов в незаконченном сообщении — признак хода только у последней (Р-6) -->
+<section data-testid="group-preparing-earlier">
+	<ConsecutiveDetailsGroup
+		id="group-preparing-earlier"
+		messageDone={false}
+		isLast={false}
+		tokens={[call('e1', 'legal-tools_case_search'), call('e2', 'legal-tools_case_read')].map((attributes) => ({ attributes, text: result }))}
+	>
+		<div slot="content"></div>
+	</ConsecutiveDetailsGroup>
+</section>
 <!-- ai-dvokat: вызовы выполнены, сообщение ещё не закончено (модель работает над ответом) -->
 <section data-testid="group-preparing">
 	<ConsecutiveDetailsGroup
 		id="group-preparing"
 		messageDone={false}
+		isLast={true}
 		tokens={[call('p1', 'legal-tools_case_read'), call('p2', 'view_skill'), call('p3', 'legal-tools_draft_check')].map((attributes) => ({ attributes, text: result }))}
 	>
 		<div slot="content"></div>
