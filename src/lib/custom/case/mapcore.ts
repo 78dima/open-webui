@@ -146,6 +146,16 @@ export function rub(v: unknown): string {
 	if (!m) return String(v);
 	return `${m[1]}${m[2].replace(/\B(?=(\d{3})+(?!\d))/g, ' ')},${`${m[3] ?? ''}00`.slice(0, 2)}`;
 }
+/** Подпись числа у суммы: подтверждённые рубли → число без валюты → «числом не разобрана». */
+export function amountNumberText(
+	a: { value_num?: string | number | null; parsed_num?: string | number | null },
+	S: Strings
+): string {
+	if (a.value_num != null) return fmt(S.map_amount_value, { v: rub(a.value_num) });
+	if (a.parsed_num != null)
+		return fmt(S.map_amount_parsed_value || S.map_amount_no_value, { v: rub(a.parsed_num) });
+	return S.map_amount_no_value;
+}
 type Span = { start_date?: string | null; end_date?: string | null };
 export function deadlineDates(d: Span, S: Strings): { text: string; none: boolean } {
 	const a = day(d.start_date);
