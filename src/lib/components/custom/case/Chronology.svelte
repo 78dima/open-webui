@@ -48,6 +48,7 @@
 	// строка ленты «записи из строк таблицы документа» (п. 8 захода 22.11): раскрывается выборкой по документу
 	type Group = {
 		group: true;
+		on_check?: number;
 		document_id: number | null;
 		document?: string | null;
 		n: number;
@@ -414,6 +415,10 @@
 						<span class="b aw">{groupText(f)}</span>
 						<div class="row g8 sm">
 							{#if f.label}<span class="mut">{fmt(S.map_table_from, { label: f.label })}</span>{/if}
+							{#if f.on_check && S.map_group_on_check}<span
+									class="pill t w"
+									data-testid="case-group-on-check">{fmt(S.map_group_on_check, { n: f.on_check })}</span
+								>{/if}
 							<button
 								type="button"
 								class="btn t"

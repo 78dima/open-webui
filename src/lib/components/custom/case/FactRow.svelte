@@ -44,11 +44,24 @@
 			{#if f.quote_changed}<span class="pill t w" data-testid="case-quote-changed"
 					>{S.quote_changed}</span
 				>{/if}
+			{#if f.sheet_checks?.length && S.map_sheet_check_pill}<span
+					class="pill t w"
+					data-testid="case-sheet-check">{S.map_sheet_check_pill}</span
+				>{/if}
 			{#if f.kind || f.persons.length}
 				<span class="sm mut aw">{[f.kind, f.persons.join(', ')].filter(Boolean).join(' · ')}</span>
 			{/if}
 		</div>
 		{#if note}<p class="sm c-warn">{note}</p>{/if}
+		<!-- лист записи стоит в «Проверьте листы» (пакет 23.11, Д-9): причины — словами списка, лист — ссылкой ниже -->
+		{#if f.sheet_checks?.length && S.map_sheet_check}<p
+				class="sm c-warn"
+				data-testid="case-sheet-check-why"
+			>
+				{fmt(S.map_sheet_check, {
+					reasons: f.sheet_checks.map((c: { reason: string }) => c.reason).join('; ')
+				})}
+			</p>{/if}
 		<div class="row g8 sm">
 			{#if f.label}<SheetRef label={f.label} href={f.url} />{/if}
 			{#if f.document}<span class="mut aw">· {f.document}</span>{/if}

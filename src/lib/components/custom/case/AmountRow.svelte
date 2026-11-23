@@ -35,6 +35,10 @@
 		{#if a.quote_changed}<span class="pill w t" data-testid="case-quote-changed"
 				><Icon name="al" />{S.quote_changed}</span
 			>{/if}
+		{#if a.sheet_checks?.length && S.map_sheet_check_pill}<span
+				class="pill w t"
+				data-testid="case-sheet-check"><Icon name="al" />{S.map_sheet_check_pill}</span
+			>{/if}
 		{#if a.unit === 'elsewhere'}<span class="pill t">{S.map_amount_unit_elsewhere}</span>{/if}
 		{#if a.unit === 'missing'}<span class="pill t">{S.map_amount_unit_missing}</span>{/if}
 		{#if a.in_table}<span class="pill t" data-testid="case-amount-in-table"
@@ -61,6 +65,15 @@
 		{/if}
 		<button type="button" class="btn t" on:click={() => onHistory(a)}>{S.map_history}</button>
 	</span>
+	<!-- лист суммы стоит в «Проверьте листы» (пакет 23.11, Д-9): причины — словами списка -->
+	{#if a.sheet_checks?.length && S.map_sheet_check_amount}<p
+			class="sm c-warn why"
+			data-testid="case-sheet-check-why"
+		>
+			{fmt(S.map_sheet_check_amount, {
+				reasons: a.sheet_checks.map((c: { reason: string }) => c.reason).join('; ')
+			})}
+		</p>{/if}
 	{#if a.quote && quoteOpen}
 		<p class="q">
 			{a.quote}{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
@@ -73,6 +86,9 @@
 <style>
 	.tr > .q {
 		margin-top: 8px;
+		grid-column: 1 / -1;
+	}
+	.tr > .why {
 		grid-column: 1 / -1;
 	}
 </style>

@@ -24,6 +24,7 @@
 	// суммы из строк таблицы документа одной строкой (п. 8 захода 22.11); раскрывается выборкой по документу
 	type Group = {
 		group: true;
+		on_check?: number;
 		document_id: number | null;
 		document?: string | null;
 		n: number;
@@ -197,6 +198,11 @@
 							<div class="col g4"></div>
 							<div class="col g6 as">
 								{#if a.label}<span class="sm mut">{fmt(S.map_table_from, { label: a.label })}</span
+									>{/if}
+								{#if a.on_check && S.map_group_on_check}<span
+										class="pill w t"
+										data-testid="case-group-on-check"
+										><Icon name="al" />{fmt(S.map_group_on_check, { n: a.on_check })}</span
 									>{/if}
 							</div>
 							<span class="row g4">
