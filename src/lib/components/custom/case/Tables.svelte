@@ -262,8 +262,8 @@
 							><Icon name={tone === 'i' ? 'clock' : tone ? 'al' : 'ok'} />{statusWord(sw, S)}</span
 						>
 						{#if sw.parent}<span class="pill t">{S.tables_parent}</span>{/if}
-						{#if sw.newer && S.tables_prior_pill}<span class="pill t" data-testid="case-table-prior"
-								>{S.tables_prior_pill}</span
+						{#if sw.newer && S.runs_prior_pill}<span class="pill t" data-testid="case-table-prior"
+								>{S.runs_prior_pill}</span
 							>{/if}
 					</div>
 					{#if sw.status === 'running'}
@@ -293,7 +293,7 @@
 					{#if sw.newer}
 						<p class="sm">
 							<a class="ref" href={hrefOf(`tables/${sw.newer}`)} data-testid="case-table-newer"
-								>{S.tables_newer_open || S.tables_newer}</a
+								>{S.runs_newer_open || S.tables_newer}</a
 							>
 						</p>
 					{/if}

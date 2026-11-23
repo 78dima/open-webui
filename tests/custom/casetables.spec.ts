@@ -287,8 +287,8 @@ test.describe('часть 3: изменения охвата (Т-5), ссылк�
 			'В охвате прохода после него: убрано — 1, строк, документ которых в описи теперь другой или убран, — 3.'
 		);
 		// у прежнего прохода (есть более новый) — пометка и ссылка на новый; главная «Открыть» — не у него (23.11, Д-7)
-		await expect(rows.nth(1).getByTestId('case-table-newer')).toHaveText(S.tables_newer_open);
-		await expect(rows.nth(1).getByTestId('case-table-prior')).toHaveText(S.tables_prior_pill);
+		await expect(rows.nth(1).getByTestId('case-table-newer')).toHaveText(S.runs_newer_open);
+		await expect(rows.nth(1).getByTestId('case-table-prior')).toHaveText(S.runs_prior_pill);
 		await expect(rows.nth(1).getByTestId('case-table-open')).not.toHaveClass(/(^|\s)p(\s|$)/);
 		await expect(rows.nth(2).getByTestId('case-table-prior')).toHaveCount(0);
 		await expect(rows.nth(1).getByTestId('case-table-newer')).toHaveAttribute(
@@ -369,11 +369,11 @@ test.describe('часть 3: изменения охвата (Т-5), ссылк�
 				'tables/scope?**': scope(0.02)
 			}
 		});
-		await expect(page.getByTestId('case-table-newer')).toContainText(S.tables_newer_note);
+		await expect(page.getByTestId('case-table-newer')).toContainText(S.runs_newer_note);
 		await expect(page.getByTestId('case-table-action')).toHaveCount(0);
 		await expect(page.getByTestId('case-table-stale')).not.toContainText(S.tables_catch_up_free);
 		await expect(page.getByText(S.runs_catch_up_free)).toHaveCount(0);
-		await expect(page.getByTestId('case-table-newer-open')).toHaveText(S.tables_newer_open);
+		await expect(page.getByTestId('case-table-newer-open')).toHaveText(S.runs_newer_open);
 		await page.getByTestId('case-table-newer-open').click();
 		await expect(page.getByTestId('case-table-head').getByRole('heading', { level: 1 })).toHaveText(
 			'Более новая таблица'

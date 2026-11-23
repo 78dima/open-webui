@@ -324,9 +324,9 @@
 				new_name: target.new.filename || '—'
 			})}
 		</p>
-		{#if S.whatsnew_replace_links}
+		{#if S.replace_links_note}
 			<p class="md aw" data-testid="case-replace-links">
-				{fmt(S.whatsnew_replace_links, { old_pages: target.old.pages, same: target.same })}
+				{fmt(S.replace_links_note, { old_pages: target.old.pages, same: target.same })}
 			</p>
 		{/if}
 		<p class="sm fg2">

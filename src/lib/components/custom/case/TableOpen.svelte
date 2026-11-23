@@ -434,11 +434,11 @@
 			</div>
 		{/if}
 		{#if sw.newer}
-			{#if S.tables_newer_note && S.tables_newer_open}
+			{#if S.runs_newer_note && S.runs_newer_open}
 				<div class="note row g12 act" data-testid="case-table-newer">
-					<p class="grow">{S.tables_newer_note}</p>
+					<p class="grow">{S.runs_newer_note}</p>
 					<a class="btn p" href={hrefOf(`tables/${sw.newer}`)} data-testid="case-table-newer-open"
-						>{S.tables_newer_open}</a
+						>{S.runs_newer_open}</a
 					>
 				</div>
 			{:else}
