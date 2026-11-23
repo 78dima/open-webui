@@ -111,6 +111,49 @@ test.describe('работа по делу идёт', () => {
 	});
 });
 
+test.describe('перечитывание раздела не сбрасывает место юриста', () => {
+	test.use({ viewport: { width: 1280, height: 1100 } });
+
+	test('хронология: догруженные «Показать ещё» порции остаются, пока ответ не изменился; изменился — лента с начала', async ({ page }) => {
+		const facts = fixture('facts');
+		const mk = (from: number, n: number) => facts.facts.filter((x: any) => !x.group).slice(0, 1).flatMap((f: any) => Array.from({ length: n }, (_, i) => ({ ...f, id: 9000 + from + i, summary: `Запись ${from + i}` })));
+		let total = 6;
+		let w: any = work({ cards: 2 });
+		let asked = 0;
+		await openSection(page, {
+			section: 'chronology',
+			data: () => overview(w),
+			routes: {
+				work: (r: Route) => r.fulfill({ json: { work: w, paused: null } }),
+				'facts?**': (r: Route, c: any) => {
+					const p = Number(new URL('http://x' + c.path).searchParams.get('page') ?? 0);
+					if (!p) asked += 1;
+					return r.fulfill({ json: { ...facts, facts: mk(p * 2, 2), total, total_records: total, next_page: p < 2 ? p + 1 : null } });
+				}
+			}
+		});
+		const rows = page.getByTestId('case-fact');
+		await expect(rows).toHaveCount(2);
+		await page.getByTestId('case-facts-more').click();
+		await expect(rows).toHaveCount(4);
+		await page.getByTestId('case-facts-more').click();
+		await expect(rows).toHaveCount(6); // дочитано до третьей порции
+		const first = asked;
+		// работа по делу идёт и кончается: раздел перечитывается (счёт тикает, затем конец работы), ответ тот же
+		w = work({ cards: 1 });
+		await page.waitForTimeout(5500);
+		w = work({});
+		await expect(page.getByTestId('case-work-note')).toHaveCount(0, { timeout: 9000 });
+		await expect.poll(() => asked).toBeGreaterThan(first); // перечитывание было
+		await expect(rows).toHaveCount(6); // а место юриста — на месте
+		await expect(rows.nth(5)).toContainText('Запись 5');
+		// записи изменились (общий счёт другой) — лента честно с начала
+		total = 7;
+		await page.getByTestId('case-map-refresh').click();
+		await expect(rows).toHaveCount(2);
+	});
+});
+
 test.describe('таблицы и проходы обновляются сами', () => {
 	test.use({ viewport: { width: 1280, height: 1100 } });
 

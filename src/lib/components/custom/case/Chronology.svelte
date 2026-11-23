@@ -124,11 +124,18 @@
 	onDestroy(() => Object.assign(kept, { form: { ...form }, asked: { ...asked } }));
 	let extra: (Fact | Group)[] = []; // следующие порции той же выборки
 	let nextPage: number | null = null;
+	let shownKey = ''; // запрос и ответ первой порции, по которым показана лента
 	const loader = createLoader(
 		async () => {
 			const d = await state.api.get<Answer>(
 				casePath(state, `/facts${query({ ...asked, groups: true })}`)
 			);
+			// Ответ тот же, что показан (перечитывание вместе с обзором, а записи не менялись): догруженные «Показать
+			// ещё» порции, правки на месте и место юриста в ленте остаются. Сбрасываются только когда изменился ответ
+			// или запрос (в ответе — и общий счёт записей: новые записи в дальних порциях тоже меняют его).
+			const key = JSON.stringify([asked, d]);
+			if (key === shownKey) return d;
+			shownKey = key;
 			extra = [];
 			if (asked.hidden) gone = new Set(); // «с убранными» — убранные снова видны
 			// свежая порция ленты — сама новее правок на месте; у строк раскрытых групп правка на месте остаётся
@@ -317,7 +324,10 @@
 		{
 			id: 'refresh',
 			text: S.map_refresh,
-			run: () => void reload.run(),
+			run: () => {
+				shownKey = ''; // «Обновить» юриста — лента с начала, и при том же ответе первой порции
+				void reload.run();
+			},
 			busy: $reloading,
 			busyText: S.busy_refresh,
 			testid: 'case-map-refresh'
