@@ -28,7 +28,7 @@
 	import Icon from './Icon.svelte';
 	import Busy from './Busy.svelte';
 	import WorkNote from './WorkNote.svelte';
-	import { SECTION_WORK, workWatcher } from '$lib/custom/case/casepage';
+	import { SECTION_WORK } from '$lib/custom/case/casepage';
 	import SheetRef from './SheetRef.svelte';
 
 	export let state: CaseState;
@@ -119,15 +119,6 @@
 		void load(true);
 	}
 	const pickVolume = () => void load(true);
-	// чтение листов или опись тома закончились: если версия дела не изменилась, выбор для «Объединить» и догруженные
-	// порции не сбрасываем (Р-8); если версия изменилась — опись перечитает верхний блок по `$data.version !== version`.
-	const watchWork = workWatcher(SECTION_WORK.inventory, () => {
-		if ($data && started && $data.version !== version && !winOpen && !historyOpen) {
-			version = $data.version;
-			void load(true);
-		}
-	});
-	$: watchWork($data);
 
 	// ---- выгрузка ----
 	let exporting = '';

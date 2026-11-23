@@ -27,7 +27,7 @@
 	$: paused = isPausedFor($data, groups);
 	$: stalled = !!$data?.work?.stalled && !!S.work_note_stalled;
 	$: waits = stalled || (paused && !!S.work_note_paused);
-	$: waitReason = waiting ? waitReasonsText($data?.work, S) : '';
+	$: waitReason = waiting ? waitReasonsText($data?.work, S, groups) : '';
 	$: text = parts
 		? fmt(stalled ? S.work_note_stalled : paused && S.work_note_paused ? S.work_note_paused : S[key], {
 				parts

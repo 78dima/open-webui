@@ -34,6 +34,7 @@ import { createCaseState } from './casestore';
 import { createLoader, createReload } from './loader';
 import { readListing } from './mycases';
 import { mergeTableRows, type Cell, type Check } from './tablescore';
+import { lastDetailGroupIndex } from '../toolStatus';
 
 const boot = bootJson as Boot;
 const ready = readyJson as unknown as CaseData;
@@ -180,22 +181,81 @@ describe('работа по делу (поле work обзора)', () => {
 		expect(stringsJson).toHaveProperty('wait_unknown');
 	});
 
-	it('Р-2: rate не считается паузой; marks останавливает только read; общая пауза останавливает все группы', () => {
+	it('Р-2 / Ф-4: rate не считается паузой; пауза групп берётся из work.paused_groups (по шагам сервиса)', () => {
 		expect(pauseOf({ paused: { reason: 'rate', since: null, until: null } })).toBeNull();
 		const marks = { reason: 'marks', since: null, until: null, groups: ['read'] };
-		expect(isPausedFor({ paused: marks, work: work({ cards: 2 }) }, SECTION_WORK.chronology)).toBe(
-			false
-		);
-		expect(isPausedFor({ paused: marks, work: work({ read: 1 }) }, SECTION_WORK.inventory)).toBe(
-			true
-		);
+		// marks при идущем шаге text в группе read → сервис отдаёт paused_groups: [] → не на паузе!
 		expect(
-			isPausedFor({ paused: marks, work: work({ read: 1, cards: 2 }) }, SECTION_WORK.chronology)
+			isPausedFor(
+				{ paused: marks, work: { ...work({ read: 5 }), paused_groups: [] } },
+				SECTION_WORK.inventory
+			)
+		).toBe(false);
+		// marks при одних шагах marks в read → сервис отдаёт paused_groups: ['read'] → на паузе
+		expect(
+			isPausedFor(
+				{ paused: marks, work: { ...work({ read: 1 }), paused_groups: ['read'] } },
+				SECTION_WORK.inventory
+			)
+		).toBe(true);
+		expect(
+			isPausedFor(
+				{ paused: marks, work: { ...work({ read: 1, cards: 2 }), paused_groups: ['read'] } },
+				SECTION_WORK.chronology
+			)
 		).toBe(false);
 		const budget = { reason: 'budget', since: null, until: null, groups: null };
-		expect(isPausedFor({ paused: budget, work: work({ cards: 2 }) }, SECTION_WORK.chronology)).toBe(
-			true
-		);
+		expect(
+			isPausedFor(
+				{ paused: budget, work: { ...work({ cards: 2 }), paused_groups: ['cards'] } },
+				SECTION_WORK.chronology
+			)
+		).toBe(true);
+	});
+
+	it('Ф-8: waitReasonsText по группам возвращает причины только нужной группы, без групп — все', () => {
+		const w: Work = {
+			busy: false,
+			groups: {},
+			waiting: { cards: 1, read: 1 },
+			wait_reasons: ['http_401', 'texts_unreviewed'],
+			waiting_reasons: { cards: ['texts_unreviewed'], read: ['http_401'] },
+			sweeps: 0
+		};
+		expect(waitReasonsText(w, stringsJson, ['cards'])).toBe(stringsJson.wait_unreviewed);
+		expect(waitReasonsText(w, stringsJson, ['read'])).toBe(stringsJson.wait_http_401);
+		expect(waitReasonsText(w, stringsJson)).toContain(stringsJson.wait_http_401);
+		expect(waitReasonsText(w, stringsJson)).toContain(stringsJson.wait_unreviewed);
+	});
+
+	it('Ф-1: lastDetailGroupIndex находит последнюю группу вызовов без непустого текста после неё на обоих путях', () => {
+		// Markdown-токены
+		const mdTwo = [{ type: 'detail_group' }, { type: 'paragraph' }, { type: 'detail_group' }, { type: 'space' }];
+		expect(lastDetailGroupIndex(mdTwo, (t) => t.type === 'detail_group', (t) => t.type === 'space')).toBe(2);
+		const mdTail = [...mdTwo, { type: 'paragraph' }];
+		expect(lastDetailGroupIndex(mdTail, (t) => t.type === 'detail_group', (t) => t.type === 'space')).toBe(-1);
+		// Структурный вывод (StructuredOutputRenderer)
+		const soTwo = [
+			{ type: 'detail_group', text: '' },
+			{ type: 'message', text: 'Промежуточный' },
+			{ type: 'detail_group', text: '' },
+			{ type: 'message', text: '   ' }
+		];
+		expect(
+			lastDetailGroupIndex(
+				soTwo,
+				(it) => it.type === 'detail_group',
+				(it) => it.type === 'message' && !it.text.trim()
+			)
+		).toBe(2);
+		const soTail = [...soTwo, { type: 'message', text: 'Ответ' }];
+		expect(
+			lastDetailGroupIndex(
+				soTail,
+				(it) => it.type === 'detail_group',
+				(it) => it.type === 'message' && !it.text.trim()
+			)
+		).toBe(-1);
 	});
 });
 
@@ -354,6 +414,22 @@ describe('Р-8: открытая таблица не теряет строки, 
 		expect(merged[0].cells.c2.state).toBe('found');
 		// строка из второй порции (row2) осталась на месте
 		expect(merged.map((r) => r.document_id)).toEqual([10, 20]);
+	});
+
+	it('Ф-11: новая строка первой порции встаёт на своё место, а не в конец списка после догруженных порций', () => {
+		const r1 = { document_id: 1, cells: {} };
+		const r3 = { document_id: 3, cells: {} };
+		const rPage2 = { document_id: 99, cells: {} };
+		// пришла свежая первая порция: между 1 и 3 появилась новая строка 2
+		const incoming = [
+			{ document_id: 1, cells: {} },
+			{ document_id: 2, cells: {} },
+			{ document_id: 3, cells: {} }
+		];
+		const merged = mergeTableRows([r1, r3, rPage2], incoming, new Set(), false);
+		expect(merged.map((r) => r.document_id)).toEqual([1, 2, 3, 99]);
+		expect(merged[0]).toBe(r1);
+		expect(merged[2]).toBe(r3);
 	});
 });
 

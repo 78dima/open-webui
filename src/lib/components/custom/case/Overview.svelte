@@ -273,7 +273,7 @@
 				{#if sum.kind !== 'empty' && !b.can_write}<p class="md soft">
 						{S.overview_readonly_text}
 					</p>{/if}
-				{#if sum.kind === 'ready' && (sum.checks || b.can_write)}
+				{#if (sum.kind === 'ready' || sum.kind === 'waiting') && (sum.checks || b.can_write)}
 					<div class="row g8 acts">
 						{#if sum.checks && sectionOpen('check', b)}
 							<a class="btn big p" href={hrefOf('check')}>{S.overview_check_btn}</a>
@@ -292,7 +292,7 @@
 		</div>
 	</section>
 
-	{#if sum.kind === 'ready' && paused}
+	{#if (sum.kind === 'ready' || sum.kind === 'waiting') && paused}
 		<div class="note" class:s={!paused.self} data-testid="case-paused-note">
 			<Icon name={paused.self ? 'pause' : 'al'} klass="l" />
 			<p>{pausedText}</p>

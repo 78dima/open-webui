@@ -340,14 +340,14 @@ export function mergeTableRows<T extends { document_id: number; cells: Record<st
 			return cur ? updateOne(cur, inc) : inc;
 		});
 	}
-	const out = [...prev];
-	for (const inc of incoming) {
+	// Ф-11: новая строка первой порции встаёт на своё место по порядку incoming, а строки следующих порций из prev
+	// остаются следом в прежнем порядке (объекты существующих строк сохраняют ссылку).
+	const seen = new Set<number>();
+	const head = incoming.map((inc) => {
+		seen.add(inc.document_id);
 		const cur = byId.get(inc.document_id);
-		if (cur) updateOne(cur, inc);
-		else {
-			byId.set(inc.document_id, inc);
-			out.push(inc);
-		}
-	}
-	return out;
+		return cur ? updateOne(cur, inc) : inc;
+	});
+	const tail = prev.filter((r) => !seen.has(r.document_id));
+	return [...head, ...tail];
 }

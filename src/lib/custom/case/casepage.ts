@@ -159,6 +159,8 @@ export type Work = {
 	running?: Record<string, number>;
 	waiting?: Record<string, number>;
 	wait_reasons?: string[];
+	waiting_reasons?: Record<string, string[]>;
+	paused_groups?: string[];
 	sweeps: number;
 	stalled?: boolean;
 };
@@ -350,13 +352,12 @@ export const WAIT_KEYS: Record<string, string> = {
 	upload_receiving: 'wait_upload_receiving',
 	models_off: 'paused_models_off',
 	reprocess_limit: 'wait_reprocess_limit',
-	unreviewed: 'wait_unreviewed',
+	texts_unreviewed: 'wait_unreviewed',
 	texts_missing: 'wait_texts_missing',
 	http_401: 'wait_http_401',
 	http_429: 'wait_http_429',
 	engine_not_configured: 'wait_engine_not_configured',
-	not_ready: 'wait_not_ready',
-	passport_cards: 'wait_passport_cards'
+	not_ready: 'wait_not_ready'
 };
 
 /** Сколько задач группы сейчас в очереди и в работе (`sweeps` — идущих проходов). */
@@ -382,10 +383,18 @@ export const workWaitingOnly = (
 	data: Pick<CaseData, 'work'> | null | undefined,
 	localRunning = false
 ): boolean => !localRunning && !workActive(data) && workWaiting(data, WORK_PROCESSING);
-/** Причины ожидания задач словами сервиса, без повторов. */
-export function waitReasonsText(work: Work | null | undefined, S: Record<string, any>): string {
+/** Причины ожидания задач словами сервиса, без повторов (Ф-8: если заданы `groups`, берёт причины этих групп). */
+export function waitReasonsText(
+	work: Work | null | undefined,
+	S: Record<string, any>,
+	groups?: string[]
+): string {
 	const out: string[] = [];
-	for (const code of work?.wait_reasons ?? []) {
+	const codes =
+		groups && work?.waiting_reasons
+			? groups.flatMap((g) => work.waiting_reasons?.[g] ?? [])
+			: (work?.wait_reasons ?? []);
+	for (const code of codes) {
 		const txt = String(S[WAIT_KEYS[code] ?? 'wait_unknown'] ?? S.wait_unknown ?? '').trim();
 		if (txt && !out.includes(txt)) out.push(txt);
 	}
@@ -411,6 +420,7 @@ export const workKey = (work: Work | null | undefined): string =>
 		...WORK_ORDER.filter((g) => workCount(work, g) > 0),
 		...WORK_PROCESSING.filter((g) => (work?.waiting?.[g] ?? 0) > 0).map((g) => `w:${g}`),
 		...(work?.wait_reasons ?? []).map((r) => `wr:${r}`),
+		...(work?.paused_groups ?? []).map((g) => `pg:${g}`),
 		work?.stalled ? 'stalled' : ''
 	].join(',');
 /** Раздел следит за работой своих групп: `done` зовётся, когда она закончилась, — раздел перечитывает себя сразу. */
@@ -459,21 +469,26 @@ export function pauseOf(
 ): null | { self: boolean; key: string; since: string | null; groups: string[] | null } {
 	const p = data?.paused;
 	if (!p || p.reason === 'rate') return null;
-	const groups =
-		p.groups !== undefined ? p.groups : p.reason === 'marks' ? ['read'] : null;
+	const groups = p.groups ?? null;
 	if (Array.isArray(groups) && !groups.length) return null;
 	return { self: PAUSE_SELF.has(p.reason), key: pauseKey(p.reason), since: p.since, groups };
 }
-/** Остановлена ли паузой вся активная работа названных групп (частичная пауза `marks` — только `read`). */
+/** Остановлена ли паузой вся активная работа названных групп (Ф-4: по готовому `work.paused_groups` от сервиса,
+ *  вычисленному по шагам; при прежнем сервисе без `paused_groups` — по `paused`). */
 export function isPausedFor(
 	data: Pick<CaseData, 'paused' | 'work'> | null | undefined,
 	groups: string[] = WORK_PROCESSING
 ): boolean {
+	const active = groups.filter((g) => workCount(data?.work, g) > 0);
+	if (!active.length) return false;
+	if (Array.isArray(data?.work?.paused_groups)) {
+		const pg = data.work.paused_groups;
+		return active.every((g) => pg.includes(g));
+	}
 	const p = pauseOf(data);
 	if (!p) return false;
 	if (p.groups === null) return true;
-	const active = groups.filter((g) => workCount(data?.work, g) > 0);
-	return active.length > 0 && active.every((g) => p.groups!.includes(g));
+	return active.every((g) => p.groups!.includes(g));
 }
 const PAUSE_KEYS: Record<string, string> = {
 	manual: 'paused_manual',

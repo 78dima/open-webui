@@ -109,9 +109,11 @@
 	let loadedId = '';
 	let mounted = false;
 	let loadedPages = 1;
+	let loadSeq = 0;
 	async function load(page: number) {
 		if (busy) return;
 		const reqId = id;
+		loadSeq += 1;
 		busy = true;
 		paged = page > 0;
 		try {
@@ -156,10 +158,11 @@
 		if (busy || !live(sw) || (typeof document !== 'undefined' && document.hidden)) return;
 		const reqId = id;
 		const startedSeq = checkSeq;
-		const pagesWanted = loadedPages;
+		const seqAtStart = loadSeq;
+		let pagesWanted = loadedPages;
 		try {
 			const d = await state.api.get<View>(path('?page=0'));
-			if (reqId !== id || busy) return;
+			if (reqId !== id || busy || seqAtStart !== loadSeq) return;
 			const guard = protectedChecksSince(startedSeq);
 			if (live(d.sweep)) {
 				view = paged && view ? { ...view, sweep: d.sweep, summary: d.summary } : d;
@@ -167,26 +170,28 @@
 				else if (!paged) findings = d.findings ?? [];
 				return;
 			}
-			// проход закончился: перечитать весь загруженный объём порций, не сбрасывая место и отметки
+			// проход закончился: перечитать весь загруженный объём порций, не сбрасывая место и отметки; если юрист
+			// нажал «Показать ещё» во время перечитывания — подтягиваем и новую порцию (Ф-11)
 			const allRows: Row[] = [...(d.rows ?? [])];
 			const allFindings: Finding[] = [...(d.findings ?? [])];
 			let lastView = d;
 			let p = d.next_page ?? null;
 			let got = 1;
-			while (got < pagesWanted && p != null && !lastView.end) {
+			while (got < Math.max(pagesWanted, loadedPages) && p != null && !lastView.end) {
 				const more = await state.api.get<View>(path(`?page=${p}`));
-				if (reqId !== id || busy) return;
+				if (reqId !== id) return;
 				lastView = more;
 				if (more.kind === 'table') allRows.push(...(more.rows ?? []));
 				else allFindings.push(...(more.findings ?? []));
 				p = more.next_page ?? null;
 				got += 1;
 			}
+			if (reqId !== id || busy) return;
 			view = { ...d, next_page: lastView.next_page, end: lastView.end };
-			loadedPages = got;
-			paged = got > 1;
+			loadedPages = Math.max(got, loadedPages);
+			paged = loadedPages > 1;
 			const finalGuard = protectedChecksSince(startedSeq);
-			if (d.kind === 'table') rows = mergeTableRows(rows, allRows, finalGuard, true);
+			if (d.kind === 'table') rows = mergeTableRows(rows, allRows, finalGuard, loadedPages <= got);
 			else findings = allFindings;
 		} catch {
 			// сбой одного перечитывания признака не меняет: следующее — через тот же срок

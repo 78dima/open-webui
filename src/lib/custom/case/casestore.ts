@@ -165,7 +165,9 @@ export function createCaseState(
 						if (stopped) return;
 						const same =
 							workKey(light.work) === workKey(cur.work) &&
-							(light.paused?.reason ?? '') === (cur.paused?.reason ?? '');
+							(light.paused?.reason ?? '') === (cur.paused?.reason ?? '') &&
+							JSON.stringify(light.paused?.groups ?? null) ===
+								JSON.stringify(cur.paused?.groups ?? null);
 						if (same) {
 							if (JSON.stringify(light.work) !== JSON.stringify(cur.work))
 								data.set({ ...cur, work: light.work, paused: light.paused });
