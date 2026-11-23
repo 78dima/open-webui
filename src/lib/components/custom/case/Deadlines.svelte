@@ -216,13 +216,26 @@
 							>{S.map_unhide}</button
 						>
 					{:else}
-						<button
-							type="button"
-							class="btn"
-							class:p={!confirmed}
-							on:click={() => act(x.id, { confirmed: !confirmed })}
-							>{confirmed ? S.map_deadline_unconfirm : S.map_deadline_confirm}</button
-						>
+						<!-- черновик без даты окончания подтвердить нельзя (правило сервиса `deadlines._set`): вместо
+						     «Подтвердить» — «Указать даты», открывает правку; дата появилась — появляется «Подтвердить» -->
+						{#if !confirmed && !x.end_date}
+							{#if S.map_deadline_set_dates}
+								<button
+									type="button"
+									class="btn p"
+									data-testid="case-deadline-set-dates"
+									on:click={() => show(x)}>{S.map_deadline_set_dates}</button
+								>
+							{/if}
+						{:else}
+							<button
+								type="button"
+								class="btn"
+								class:p={!confirmed}
+								on:click={() => act(x.id, { confirmed: !confirmed })}
+								>{confirmed ? S.map_deadline_unconfirm : S.map_deadline_confirm}</button
+							>
+						{/if}
 						<button type="button" class="btn" on:click={() => show(x)}>{S.map_edit}</button>
 						<button type="button" class="btn t" on:click={() => act(x.id, { hidden: true })}
 							>{S.map_hide}</button
