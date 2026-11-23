@@ -119,15 +119,15 @@
 		void load(true);
 	}
 	const pickVolume = () => void load(true);
-	// чтение листов или опись тома закончились — опись перечитывается сразу (пока идут — вверху строка хода); пока
-	// открыто окно правки — подождать, как при смене версии дела
-	let workEnded = false;
-	const watchWork = workWatcher(SECTION_WORK.inventory, () => (workEnded = true));
+	// чтение листов или опись тома закончились: если версия дела не изменилась, выбор для «Объединить» и догруженные
+	// порции не сбрасываем (Р-8); если версия изменилась — опись перечитает верхний блок по `$data.version !== version`.
+	const watchWork = workWatcher(SECTION_WORK.inventory, () => {
+		if ($data && started && $data.version !== version && !winOpen && !historyOpen) {
+			version = $data.version;
+			void load(true);
+		}
+	});
 	$: watchWork($data);
-	$: if (workEnded && started && !winOpen && !historyOpen) {
-		workEnded = false;
-		void load(true);
-	}
 
 	// ---- выгрузка ----
 	let exporting = '';

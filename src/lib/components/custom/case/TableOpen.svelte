@@ -18,6 +18,7 @@
 		catchUpNote,
 		copyText,
 		coverage,
+		mergeTableRows,
 		needsConfirm,
 		placeQuery,
 		priceText,
@@ -107,6 +108,7 @@
 	let busy = false;
 	let loadedId = '';
 	let mounted = false;
+	let loadedPages = 1;
 	async function load(page: number) {
 		if (busy) return;
 		const reqId = id;
@@ -116,6 +118,8 @@
 			const d = await state.api.get<View>(path(`?page=${page}`));
 			if (reqId !== id) return;
 			view = d;
+			if (page === 0) loadedPages = 1;
+			else loadedPages = Math.max(loadedPages, page + 1);
 			// порция не повторяет уже показанное (состав мог сдвинуться между порциями): повтор ключа ломал бы список
 			if (d.kind === 'table') {
 				const seen = new Set(page ? rows.map((r) => r.document_id) : []);
@@ -131,26 +135,59 @@
 		}
 	}
 	// Открытая таблица идущего прохода перечитывает себя раз в 5 с, пока проход не закончен: признак — статус
-	// прохода в ответе сервиса (`queued` / `running`), а не таймер; закончился — последнее перечитывание даёт итог.
-	// Юрист дочитал дальше первой порции («Показать ещё») — строки остаются на месте, обновляется шапка с ходом.
+	// прохода в ответе сервиса (`queued` / `running`), а не таймер. Строки обновляются по месту (`mergeTableRows`),
+	// чтобы отметки «проверено» между опросами не откатывались и открытое окно примечания не теряло строку; по
+	// окончании прохода перечитывается весь загруженный объём порций, а не только первая (Р-8).
 	const LIVE_MS = 5000;
 	const live = (s: Sweep | undefined | null) =>
 		!!s && (s.status === 'running' || s.status === 'queued');
 	let paged = false;
+	let checkSeq = 0;
+	const cellTouch = new Map<string, number>();
+	const inFlightChecks = new Set<string>();
+	function protectedChecksSince(startedSeq: number): Set<string> {
+		const out = new Set<string>(inFlightChecks);
+		for (const [k, s] of cellTouch.entries()) {
+			if (s > startedSeq) out.add(k);
+		}
+		return out;
+	}
 	async function tick() {
 		if (busy || !live(sw) || (typeof document !== 'undefined' && document.hidden)) return;
 		const reqId = id;
+		const startedSeq = checkSeq;
+		const pagesWanted = loadedPages;
 		try {
 			const d = await state.api.get<View>(path('?page=0'));
 			if (reqId !== id || busy) return;
-			if (paged && live(d.sweep) && view) {
-				view = { ...view, sweep: d.sweep, summary: d.summary };
+			const guard = protectedChecksSince(startedSeq);
+			if (live(d.sweep)) {
+				view = paged && view ? { ...view, sweep: d.sweep, summary: d.summary } : d;
+				if (d.kind === 'table') rows = mergeTableRows(rows, d.rows ?? [], guard, !paged);
+				else if (!paged) findings = d.findings ?? [];
 				return;
 			}
-			paged = false;
-			view = d;
-			if (d.kind === 'table') rows = d.rows ?? [];
-			else findings = d.findings ?? [];
+			// проход закончился: перечитать весь загруженный объём порций, не сбрасывая место и отметки
+			const allRows: Row[] = [...(d.rows ?? [])];
+			const allFindings: Finding[] = [...(d.findings ?? [])];
+			let lastView = d;
+			let p = d.next_page ?? null;
+			let got = 1;
+			while (got < pagesWanted && p != null && !lastView.end) {
+				const more = await state.api.get<View>(path(`?page=${p}`));
+				if (reqId !== id || busy) return;
+				lastView = more;
+				if (more.kind === 'table') allRows.push(...(more.rows ?? []));
+				else allFindings.push(...(more.findings ?? []));
+				p = more.next_page ?? null;
+				got += 1;
+			}
+			view = { ...d, next_page: lastView.next_page, end: lastView.end };
+			loadedPages = got;
+			paged = got > 1;
+			const finalGuard = protectedChecksSince(startedSeq);
+			if (d.kind === 'table') rows = mergeTableRows(rows, allRows, finalGuard, true);
+			else findings = allFindings;
 		} catch {
 			// сбой одного перечитывания признака не меняет: следующее — через тот же срок
 		}
@@ -324,19 +361,26 @@
 		checked: boolean,
 		note: string | null | undefined
 	) {
-		const r = await state.api.request<{ check: Check | null }>(
-			'PUT',
-			path('/checks'),
-			{
-				document_id: row.document_id,
-				column_key: col.key,
-				checked,
-				note: note == null ? null : note
-			},
-			{ refresh: false }
-		);
-		row.cells[col.key].check = r.check;
-		rows = rows;
+		const cellKey = `${row.document_id}:${col.key}`;
+		inFlightChecks.add(cellKey);
+		try {
+			const r = await state.api.request<{ check: Check | null }>(
+				'PUT',
+				path('/checks'),
+				{
+					document_id: row.document_id,
+					column_key: col.key,
+					checked,
+					note: note == null ? null : note
+				},
+				{ refresh: false }
+			);
+			row.cells[col.key].check = r.check;
+			cellTouch.set(cellKey, ++checkSeq);
+			rows = rows;
+		} finally {
+			inFlightChecks.delete(cellKey);
+		}
 	}
 	// «проверено» строке или столбцу целиком (Р5-7 захода 22.11): сервис ставит отметку каждой ячейке тем же путём
 	async function checkMany(body: { document_id?: number; column_key?: string }) {

@@ -33,6 +33,7 @@ import {
 import { createCaseState } from './casestore';
 import { createLoader, createReload } from './loader';
 import { readListing } from './mycases';
+import { mergeTableRows, type Cell, type Check } from './tablescore';
 
 const boot = bootJson as Boot;
 const ready = readyJson as unknown as CaseData;
@@ -318,5 +319,40 @@ describe('страница дела: лёгкий опрос, пока идёт 
 		expect(calls.filter((c) => c === 'api/cases/f1').length).toBe(3);
 		state.stop();
 		vi.useRealTimers();
+	});
+});
+
+describe('Р-8: открытая таблица не теряет строки, отметки и окно примечания при опросе', () => {
+	it('обновление строк по месту сохраняет ссылку на строку и не откатывает отметку «проверено» между опросами', () => {
+		const localCheck: Check = { stands: true, note: 'сверено', by_name: 'Юрист', at: '2026-11-23' };
+		const row1 = {
+			document_id: 10,
+			cells: {
+				c1: { state: 'found', answers: [], check: localCheck } as Cell,
+				c2: { state: 'pending', answers: [], check: null } as Cell
+			}
+		};
+		const row2 = {
+			document_id: 20,
+			cells: { c1: { state: 'found', answers: [], check: null } as Cell }
+		};
+		// пришёл снимок опроса: в нём c1 ещё без отметки (снимок собран до клика юриста), а c2 уже дочитался
+		const incoming = [
+			{
+				document_id: 10,
+				cells: {
+					c1: { state: 'found', answers: [], check: null } as Cell,
+					c2: { state: 'found', answers: [{ value: 'да', page_id: 1 }], check: null } as Cell
+				}
+			}
+		];
+		const merged = mergeTableRows([row1, row2], incoming, new Set(['10:c1']), false);
+		// объект row1 — та же ссылка (окно примечания не потеряло строку)
+		expect(merged[0]).toBe(row1);
+		// отметка «проверено» не откатилась, а новый ответ c2 пришёл
+		expect(merged[0].cells.c1.check).toEqual(localCheck);
+		expect(merged[0].cells.c2.state).toBe('found');
+		// строка из второй порции (row2) осталась на месте
+		expect(merged.map((r) => r.document_id)).toEqual([10, 20]);
 	});
 });

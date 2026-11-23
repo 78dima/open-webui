@@ -308,3 +308,46 @@ export const catchUpNote = (cu: CatchUp, S: Strings): string =>
 /** Подпись отношения места прохода к вопросу (`answers` / `mentions`); `null` — без отметки. */
 export const relationWord = (relation: string | null | undefined, S: Strings): string =>
 	relation && RELATION[relation] ? (S[RELATION[relation]] ?? '') : '';
+
+/** Обновить строки открытой таблицы по месту (Р-8): существующие объекты строк сохраняют ссылку (открытое окно
+ *  примечания не теряет строку), а отметки «проверено» из `protectedChecks` (поставленные между опросами или в полёте)
+ *  не откатываются более старым снимком. Если `replaceList` — порядок и состав берутся из `incoming`, иначе прежние
+ *  строки (включая догруженные порции) сохраняются и обновляются по `document_id`. */
+export function mergeTableRows<T extends { document_id: number; cells: Record<string, Cell> }>(
+	prev: T[],
+	incoming: T[],
+	protectedChecks: ReadonlySet<string>,
+	replaceList = false
+): T[] {
+	const byId = new Map(prev.map((r) => [r.document_id, r]));
+	const updateOne = (cur: T, inc: T): T => {
+		const nextCells: Record<string, Cell> = { ...cur.cells };
+		for (const [k, incCell] of Object.entries(inc.cells ?? {})) {
+			const cellKey = `${inc.document_id}:${k}`;
+			const curCell = cur.cells?.[k];
+			if (protectedChecks.has(cellKey) && curCell) {
+				nextCells[k] = { ...incCell, check: curCell.check };
+			} else {
+				nextCells[k] = incCell;
+			}
+		}
+		Object.assign(cur, inc, { cells: nextCells });
+		return cur;
+	};
+	if (replaceList) {
+		return incoming.map((inc) => {
+			const cur = byId.get(inc.document_id);
+			return cur ? updateOne(cur, inc) : inc;
+		});
+	}
+	const out = [...prev];
+	for (const inc of incoming) {
+		const cur = byId.get(inc.document_id);
+		if (cur) updateOne(cur, inc);
+		else {
+			byId.set(inc.document_id, inc);
+			out.push(inc);
+		}
+	}
+	return out;
+}
