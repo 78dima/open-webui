@@ -8,6 +8,7 @@
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import Icon from './Icon.svelte';
+	import Busy from './Busy.svelte';
 	import StaleNote from './StaleNote.svelte';
 
 	export let state: CaseState;
@@ -78,7 +79,7 @@
 							</select>
 						{/if}
 						<button type="button" class="btn s p" disabled={busy.has(f.id)} on:click={() => add(f)}
-							>{S.folder_file_add}</button
+							><Busy on={busy.has(f.id)} text={S.busy_wait}>{S.folder_file_add}</Busy></button
 						>
 					</div>
 				{/if}

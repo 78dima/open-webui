@@ -27,6 +27,7 @@
 	} from '$lib/custom/case/mycases';
 	import FormDialog from './FormDialog.svelte';
 	import Icon, { type IconName } from './Icon.svelte';
+	import Busy from './Busy.svelte';
 	import SectionTree from './SectionTree.svelte';
 	import StateCard from './StateCard.svelte';
 
@@ -570,7 +571,8 @@
 										disabled={creating !== null}
 										class:busy={creating === f.id}
 										on:click={() => createCase(f)}
-										>{creating === f.id ? S.create_case_busy : S.create_case}</button
+										><Busy on={creating === f.id} text={S.create_case_busy}>{S.create_case}</Busy
+										></button
 									>
 								{:else}
 									<span class="mc-pill readonly"><Icon name="lock" />{S.access_readonly}</span>

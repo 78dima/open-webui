@@ -9,6 +9,7 @@
 	import { fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
+	import Busy from './Busy.svelte';
 
 	export let open = false;
 	export let state: CaseState;
@@ -54,7 +55,10 @@
 			if (mine === asked) error = reasonText(S, e);
 		}
 	}
+	let reverting: number | null = null; // откат в пути: кнопка занята, второй откат не уходит
 	async function revert(e: Edit) {
+		if (reverting !== null) return;
+		reverting = e.id;
 		try {
 			await state.api.post(casePath(state, `/edits/${e.id}/revert`));
 			caseToast(S.revert_done);
@@ -62,6 +66,8 @@
 			onReverted();
 		} catch (err) {
 			caseToast(errorText(S, err), true);
+		} finally {
+			reverting = null;
 		}
 	}
 	// значения словами готовит сервис (том, файл, опись, лист); у записей карты дела (паспорт, хронология, суммы,
@@ -107,7 +113,14 @@
 						<span class="sm fg2 aw">{line(e)}</span>
 					</div>
 					{#if e.can_revert}
-						<button type="button" class="btn s" on:click={() => revert(e)}>{S.revert}</button>
+						<button
+							type="button"
+							class="btn s"
+							disabled={reverting !== null}
+							on:click={() => revert(e)}
+							data-testid="case-history-revert"
+							><Busy on={reverting === e.id} text={S.busy_wait}>{S.revert}</Busy></button
+						>
 					{/if}
 				</div>
 			{/each}
