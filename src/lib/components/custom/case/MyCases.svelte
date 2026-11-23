@@ -5,8 +5,8 @@
 	// (плитки, отбор, порядок, склонение) страница считает сама из пришедшего — `$lib/custom/case/mycases`.
 	// Слова — только из строк сервиса (`S.ключ`), данные в разметку — только текстом.
 	import { onDestroy, onMount } from 'svelte';
-	import { config } from '$lib/stores';
-	import { getFolders, getSharedFolders } from '$lib/apis/folders';
+	import { config, folders as chatFolderStore, user } from '$lib/stores';
+	import { createNewFolder, getFolders, getSharedFolders } from '$lib/apis/folders';
 	import { CaseApiError, createCaseApi } from '$lib/custom/case/api';
 	import { caseStrings, count, fmt, plural } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
@@ -25,6 +25,7 @@
 		type Order,
 		type Scope
 	} from '$lib/custom/case/mycases';
+	import FormDialog from './FormDialog.svelte';
 	import Icon, { type IconName } from './Icon.svelte';
 	import SectionTree from './SectionTree.svelte';
 	import StateCard from './StateCard.svelte';
@@ -56,15 +57,56 @@
 	let creating: string | null = null;
 	let controller: AbortController | null = null;
 
+	/** Свои папки чата (для сверки названия новой папки с соседями верхнего уровня). */
+	let ownFolders: { id: string; name?: string; parent_id?: string | null; updated_at?: number }[] = [];
 	/** Дерево папок чата: нужно только для «Разделов из чата»; не пришло — страница работает без них. */
 	async function chatFolders(): Promise<FolderNode[] | null> {
 		const token = localStorage.getItem('token') ?? '';
 		try {
 			const [own, shared] = await Promise.all([getFolders(token), getSharedFolders(token)]);
-			return [...(Array.isArray(own) ? own : []), ...(Array.isArray(shared) ? shared : [])];
+			ownFolders = Array.isArray(own) ? own : [];
+			// то же хранилище, что обновляет боковая панель чата (`initFolders`): новая папка видна в чате без перезагрузки
+			chatFolderStore.set(
+				[...ownFolders].sort((a, b) => (b.updated_at ?? 0) - (a.updated_at ?? 0)) as never
+			);
+			return [...ownFolders, ...(Array.isArray(shared) ? shared : [])] as FolderNode[];
 		} catch {
 			return null;
 		}
+	}
+
+	// ---- «Создать папку» (пакет 23.11, Д-4): окно здесь же, папка создаётся штатным запросом папок чата ----
+	/** Право на папки — как у боковой панели чата (`Sidebar.svelte`, раздел «Папки»). */
+	$: canFolders =
+		!!$config?.features?.enable_folders &&
+		($user?.role === 'admin' || ($user?.permissions?.features?.folders ?? true));
+	/** Окно есть, когда сервис прислал его строки; прежний сервис — прежняя ссылка в чат. */
+	$: folderDialog = canFolders && !!S.create_folder && !!S.new_folder_name;
+	let folderOpen = false;
+	let folderName = '';
+	const askFolder = () => {
+		folderName = '';
+		folderOpen = true;
+	};
+	async function createFolder() {
+		let name = folderName.trim();
+		// пустое название — отказ, как у штатного окна («Folder name cannot be empty.»)
+		if (!name) throw new CaseApiError(400, 'other', S.new_folder_empty);
+		// повтор названия среди папок верхнего уровня — номер в конце, как у штатного окна
+		const siblings = ownFolders.filter((f) => (f.parent_id ?? null) === null);
+		const taken = (x: string) => siblings.some((f) => (f.name ?? '').toLowerCase() === x.toLowerCase());
+		if (taken(name)) {
+			let i = 1;
+			while (taken(`${name} ${i}`)) i++;
+			name = `${name} ${i}`;
+		}
+		try {
+			await createNewFolder(localStorage.getItem('token') ?? '', { name });
+		} catch (e) {
+			throw new CaseApiError(400, 'other', typeof e === 'string' ? e : '');
+		}
+		caseToast(fmt(S.new_folder_done, { name }));
+		await load();
 	}
 
 	function describe(error: unknown): Failure {
@@ -288,9 +330,15 @@
 				text={S.my_cases_empty}
 				testid="case-empty"
 			>
-				<a class="mc-big ghost act" href={chatHref}>
-					<Icon name="plus" stroke={2} />{S.create_folder_in_chat}
-				</a>
+				{#if folderDialog}
+					<button type="button" class="mc-big ghost act" on:click={askFolder} data-testid="case-new-folder"
+						><Icon name="plus" stroke={2} />{S.create_folder}</button
+					>
+				{:else if canFolders}
+					<a class="mc-big ghost act" href={chatHref}
+						><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
+					>
+				{/if}
 			</StateCard>
 		{:else}
 			<div class="mc-tiles">
@@ -461,9 +509,15 @@
 							</div>
 							<p>{S.folders_without_case_note}</p>
 						</div>
-						<a class="mc-new w" href={chatHref}
-							><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
-						>
+						{#if folderDialog}
+							<button type="button" class="mc-new w" on:click={askFolder} data-testid="case-new-folder"
+								><Icon name="plus" stroke={2} />{S.create_folder}</button
+							>
+						{:else if canFolders}
+							<a class="mc-new w" href={chatHref}
+								><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
+							>
+						{/if}
 					</div>
 					<div class="mc-grid">
 						{#each empties as f (f.id)}
@@ -497,18 +551,51 @@
 					</div>
 				{:else}
 					<div class="mc-freehead alone w">
-						<a class="mc-new" href={chatHref}
-							><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
-						>
+						{#if folderDialog}
+							<button type="button" class="mc-new" on:click={askFolder} data-testid="case-new-folder"
+								><Icon name="plus" stroke={2} />{S.create_folder}</button
+							>
+						{:else if canFolders}
+							<a class="mc-new" href={chatHref}
+								><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
+							>
+						{/if}
 					</div>
 				{/if}
-				<a class="mc-new wide n" href={chatHref}
-					><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
-				>
+				{#if folderDialog}
+					<button type="button" class="mc-new wide n" on:click={askFolder} data-testid="case-new-folder"
+						><Icon name="plus" stroke={2} />{S.create_folder}</button
+					>
+				{:else if canFolders}
+					<a class="mc-new wide n" href={chatHref}
+						><Icon name="plus" stroke={2} />{S.create_folder_in_chat}</a
+					>
+				{/if}
 			</section>
 		{/if}
 	</main>
 </div>
+
+<FormDialog
+	bind:open={folderOpen}
+	title={S.new_folder_title}
+	{S}
+	submit={createFolder}
+	submitText={S.create_folder}
+	testid="case-new-folder-dialog"
+>
+	<label class="lbl"
+		>{S.new_folder_name}<input
+			class="in"
+			type="text"
+			maxlength="200"
+			required
+			autocomplete="off"
+			bind:value={folderName}
+		/></label
+	>
+	<p class="sm mut">{S.new_folder_hint}</p>
+</FormDialog>
 
 <style>
 	/* Значения — из макетов D-* (там они записаны прямо в разметке). Цвета, общие с делом и листом, — переменные
@@ -984,6 +1071,12 @@
 	.mc-freehead p {
 		font-size: 13.5px;
 		color: var(--muted);
+	}
+	/* «Создать папку» — кнопка в виде прежней ссылки */
+	button.mc-new,
+	button.mc-big {
+		font: inherit;
+		cursor: pointer;
 	}
 	.mc-new {
 		display: inline-flex;

@@ -9,3 +9,5 @@ export const settings = writable<any>({});
 export const mobile = writable(false);
 export const showSidebar = writable(true);
 export const chatId = writable('chat-1');
+// «Мои дела»: окно «Создать папку» обновляет то же хранилище папок, что боковая панель чата
+export const folders = writable<any[]>([]);

@@ -56,7 +56,9 @@ async function open(page: Page, scene: Scene = {}) {
 	if (scene.dark) await page.evaluate(() => document.documentElement.classList.add('dark'));
 	await page.evaluate(
 		(config) => (window as any).setConfig(config),
-		scene.config === undefined ? { custom_ui: { case: true } } : scene.config
+		scene.config === undefined
+			? { custom_ui: { case: true }, features: { enable_folders: true } }
+			: scene.config
 	);
 	return { calls, external };
 }
@@ -122,7 +124,9 @@ test.describe('компьютер, 1280', () => {
 			'Тихонов — трудовой спор'
 		]);
 		await expect(page.getByText(S.folders_without_case_note)).toBeVisible();
-		await expect(page.locator('a:visible', { hasText: S.create_folder_in_chat })).toHaveAttribute('href', '/');
+		// «Создать папку» — кнопка с окном на этой же странице (пакет 23.11, Д-4), ссылка «в чат» — прежняя
+		await expect(page.getByTestId('case-new-folder').locator('visible=true')).toHaveText(S.create_folder);
+		await expect(page.locator('a:visible', { hasText: S.create_folder_in_chat })).toHaveCount(0);
 		await expect(page.locator('a:visible', { hasText: S.go_to_chat })).toHaveAttribute('href', '/');
 
 		const listing = calls.filter((c) => c.path === '/legal-tools/api/cases');
@@ -166,7 +170,7 @@ test.describe('компьютер, 1280', () => {
 		await year.click();
 		await expect(rows(page)).toHaveCount(1);
 		await expect(folders(page).locator('.title')).toHaveText(['2025']);
-		await expect(page.locator('a:visible', { hasText: S.create_folder_in_chat })).toHaveCount(1);
+		await expect(page.getByTestId('case-new-folder').locator('visible=true')).toHaveCount(1);
 		await year.click(); // повторное нажатие снимает отбор
 		await expect(rows(page)).toHaveCount(4);
 
@@ -277,13 +281,13 @@ test.describe('компьютер, 1280', () => {
 		await expect(rows(page)).toHaveCount(4);
 	});
 
-	test('папок нет: карточка «Папок пока нет» и «Создать папку в чате»', async ({ page }) => {
+	test('папок нет: карточка «Папок пока нет» и «Создать папку»', async ({ page }) => {
 		await open(page, { listing: 'my-cases-empty' });
 		await ready(page);
 		const card = page.getByTestId('case-empty');
 		await expect(card.getByRole('heading')).toHaveText(S.my_cases_empty_title);
 		await expect(card).toContainText(S.my_cases_empty);
-		await expect(card.getByRole('link', { name: S.create_folder_in_chat })).toHaveAttribute('href', '/');
+		await expect(card.getByRole('button', { name: S.create_folder })).toBeVisible();
 		await expect(page.getByTestId('case-scope-all')).toHaveText(/0/);
 		await expect(page.getByRole('searchbox')).toHaveCount(0);
 		await expect(page.getByTestId('case-list')).toHaveCount(0);
@@ -302,7 +306,7 @@ test.describe('компьютер, 1280', () => {
 		await expect(rows(page).first().locator('.title')).toHaveText(S.folder_untitled);
 		await expect(rows(page).first().locator('.vol')).toHaveText(S.volumes_none);
 		await expect(rows(page).nth(2).locator('.path')).toHaveText('Арбитраж / 2025 / Апелляция / Девятый ААС');
-		await expect(page.getByTestId('case-folders').locator('a:visible')).toHaveText(S.create_folder_in_chat);
+		await expect(page.getByTestId('case-folders').getByTestId('case-new-folder').locator('visible=true')).toHaveText(S.create_folder);
 		await noSideScroll(page);
 		// отбор, под который ничего не попало: своя фраза, а не «заведите дело ниже»
 		await page.getByTestId('case-scope-own').click();
