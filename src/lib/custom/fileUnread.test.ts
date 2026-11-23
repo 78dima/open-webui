@@ -18,6 +18,11 @@ describe('причина «не прочитан» — словами для ю�
 		}
 		expect(unreadReason()).toBe(ru.file_unread.reason);
 		expect(unreadReason()).toContain('файл повреждён или не читается');
+		// Ф-10: сообщение — теми же словами, что подсказка: не утверждает «повреждён», оговорка про сбой распознавания
+		const caveat = 'повреждён или не читается (или сервис распознавания был недоступен)';
+		expect(unreadReason()).toContain(caveat);
+		expect(ru.file_unread.toast).toContain(caveat);
+		expect(ru.file_unread.toast).toMatch(/сообщите администратору/);
 	});
 	it('знак есть, пока у вложения ошибка разбора; текста ошибки в разметке нет', () => {
 		expect(isUnread(RAW)).toBe(true);

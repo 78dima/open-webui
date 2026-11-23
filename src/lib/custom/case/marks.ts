@@ -95,6 +95,17 @@ export function placeUrl(
 
 export const pairText = (p: MarkPair) => (p.b ? `«${p.a}» / «${p.b}»` : `«${p.a}»`);
 
+/** Пар в строке отметки, сверх — «и ещё N»: тот же предел, что у строки «Проверьте листы» сервиса
+ * (`overview.TEXT_DISAGREE_SHOWN`), и те же слова (`text_disagree_more`). */
+export const PAIRS_SHOWN = 3;
+
+/** Пары строкой отметки — одна функция для всех строк и подсказок отметки (уборка ревью пакета 2). */
+export function pairsText(list: MarkPair[], S: Record<string, any>): string {
+	const head = list.slice(0, PAIRS_SHOWN).map(pairText).join('; ');
+	const more = list.length - PAIRS_SHOWN;
+	return more > 0 && S.text_disagree_more ? head + fmt(S.text_disagree_more, { n: more }) : head;
+}
+
 const keyOf = (own: MarkKeys['own'], field: string | undefined) =>
 	typeof own === 'string' ? own : own ? (own[field ?? ''] ?? own['']) : undefined;
 
@@ -121,7 +132,7 @@ export function markView(
 	for (const [k, list] of byKey)
 		lines.push({
 			kind: 'own',
-			text: fmt(S[k], { ...vars, values: list.map(pairText).join('; ') }),
+			text: fmt(S[k], { ...vars, values: pairsText(list, S) }),
 			url: placeUrl(list[0], base)
 		});
 	// имена: расходятся оба прочтения — одной строкой; имя только в одном прочтении — другой
@@ -134,7 +145,7 @@ export function markView(
 		if (k && S[k] && list.length)
 			lines.push({
 				kind: 'person',
-				text: fmt(S[k], { ...vars, values: list.map(pairText).join('; ') }),
+				text: fmt(S[k], { ...vars, values: pairsText(list, S) }),
 				url: placeUrl(list[0], base)
 			});
 	const reasons = checks.map((c) => c.reason).join('; ');
@@ -148,7 +159,7 @@ export function markView(
 				? {
 						text: S.map_own_value_pill,
 						url: placeUrl(first, base),
-						title: [...own, ...persons].map(pairText).join('; ')
+						title: pairsText([...own, ...persons], S)
 					}
 				: null,
 		sheet:

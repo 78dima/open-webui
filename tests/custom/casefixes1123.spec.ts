@@ -143,7 +143,7 @@ test.describe('Д-9, Д-10: отметка у записи и подчёркив
 		await expect(rows.nth(1).getByTestId('case-sheet-check-why')).toHaveText('Лист записи стоит в «Проверьте листы»: размыто — переснимите.');
 		await expect(rows.nth(1).getByTestId('case-own-value')).toHaveCount(0);
 		await expect(rows.nth(2).locator('[data-testid="case-own-value"], [data-testid="case-sheet-check"]')).toHaveCount(0);
-		await expect(page.getByTestId('case-fact-group').getByTestId('case-group-on-check')).toHaveText('с отметкой о прочтении: 4');
+		await expect(page.getByTestId('case-fact-group').getByTestId('case-group-on-check')).toHaveText(S.map_group_on_check.replace('{n}', '4'));
 		// подчёркивание — в раскрытой цитате, с обоими прочтениями в подсказке; текст цитаты не меняется
 		await expect(page.getByTestId('case-quote-mark')).toHaveCount(0);
 		await rows.nth(0).getByRole('button', { name: S.quote_toggle }).click();
@@ -167,7 +167,7 @@ test.describe('Д-9, Д-10: отметка у записи и подчёркив
 		await expect(rows.nth(1).getByTestId('case-sheet-check-why')).toHaveText('Лист суммы стоит в «Проверьте листы»: размыто — переснимите.');
 		await expect(page.getByTestId('case-own-value')).toHaveCount(1);
 		await expect(page.getByTestId('case-sheet-check')).toHaveCount(1);
-		await expect(page.getByTestId('case-group-on-check')).toHaveText(['с отметкой о прочтении: 2']);
+		await expect(page.getByTestId('case-group-on-check')).toHaveText([S.map_group_on_check_amount.replace('{n}', '2')]);
 	});
 
 	test('сроки (Д-10): у основания — расходящаяся дата срока, лист-основание целиком и подчёркивание в цитате', async ({ page }) => {

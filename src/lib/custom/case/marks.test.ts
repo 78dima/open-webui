@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { readable } from 'svelte/store';
 import { render } from 'svelte/server';
-import { MARKS, markView, pairPlaces, passportMarks, placeUrl } from './marks';
+import { MARKS, PAIRS_SHOWN, markView, pairPlaces, pairsText, passportMarks, placeUrl } from './marks';
 import { checkGroups } from './casepage';
 import ReadingMark from '../../components/custom/case/ReadingMark.svelte';
 import FactRow from '../../components/custom/case/FactRow.svelte';
@@ -161,6 +161,14 @@ describe('markView: что показать по полям сервиса', () 
 		expect(none).toEqual({ own: null, sheet: null, lines: [] });
 		const noOwn = markView(m, { ...S, map_own_date: undefined }, MARKS.fact);
 		expect(noOwn.lines.map((l) => l.kind)).toEqual(['person', 'sheet']);
+	});
+	it('пары — одной функцией и пределом списка «Проверьте листы»: сверх трёх — «и ещё N» (уборка ревью пакета 2)', () => {
+		const four = ['1', '2', '3', '4'].map((x) => ({ a: x, b: x + '0' }));
+		expect(PAIRS_SHOWN).toBe(3);
+		expect(pairsText(four, S)).toBe('«1» / «10»; «2» / «20»; «3» / «30»' + S.text_disagree_more.replace('{n}', '1'));
+		const v = markView({ own_value: four.map((p) => ({ ...p, url: P })) }, S, MARKS.fact);
+		expect(v.lines[0].text).toContain(pairsText(four, S));
+		expect(v.own?.title).toBe(pairsText(four, S));
 	});
 	it('у пары без url адрес собирается из place_base и места', () => {
 		const v = markView({ own_value: [{ a: '1', b: '2', hl: '3-4' }], place_base: P }, S, MARKS.amount);
