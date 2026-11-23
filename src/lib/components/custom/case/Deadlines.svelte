@@ -17,6 +17,7 @@
 	import FormDialog from './FormDialog.svelte';
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon from './Icon.svelte';
+	import QuoteText from './QuoteText.svelte';
 	import SheetRef from './SheetRef.svelte';
 
 	export let state: CaseState;
@@ -38,6 +39,9 @@
 			quote?: string | null;
 			quote_rest?: number | null;
 			quote_changed?: boolean;
+			sheet_checks?: { code: string; reason: string }[];
+			own_value?: string[][];
+			quote_marks?: { start: number; end: number; a: string; b: string }[];
 		};
 		calc?: string | null;
 		norm?: string | null;
@@ -190,9 +194,28 @@
 					{#if x.basis.quote_changed}<span class="pill w t as" data-testid="case-quote-changed"
 							><Icon name="al" />{S.quote_changed}</span
 						>{/if}
+					<!-- отметка срока (пакет 23.11, Д-10): расходится его дата — оба прочтения; лист-основание помечен целиком -->
+					{#if x.basis.own_value?.length && S.map_own_deadline}<span
+							class="pill w t as"
+							data-testid="case-own-value"><Icon name="al" />{S.map_own_value_pill}</span
+						>
+						<p class="sm c-warn" data-testid="case-own-value-why">
+							{fmt(S.map_own_deadline, {
+								values: x.basis.own_value.map((v) => `«${v[0]}» / «${v[1]}»`).join('; ')
+							})}
+						</p>{/if}
+					{#if x.basis.sheet_checks?.length && S.map_sheet_check_deadline}<span
+							class="pill w t as"
+							data-testid="case-sheet-check"><Icon name="al" />{S.map_sheet_check_pill}</span
+						>
+						<p class="sm c-warn" data-testid="case-sheet-check-why">
+							{fmt(S.map_sheet_check_deadline, {
+								reasons: x.basis.sheet_checks.map((c) => c.reason).join('; ')
+							})}
+						</p>{/if}
 					{#if x.basis.quote}
 						<p class="q">
-							{x.basis.quote}{#if quoteMore(x.basis.quote_rest, S)}{' '}<span class="mut"
+							<QuoteText quote={x.basis.quote} marks={x.basis.quote_marks} {S} />{#if quoteMore(x.basis.quote_rest, S)}{' '}<span class="mut"
 									>{quoteMore(x.basis.quote_rest, S)}</span
 								>{/if}
 						</p>

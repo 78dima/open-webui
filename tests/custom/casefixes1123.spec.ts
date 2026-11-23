@@ -118,39 +118,64 @@ test.describe('Д-4: «Создать папку» на «Мои дела»', ()
 	});
 });
 
-// ---- Д-9: отметка «лист в „Проверьте листы“» у записи хронологии и суммы ----
-test.describe('Д-9: лист записи стоит в «Проверьте листы»', () => {
+// ---- Д-9, Д-10: отметка у записи хронологии, суммы и срока; подчёркивание расхождений в цитате ----
+test.describe('Д-9, Д-10: отметка у записи и подчёркивание в цитате', () => {
 	test.use({ viewport: { width: 1280, height: 1100 } });
-	const checks = [{ code: 'text_disagree', reason: 'числа на листе прочитаны по-разному: «500» / «800»' }, { code: 'blurred', reason: 'размыто — переснимите' }];
+	const whole = [{ code: 'blurred', reason: 'размыто — переснимите' }];
 
-	test('хронология: отметка и причины словами списка у записи с такого листа; у прочих и при прежнем сервисе — нет; счёт на группе', async ({ page }) => {
+	test('хронология: «прочитано по-разному» у записи с расходящейся датой, «лист в „Проверьте листы“» у листа целиком; в цитате места подчёркнуты; счёт на группе', async ({ page }) => {
 		const d = fixture('facts');
-		d.facts[0].sheet_checks = checks;
-		d.facts[1].sheet_checks = [];
-		delete d.facts[2].sheet_checks; // прежний сервис поля не присылает
+		const q = d.facts[0].quote as string;
+		const word = q.slice(4, 9);
+		Object.assign(d.facts[0], { own_value: [['12.05.2025', '12.05.2026']], sheet_checks: [], quote_marks: [{ start: 4, end: 9, a: word, b: 'иначе' }] });
+		Object.assign(d.facts[1], { own_value: [], sheet_checks: whole, quote_marks: [] });
+		for (const k of ['own_value', 'sheet_checks', 'quote_marks']) delete d.facts[2][k]; // прежний сервис полей не присылает
 		d.facts.push({ group: true, document_id: 5, document: 'Выписка', n: 12, date_from: '2025-04-01', date_to: '2025-05-31', page_id: 1, label: 'т. 2, л.д. 5', on_check: 4 });
 		await openSection(page, { section: 'chronology', routes: { 'facts**': d } });
 		const rows = page.getByTestId('case-fact');
-		await expect(rows.nth(0).getByTestId('case-sheet-check')).toHaveText(S.map_sheet_check_pill);
-		await expect(rows.nth(0).getByTestId('case-sheet-check-why')).toHaveText(
-			'Лист записи стоит в «Проверьте листы»: числа на листе прочитаны по-разному: «500» / «800»; размыто — переснимите. Сверьте запись с листом.'
-		);
-		await expect(rows.nth(1).getByTestId('case-sheet-check')).toHaveCount(0);
-		await expect(rows.nth(2).getByTestId('case-sheet-check')).toHaveCount(0);
-		await expect(page.getByTestId('case-sheet-check')).toHaveCount(1);
-		await expect(page.getByTestId('case-fact-group').getByTestId('case-group-on-check')).toHaveText('с листов из «Проверьте листы»: 4');
+		await expect(rows.nth(0).getByTestId('case-own-value')).toHaveText(S.map_own_value_pill);
+		await expect(rows.nth(0).getByTestId('case-own-value-why')).toHaveText('Дата этой записи прочитана на листе по-разному: «12.05.2025» / «12.05.2026».');
+		await expect(rows.nth(0).getByTestId('case-sheet-check')).toHaveCount(0);
+		await expect(rows.nth(1).getByTestId('case-sheet-check')).toHaveText(S.map_sheet_check_pill);
+		await expect(rows.nth(1).getByTestId('case-sheet-check-why')).toHaveText('Лист записи стоит в «Проверьте листы»: размыто — переснимите.');
+		await expect(rows.nth(1).getByTestId('case-own-value')).toHaveCount(0);
+		await expect(rows.nth(2).locator('[data-testid="case-own-value"], [data-testid="case-sheet-check"]')).toHaveCount(0);
+		await expect(page.getByTestId('case-fact-group').getByTestId('case-group-on-check')).toHaveText('с отметкой о прочтении: 4');
+		// подчёркивание — в раскрытой цитате, с обоими прочтениями в подсказке; текст цитаты не меняется
+		await expect(page.getByTestId('case-quote-mark')).toHaveCount(0);
+		await rows.nth(0).getByRole('button', { name: S.quote_toggle }).click();
+		const mark = rows.nth(0).getByTestId('case-quote-mark');
+		await expect(mark).toHaveText(word);
+		await expect(mark).toHaveAttribute('title', `прочитано по-разному: «${word}» / «иначе»`);
+		expect((await rows.nth(0).locator('.q').first().innerText()).replace(/\s+/g, ' ')).toContain(q.slice(0, 30).replace(/\s+/g, ' '));
+		await rows.nth(1).getByRole('button', { name: S.quote_toggle }).click();
+		await expect(rows.nth(1).getByTestId('case-quote-mark')).toHaveCount(0);
 	});
 
-	test('суммы: отметка и причины у суммы с такого листа; счёт на группе', async ({ page }) => {
+	test('суммы: отметка у суммы с расходящимся числом и у суммы с листа, помеченного целиком; счёт на группе', async ({ page }) => {
 		const d = fixture('amounts');
-		d.amounts[0].sheet_checks = checks.slice(1);
+		Object.assign(d.amounts[0], { own_value: [['1 250 000', '1 250 800']], sheet_checks: [], quote_marks: [] });
+		Object.assign(d.amounts[1], { own_value: [], sheet_checks: whole, quote_marks: [] });
 		d.amounts.push({ group: true, document_id: 5, document: 'Выписка', n: 7, page_id: 1, label: 'т. 2, л.д. 5', on_check: 2 }, { group: true, document_id: 6, document: 'Акт', n: 3, page_id: 2, label: 'т. 2, л.д. 6', on_check: 0 });
 		await openSection(page, { section: 'amounts', routes: { 'amounts**': d } });
-		const first = page.getByTestId('case-amount').first();
-		await expect(first.getByTestId('case-sheet-check')).toHaveText(S.map_sheet_check_pill);
-		await expect(first.getByTestId('case-sheet-check-why')).toHaveText('Лист суммы стоит в «Проверьте листы»: размыто — переснимите. Сверьте сумму с листом.');
+		const rows = page.getByTestId('case-amount');
+		await expect(rows.nth(0).getByTestId('case-own-value-why')).toHaveText('Эта сумма прочитана на листе по-разному: «1 250 000» / «1 250 800».');
+		await expect(rows.nth(1).getByTestId('case-sheet-check-why')).toHaveText('Лист суммы стоит в «Проверьте листы»: размыто — переснимите.');
+		await expect(page.getByTestId('case-own-value')).toHaveCount(1);
 		await expect(page.getByTestId('case-sheet-check')).toHaveCount(1);
-		await expect(page.getByTestId('case-group-on-check')).toHaveText(['с листов из «Проверьте листы»: 2']);
+		await expect(page.getByTestId('case-group-on-check')).toHaveText(['с отметкой о прочтении: 2']);
+	});
+
+	test('сроки (Д-10): у основания — расходящаяся дата срока, лист-основание целиком и подчёркивание в цитате', async ({ page }) => {
+		const d = fixture('deadlines');
+		const q = d.deadlines[0].basis.quote as string;
+		Object.assign(d.deadlines[0].basis, { own_value: [['11.04.2025', '17.04.2025']], sheet_checks: whole, quote_marks: [{ start: 0, end: 5, a: q.slice(0, 5), b: 'иначе' }] });
+		await openSection(page, { section: 'deadlines', routes: { 'deadlines**': d } });
+		const first = page.getByTestId('case-deadline').nth(0);
+		await expect(first.getByTestId('case-own-value-why')).toHaveText('Дата срока прочитана на листе-основании по-разному: «11.04.2025» / «17.04.2025».');
+		await expect(first.getByTestId('case-sheet-check-why')).toHaveText('Лист-основание стоит в «Проверьте листы»: размыто — переснимите.');
+		await expect(first.getByTestId('case-quote-mark')).toHaveText(q.slice(0, 5));
+		await expect(page.getByTestId('case-deadline').nth(1).locator('[data-testid="case-own-value"], [data-testid="case-sheet-check"], [data-testid="case-quote-mark"]')).toHaveCount(0);
 	});
 });
 

@@ -4,6 +4,7 @@
 	import { quoteMore, rub } from '$lib/custom/case/mapcore';
 	import { fmt } from '$lib/custom/case/strings';
 	import Icon from './Icon.svelte';
+	import QuoteText from './QuoteText.svelte';
 	import SheetRef from './SheetRef.svelte';
 
 	export let a: any;
@@ -35,6 +36,9 @@
 		{#if a.quote_changed}<span class="pill w t" data-testid="case-quote-changed"
 				><Icon name="al" />{S.quote_changed}</span
 			>{/if}
+		{#if a.own_value?.length && S.map_own_value_pill}<span class="pill w t" data-testid="case-own-value"
+				><Icon name="al" />{S.map_own_value_pill}</span
+			>{/if}
 		{#if a.sheet_checks?.length && S.map_sheet_check_pill}<span
 				class="pill w t"
 				data-testid="case-sheet-check"><Icon name="al" />{S.map_sheet_check_pill}</span
@@ -65,7 +69,12 @@
 		{/if}
 		<button type="button" class="btn t" on:click={() => onHistory(a)}>{S.map_history}</button>
 	</span>
-	<!-- лист суммы стоит в «Проверьте листы» (пакет 23.11, Д-9): причины — словами списка -->
+	<!-- отметка суммы (пакет 23.11, Д-9): расходится её собственное число — оба прочтения; лист помечен целиком -->
+	{#if a.own_value?.length && S.map_own_sum}<p class="sm c-warn why" data-testid="case-own-value-why">
+			{fmt(S.map_own_sum, {
+				values: a.own_value.map((v: string[]) => `«${v[0]}» / «${v[1]}»`).join('; ')
+			})}
+		</p>{/if}
 	{#if a.sheet_checks?.length && S.map_sheet_check_amount}<p
 			class="sm c-warn why"
 			data-testid="case-sheet-check-why"
@@ -76,7 +85,7 @@
 		</p>{/if}
 	{#if a.quote && quoteOpen}
 		<p class="q">
-			{a.quote}{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
+			<QuoteText quote={a.quote} marks={a.quote_marks} {S} />{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
 					>{quoteMore(a.quote_rest, S)}</span
 				>{/if}
 		</p>

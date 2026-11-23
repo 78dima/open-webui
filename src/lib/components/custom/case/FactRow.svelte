@@ -5,6 +5,7 @@
 	import { fmt } from '$lib/custom/case/strings';
 	import { acceptedText as acceptedLine } from '$lib/custom/case/facts';
 	import Icon from './Icon.svelte';
+	import QuoteText from './QuoteText.svelte';
 	import SheetRef from './SheetRef.svelte';
 
 	export let f: any;
@@ -44,6 +45,10 @@
 			{#if f.quote_changed}<span class="pill t w" data-testid="case-quote-changed"
 					>{S.quote_changed}</span
 				>{/if}
+			{#if f.own_value?.length && S.map_own_value_pill}<span
+					class="pill t w"
+					data-testid="case-own-value">{S.map_own_value_pill}</span
+				>{/if}
 			{#if f.sheet_checks?.length && S.map_sheet_check_pill}<span
 					class="pill t w"
 					data-testid="case-sheet-check">{S.map_sheet_check_pill}</span
@@ -53,7 +58,13 @@
 			{/if}
 		</div>
 		{#if note}<p class="sm c-warn">{note}</p>{/if}
-		<!-- лист записи стоит в «Проверьте листы» (пакет 23.11, Д-9): причины — словами списка, лист — ссылкой ниже -->
+		<!-- отметка записи (пакет 23.11, Д-9): расходится её собственная дата — оба прочтения; лист помечен целиком —
+		     причины словами списка; лист — ссылкой ниже -->
+		{#if f.own_value?.length && S.map_own_date}<p class="sm c-warn" data-testid="case-own-value-why">
+				{fmt(S.map_own_date, {
+					values: f.own_value.map((v: string[]) => `«${v[0]}» / «${v[1]}»`).join('; ')
+				})}
+			</p>{/if}
 		{#if f.sheet_checks?.length && S.map_sheet_check}<p
 				class="sm c-warn"
 				data-testid="case-sheet-check-why"
@@ -77,7 +88,7 @@
 		</div>
 		{#if f.quote && quoteOpen}
 			<p class="q">
-				{f.quote}{#if quoteMore(f.quote_rest, S)}{' '}<span class="mut"
+				<QuoteText quote={f.quote} marks={f.quote_marks} {S} />{#if quoteMore(f.quote_rest, S)}{' '}<span class="mut"
 						>{quoteMore(f.quote_rest, S)}</span
 					>{/if}
 			</p>
