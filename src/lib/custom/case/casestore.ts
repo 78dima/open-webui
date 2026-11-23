@@ -31,6 +31,8 @@ export type FolderFilesState = {
 /** Пока идёт только работа по делу (карточки, паспорт, проходы…), страница раз в 5 с спрашивает лёгкую ручку
  *  `…/work`, а обзор целиком — когда состав работы изменился, после действия юриста и не реже этого срока (мс). */
 export const FULL_EVERY_MS = 30000;
+/** Тайм-аут запросов опроса (лёгкого `…/work` и обзора в цикле), мс; у действий юриста тайм-аута нет (Р-10). */
+export const POLL_TIMEOUT_MS = 15000;
 /** Короткое окно сведения частых записей в один запрос обзора (мс). */
 export const WRITE_COALESCE_MS = 300;
 const FOLDER_UPLOAD_BUSY = new Set(['receiving', 'received', 'intake']);
@@ -83,6 +85,7 @@ export function createCaseState(
 	let prevBusyUploads: string | null = null;
 	let fullAt = 0; // когда обзор пришёл целиком
 	let wantFull = true; // следующий запрос — обзор целиком (первый, после действия, по возвращении вкладки)
+	let noWorkEndpoint = false; // сервис без ручки …/work (404 при живом обзоре) — работать по обзору (Р-10)
 
 	function scheduleRefresh() {
 		if (stopped) return;
@@ -144,32 +147,42 @@ export function createCaseState(
 		run: async (signal) => {
 			try {
 				const cur = get(data);
+				let lightWas404 = false;
 				if (
 					cur &&
 					!wantFull &&
+					!noWorkEndpoint &&
 					workOnly(cur, uploads.running()) &&
 					Date.now() - fullAt < FULL_EVERY_MS
 				) {
-					// лёгкий запрос: счёт задач в строке хода тикает, обзор целиком не собирается
-					const light = await rawApi.get<{ work: Work; paused: CaseData['paused'] }>(
-						path('/work'),
-						{ signal }
-					);
-					if (stopped) return;
-					const same =
-						workKey(light.work) === workKey(cur.work) &&
-						(light.paused?.reason ?? '') === (cur.paused?.reason ?? '');
-					if (same) {
-						if (JSON.stringify(light.work) !== JSON.stringify(cur.work))
-							data.set({ ...cur, work: light.work, paused: light.paused });
-						stale.set(null);
-						return;
+					// лёгкий запрос: счёт задач в строке хода тикает, обзор целиком не собирается; при сбое лёгкого
+					// запроса тем же заходом идём в обзор целиком, «нет связи» не ставим (Р-10)
+					try {
+						const light = await rawApi.get<{ work: Work; paused: CaseData['paused'] }>(
+							path('/work'),
+							{ signal, timeoutMs: POLL_TIMEOUT_MS }
+						);
+						if (stopped) return;
+						const same =
+							workKey(light.work) === workKey(cur.work) &&
+							(light.paused?.reason ?? '') === (cur.paused?.reason ?? '');
+						if (same) {
+							if (JSON.stringify(light.work) !== JSON.stringify(cur.work))
+								data.set({ ...cur, work: light.work, paused: light.paused });
+							stale.set(null);
+							return;
+						}
+						// состав работы изменился (группа закончилась или началась) — обзор целиком тем же заходом
+					} catch (lightErr) {
+						if ((lightErr as Error)?.name === 'AbortError' || stopped) return;
+						if (failure(lightErr).kind === 'not_found') lightWas404 = true;
+						// идём в обзор целиком тем же заходом
 					}
-					// состав работы изменился (группа закончилась или началась) — обзор целиком тем же заходом
 				}
 				wantFull = false;
-				const next = await rawApi.get<CaseData>(path(), { signal });
+				const next = await rawApi.get<CaseData>(path(), { signal, timeoutMs: POLL_TIMEOUT_MS });
 				if (stopped) return;
+				if (lightWas404) noWorkEndpoint = true;
 				fullAt = Date.now();
 				data.set(next);
 				stale.set(null);

@@ -843,6 +843,7 @@
  "work_part_vectors": "готовится поиск по смыслу",
  "work_stalled": "Обработка не отвечает, задачи стоят в очереди: {parts}. Записи разделов могут быть прежними.",
  "overview_state_waiting": "Обработка ждёт",
+ "overview_state_stalled": "Обработка не отвечает",
  "work_waiting_line": "Обработка ждёт: {reason}.",
  "work_note_waiting": "Обработка ждёт: {reason}.",
  "wait_av": "ждёт антивирус — проверка начнётся сама",

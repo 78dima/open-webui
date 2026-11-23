@@ -49,7 +49,7 @@ export function detailText(data: unknown): string {
 	return typeof text === 'string' ? text : '';
 }
 
-export type CaseRequestOptions = { signal?: AbortSignal; refresh?: boolean };
+export type CaseRequestOptions = { signal?: AbortSignal; refresh?: boolean; timeoutMs?: number };
 export type CaseApi = {
 	base: string;
 	/** Адрес в сервисе от его базы: `url('case/<папка>')` — прежняя страница дела и листы. */
@@ -109,13 +109,35 @@ export function createCaseApi(
 			Accept: 'application/json',
 			Authorization: `Bearer ${bearer}`
 		};
+		let ac: AbortController | null = null;
+		let timer: ReturnType<typeof setTimeout> | null = null;
+		let timedOut = false;
+		const onOuterAbort = () => ac?.abort();
+		let signal = options.signal;
+		if (options.timeoutMs != null && options.timeoutMs > 0) {
+			ac = new AbortController();
+			if (options.signal?.aborted) ac.abort();
+			else options.signal?.addEventListener('abort', onOuterAbort, { once: true });
+			timer = setTimeout(() => {
+				timedOut = true;
+				ac?.abort();
+			}, options.timeoutMs);
+			signal = ac.signal;
+		}
+		const cleanup = () => {
+			if (timer !== null) {
+				clearTimeout(timer);
+				timer = null;
+			}
+			options.signal?.removeEventListener('abort', onOuterAbort);
+		};
 		const init: RequestInit = {
 			method,
 			headers,
 			credentials: 'same-origin',
 			redirect: 'error',
 			cache: 'no-store',
-			signal: options.signal
+			signal
 		};
 		if (method !== 'GET' && method !== 'HEAD') headers['X-Ai-Case'] = '1';
 		if (typeof Blob !== 'undefined' && body instanceof Blob) {
@@ -129,7 +151,8 @@ export function createCaseApi(
 		try {
 			response = await (deps.fetcher ?? fetch)(url(path), init);
 		} catch (error) {
-			if ((error as { name?: string } | null)?.name === 'AbortError') throw error;
+			cleanup();
+			if ((error as { name?: string } | null)?.name === 'AbortError' && !timedOut) throw error;
 			throw new CaseApiError(0, 'network');
 		}
 		let data: unknown = null;
@@ -138,9 +161,15 @@ export function createCaseApi(
 			const text = await response.text();
 			data = text ? JSON.parse(text) : null;
 		} catch (error) {
-			if ((error as { name?: string } | null)?.name === 'AbortError') throw error;
+			if ((error as { name?: string } | null)?.name === 'AbortError') {
+				cleanup();
+				if (timedOut) throw new CaseApiError(0, 'network');
+				throw error;
+			}
 			data = null;
 			foreign = true;
+		} finally {
+			cleanup();
 		}
 		// «200», но не JSON — ответил не сервис (например, приложение чата отдало свою страницу по этому пути,
 		// когда путь к сервису не настроен): это сбой, а не пустой список

@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import bootJson from '../../../../tests/custom/fixtures/case/case-boot.json';
 import readyJson from '../../../../tests/custom/fixtures/case/case-overview.json';
 import stringsJson from '../../../../tests/custom/fixtures/case/strings.json';
-import type { CaseApi } from './api';
+import { CaseApiError, createCaseApi, type CaseApi } from './api';
 import {
 	SECTION_WORK,
 	WAIT_KEYS,
@@ -354,5 +354,87 @@ describe('Р-8: открытая таблица не теряет строки, 
 		expect(merged[0].cells.c2.state).toBe('found');
 		// строка из второй порции (row2) осталась на месте
 		expect(merged.map((r) => r.document_id)).toEqual([10, 20]);
+	});
+});
+
+describe('Р-10: отказ лёгкого опроса, отсутствие …/work (404) и тайм-аут опроса', () => {
+	const stub = (get: (path: string, opts?: { timeoutMs?: number }) => Promise<unknown>): CaseApi => ({
+		base: '/legal-tools',
+		url: (p) => `/legal-tools/${p}`,
+		download: async () => ({ blob: new Blob(), name: '' }),
+		get: (p, o) => get(p, o) as Promise<any>,
+		request: () => Promise.resolve({}) as Promise<any>,
+		post: () => Promise.resolve({}) as Promise<any>
+	});
+
+	it('сбой …/work тем же заходом уходит в обзор целиком и не ставит stale', async () => {
+		vi.useFakeTimers();
+		const calls: string[] = [];
+		const timeouts: (number | undefined)[] = [];
+		const api = stub(async (path, opts) => {
+			calls.push(path.replace('api/cases/f1', '') || '/');
+			if (path === 'api/cases/f1' || path.endsWith('/work')) timeouts.push(opts?.timeoutMs);
+			if (path.endsWith('/boot')) return { ...boot, folder_id: 'f1', has_case: true };
+			if (path.endsWith('/folder-files')) return { files: [] };
+			if (path.endsWith('/work')) throw new CaseApiError(500, 'other', 'boom');
+			return { ...ready, work: work({ cards: 2 }) };
+		});
+		const state = createCaseState(api, 'f1');
+		await state.start();
+		await vi.advanceTimersByTimeAsync(5000);
+		// лёгкий запрос упал → тем же заходом ушли в обзор, stale остался null, тайм-аут передан
+		expect(calls.filter((c) => c === '/work').length).toBe(1);
+		expect(calls.filter((c) => c === '/').length).toBe(2);
+		expect(get(state.stale)).toBeNull();
+		expect(timeouts.every((t) => typeof t === 'number' && t > 0)).toBe(true);
+		state.stop();
+		vi.useRealTimers();
+	});
+
+	it('сервис без ручки …/work (404 при живом обзоре): страница переходит на опрос обзором и …/work больше не дёргает', async () => {
+		vi.useFakeTimers();
+		const calls: string[] = [];
+		const api = stub(async (path) => {
+			calls.push(path.replace('api/cases/f1', '') || '/');
+			if (path.endsWith('/boot')) return { ...boot, folder_id: 'f1', has_case: true };
+			if (path.endsWith('/folder-files')) return { files: [] };
+			if (path.endsWith('/work')) throw new CaseApiError(404, 'not_found');
+			return { ...ready, work: work({ cards: 2 }) };
+		});
+		const state = createCaseState(api, 'f1');
+		await state.start();
+		await vi.advanceTimersByTimeAsync(5000);
+		await vi.advanceTimersByTimeAsync(5000);
+		expect(calls.filter((c) => c === '/work').length).toBe(1);
+		expect(calls.filter((c) => c === '/').length).toBe(3);
+		expect(get(state.bootError)).toBeNull();
+		expect(get(state.stale)).toBeNull();
+		state.stop();
+		vi.useRealTimers();
+	});
+
+	it('тайм-аут запроса опроса в api.ts: зависший запрос завершается CaseApiError(0, network), а без timeoutMs — не обрывается', async () => {
+		vi.useFakeTimers();
+		const api = createCaseApi(
+			{ legal_tools_base: '/legal-tools' },
+			{
+				token: () => 'tok',
+				fetcher: (_url, init) =>
+					new Promise<Response>((_resolve, reject) => {
+						init?.signal?.addEventListener('abort', () => {
+							const e = new Error('Aborted');
+							e.name = 'AbortError';
+							reject(e);
+						});
+					})
+			}
+		);
+		const p = api.get('api/cases/f1/work', { timeoutMs: 100 });
+		const caught = p.catch((e) => e);
+		await vi.advanceTimersByTimeAsync(120);
+		const err = await caught;
+		expect(err).toBeInstanceOf(CaseApiError);
+		expect((err as CaseApiError).kind).toBe('network');
+		vi.useRealTimers();
 	});
 });

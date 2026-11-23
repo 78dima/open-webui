@@ -201,6 +201,10 @@
 							>
 						{:else if pausedHere && paused}
 							<span class="pill s"><Icon name="al" />{S.overview_state_stopped}</span>
+						{:else if d.work?.stalled}
+							<span class="pill w" data-testid="case-state-stalled"
+								><Icon name="al" />{S.overview_state_stalled || S.overview_state_stopped}</span
+							>
 						{:else}
 							<span class="pill i"><Icon name="clock" />{S.overview_state_processing}</span>
 						{/if}
