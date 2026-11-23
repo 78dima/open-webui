@@ -271,7 +271,9 @@ export function navGroups(
 			...g,
 			items: g.items
 				.filter((i) => sectionOpen(i.slug, boot, folderFiles, folderFilesFailed))
-				.map((i) => (workActive(data, SECTION_WORK[i.slug]) ? { ...i, work: true } : i))
+				.map((i) =>
+					SECTION_WORK[i.slug] && workActive(data, SECTION_WORK[i.slug]) ? { ...i, work: true } : i
+				)
 		}))
 		.filter((g) => g.items.length);
 }
@@ -435,7 +437,7 @@ export function summary(data: CaseData): Summary {
 		uploads.some((u) => UPLOAD_BUSY.has(u.phase) || u.phase === 'receiving');
 	const ic = ov.index_coverage ?? { indexed: 0, total: 0 };
 	const busy =
-		processing(data) ||
+		intake(data) ||
 		uploads.some((u) => u.phase === 'receiving') || // файл ещё передаётся — материалы в пути
 		ic.indexed < ic.total ||
 		volumes.some((v) => v.status !== 'inventory_ready') ||
