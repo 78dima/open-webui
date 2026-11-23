@@ -92,6 +92,7 @@
 		undated?: number;
 		next_page?: number | null;
 		state?: MapState | null;
+		rev?: string | null;
 		can_write?: boolean;
 	};
 	type Query = {
@@ -124,24 +125,50 @@
 	onDestroy(() => Object.assign(kept, { form: { ...form }, asked: { ...asked } }));
 	let extra: (Fact | Group)[] = []; // следующие порции той же выборки
 	let nextPage: number | null = null;
-	let shownKey = ''; // запрос и ответ первой порции, по которым показана лента
+	let loadedPages = 1; // сколько порций сейчас показано юристу
+	let shownRev = ''; // метка состояния записей хронологии от сервиса (`rev`)
+	let shownAsked = ''; // сериализованный отбор, для которого показана лента
 	const loader = createLoader(
 		async () => {
+			const askedNow = { ...asked };
+			const askedKey = JSON.stringify(askedNow);
 			const d = await state.api.get<Answer>(
-				casePath(state, `/facts${query({ ...asked, groups: true })}`)
+				casePath(state, `/facts${query({ ...askedNow, groups: true })}`)
 			);
-			// Ответ тот же, что показан (перечитывание вместе с обзором, а записи не менялись): догруженные «Показать
-			// ещё» порции, правки на месте и место юриста в ленте остаются. Сбрасываются только когда изменился ответ
-			// или запрос (в ответе — и общий счёт записей: новые записи в дальних порциях тоже меняют его).
-			const key = JSON.stringify([asked, d]);
-			if (key === shownKey) return d;
-			shownKey = key;
-			extra = [];
-			if (asked.hidden) gone = new Set(); // «с убранными» — убранные снова видны
-			// свежая порция ленты — сама новее правок на месте; у строк раскрытых групп правка на месте остаётся
-			const fresh = new Set(d.facts.filter((x) => !x.group).map((x) => (x as Fact).id));
+			// Р-5: решение «сохранить догруженное» принимается по факту сервиса (`rev`), а не по первой порции.
+			// Версия та же и отбор тот же — догруженные порции и место юриста остаются; изменилась — перечитать
+			// столько же порций, сколько было загружено, сохраняя место юриста.
+			if (d.rev && askedKey === shownAsked && d.rev === shownRev) return d;
+			const keepCount = askedKey === shownAsked && loadedPages > 1 ? loadedPages : 1;
+			let nextExtra: (Fact | Group)[] = [];
+			let nextP: number | null = d.next_page ?? null;
+			let pagesGot = 1;
+			const seen = new Set(d.facts.map(rowKey));
+			while (pagesGot < keepCount && nextP != null) {
+				const moreD = await state.api.get<Answer>(
+					casePath(state, `/facts${query({ ...askedNow, groups: true, page: String(nextP) })}`)
+				);
+				for (const item of moreD.facts) {
+					const k = rowKey(item);
+					if (!seen.has(k)) {
+						seen.add(k);
+						nextExtra.push(item);
+					}
+				}
+				nextP = moreD.next_page ?? null;
+				pagesGot += 1;
+			}
+			shownAsked = askedKey;
+			shownRev = d.rev ?? '';
+			loadedPages = pagesGot;
+			extra = nextExtra;
+			nextPage = nextP;
+			if (askedNow.hidden) gone = new Set(); // «с убранными» — убранные снова видны
+			// свежие порции ленты — сами новее правок на месте; у строк раскрытых групп правка на месте остаётся
+			const fresh = new Set(
+				[...d.facts, ...nextExtra].filter((x) => !x.group).map((x) => (x as Fact).id)
+			);
 			patched = Object.fromEntries(Object.entries(patched).filter(([k]) => !fresh.has(Number(k))));
-			nextPage = d.next_page ?? null;
 			return d;
 		},
 		{ gap: 20000 }
@@ -185,6 +212,7 @@
 			const seen = new Set(rows.map(rowKey));
 			extra = [...extra, ...d.facts.filter((f) => !seen.has(rowKey(f)))];
 			nextPage = d.next_page ?? null;
+			loadedPages += 1;
 		} catch (e) {
 			caseToast(errorText(S, e), true);
 		} finally {
@@ -325,7 +353,8 @@
 			id: 'refresh',
 			text: S.map_refresh,
 			run: () => {
-				shownKey = ''; // «Обновить» юриста — лента с начала, и при том же ответе первой порции
+				shownRev = ''; // «Обновить» юриста — перечитать ленту заново
+				loadedPages = 1;
 				void reload.run();
 			},
 			busy: $reloading,
