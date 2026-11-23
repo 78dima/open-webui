@@ -42,7 +42,7 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Download from '$lib/components/icons/Download.svelte';
 	import ConsecutiveDetailsGroup from './ConsecutiveDetailsGroup.svelte';
-	import { lastDetailGroupIndex } from '$lib/custom/toolStatus'; // ai-dvokat: общее правило последней группы вызовов
+	import { isMarkdownToolItem, lastDetailGroupIndex } from '$lib/custom/toolStatus'; // ai-dvokat: общее правило последнего вызова
 
 	import HtmlToken from './HTMLToken.svelte';
 	import Clipboard from '$lib/components/icons/Clipboard.svelte';
@@ -154,10 +154,11 @@
 	} text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition`;
 
 	$: displayTokens = getDisplayTokens(tokens);
-	// ai-dvokat: индекс последней группы вызовов, после которой ещё нет текста ответа (для «Выполнено, готовлю ответ»)
+	// ai-dvokat: индекс последнего вызова (группы или одиночного), после которого ещё нет текста ответа (для
+	// «Выполнено, готовлю ответ»)
 	$: lastDetailGroupIdx = lastDetailGroupIndex(
 		displayTokens,
-		(t) => t?.type === 'detail_group',
+		isMarkdownToolItem,
 		(t) => t?.type === 'space'
 	);
 	$: renderHtml = tokens.some((token) => token.type === 'html') ? markdown?.renderHtml : undefined;
@@ -558,6 +559,8 @@
 				id={`${id}-${tokenIdx}-tc`}
 				attributes={token.attributes}
 				resultContent={getDetailTextContent(token)}
+				isLast={top && tokenIdx === lastDetailGroupIdx}
+				messageDone={done}
 				{allowEmbeds}
 				resolvable={!!chatId && !!messageId && save}
 				resolving={resolvingCallId === token.attributes?.id}

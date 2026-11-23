@@ -11,7 +11,7 @@
 
 	import Markdown from './Markdown.svelte';
 	import ConsecutiveDetailsGroup from './Markdown/ConsecutiveDetailsGroup.svelte';
-	import { lastDetailGroupIndex } from '$lib/custom/toolStatus'; // ai-dvokat: общее правило последней группы вызовов
+	import { isStructuredToolItem, lastDetailGroupIndex } from '$lib/custom/toolStatus'; // ai-dvokat: общее правило последнего вызова
 	import ContextCompactionLabel from './ContextCompactionLabel.svelte';
 	import {
 		buildOutputDisplayItems,
@@ -75,10 +75,10 @@
 	} text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition`;
 
 	$: displayItems = buildOutputDisplayItems(output) as OutputDisplayItem[];
-	// ai-dvokat: индекс последней группы вызовов без непустого текста ответа после неё (Ф-1)
+	// ai-dvokat: индекс последнего вызова (группы или одиночного, Ф-1, Н-2) без непустого текста ответа после него
 	$: lastDetailGroupIdx = lastDetailGroupIndex(
 		displayItems,
-		(it) => it.type === 'detail_group',
+		isStructuredToolItem,
 		(it) => it.type === 'message' && !it.text.trim()
 	);
 </script>
@@ -221,6 +221,8 @@
 				id={`${id}-${displayItem.id}-tool-call`}
 				attributes={detailToken.attributes}
 				resultContent={detailToken.text}
+				isLast={displayIdx === lastDetailGroupIdx}
+				messageDone={done}
 				{allowEmbeds}
 				resolvable={!!chatId && !!messageId && save}
 				resolving={resolvingCallId === detailToken.attributes?.id}

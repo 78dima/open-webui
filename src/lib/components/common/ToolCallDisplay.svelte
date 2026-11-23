@@ -20,7 +20,7 @@
 	import FullHeightIframe from './FullHeightIframe.svelte';
 	import MCPApp from '$lib/components/chat/Messages/MCPApp.svelte';
 	import { settings, config, user } from '$lib/stores';
-	import { plainToolStatus, toolState, toolStatusLabel } from '$lib/custom/toolStatus'; // ai-dvokat: plain status for legal users
+	import { plainToolStatus, toolPreparingLabel, toolState, toolStatusLabel } from '$lib/custom/toolStatus'; // ai-dvokat: plain status for legal users
 
 	export let id: string = '';
 	export let attributes: {
@@ -37,6 +37,8 @@
 
 	export let open = false;
 	export let grouped = false;
+	export let isLast = false; // ai-dvokat: одиночный вызов — последний, после него ещё нет текста ответа (Н-2)
+	export let messageDone = true; // ai-dvokat
 	export let allowEmbeds = false;
 	export let className = '';
 	export let resolvable = false;
@@ -160,6 +162,10 @@
 
 	// ai-dvokat: one Russian status line instead of names, arguments and results
 	$: plainLabel = plainToolStatus($config?.custom_ui, $user?.role) ? toolStatusLabel(attributes?.name, toolState({ rejected: isRejected, error: isError, done: isDone, input: needsInput, approval: needsApproval })) : '';
+	// ai-dvokat: вызов выполнен, а сообщение ещё не закончено (модель работает над ответом) — не итоговая зелёная галка,
+	// а признак хода и «Выполнено, готовлю ответ» (то же правило, что у группы вызовов, Н-2)
+	$: plainPreparing = !!plainLabel && !grouped && isLast && isDone && !isError && !isRejected && !messageDone;
+	$: shownLabel = plainPreparing ? toolPreparingLabel(attributes?.name) : plainLabel;
 
 	$: parsedArgs = parseArguments(args);
 	$: parsedResult = parseJSONString(result);
@@ -214,13 +220,13 @@
 			on:keydown={toggleOpenOnKeydown}
 		>
 			<div
-				class="w-full min-w-0 max-w-full font-normal flex items-center gap-1.5 {isActive
+				class="w-full min-w-0 max-w-full font-normal flex items-center gap-1.5 {isActive || plainPreparing
 					? 'shimmer'
 					: ''}"
 			>
 				<!-- Status icon -->
-				{#if isActive}
-					<div>
+				{#if isActive || plainPreparing}<!-- ai-dvokat: plainPreparing -->
+					<div data-ai-dvokat-preparing={plainPreparing ? '' : undefined}>
 						<Spinner className="size-4" />
 					</div>
 				{:else if isRejected}
@@ -244,10 +250,10 @@
 				<!-- Label -->
 				<div class="flex-1 min-w-0 line-clamp-1">
 					<!-- Short label (below md) -->
-					<span class="@md:hidden text-black dark:text-white">{plainLabel || attributes.name}</span>
+					<span class="@md:hidden text-black dark:text-white">{shownLabel || attributes.name}</span>
 					<!-- Full label (md and above) -->
 					<span class="hidden @md:inline font-normal">
-						{#if plainLabel}{plainLabel}<!-- ai-dvokat -->
+						{#if plainLabel}{shownLabel}<!-- ai-dvokat -->
 						{:else if isRejected}
 							{$i18n.t('Denied {{NAME}}', { NAME: attributes.name })}
 						{:else if isDone}
