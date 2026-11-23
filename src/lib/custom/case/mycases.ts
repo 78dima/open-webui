@@ -29,6 +29,8 @@ export type CaseWork = {
 	since?: string | null;
 	reasons: string[];
 	sweeps: number;
+	/** проходов, которые стоят: обработчик заданий не отвечает */
+	sweeps_stalled?: number;
 };
 const KINDS = new Set(['runs', 'paused', 'stalled', 'waiting', 'ready']);
 function readWork(raw: unknown): CaseWork | null {
@@ -39,7 +41,8 @@ function readWork(raw: unknown): CaseWork | null {
 		reason: typeof w.reason === 'string' ? w.reason : null,
 		since: typeof w.since === 'string' ? w.since : null,
 		reasons: Array.isArray(w.reasons) ? w.reasons.filter((x): x is string => typeof x === 'string') : [],
-		sweeps: Number.isFinite(Number(w.sweeps)) ? Math.max(0, Number(w.sweeps)) : 0
+		sweeps: Number.isFinite(Number(w.sweeps)) ? Math.max(0, Number(w.sweeps)) : 0,
+		sweeps_stalled: Number.isFinite(Number(w.sweeps_stalled)) ? Math.max(0, Number(w.sweeps_stalled)) : 0
 	};
 }
 /** Отметка дела в списке: ключ строки, тон, значок и причина (подсказка) — словами строк сервиса. */
@@ -66,6 +69,15 @@ export function caseMarks(
 	const m = MARK[w.kind];
 	if (m && S[m.key]) out.push(w.kind === 'runs' ? { ...m } : { ...m, why: why(w) || undefined });
 	if (w.sweeps > 0 && S.my_cases_sweeps) out.push({ key: 'my_cases_sweeps', tone: 'i', icon: 'clock' });
+	// проход стоит: его задание ждёт в очереди, а обработчик заданий не отвечает — «не отвечает», не «идёт проход»
+	if ((w.sweeps_stalled ?? 0) > 0 && w.kind !== 'stalled' && S.my_cases_stalled) {
+		out.push({
+			...MARK.stalled,
+			why: S.work_jobs_stalled
+				? String(S.work_jobs_stalled).replace('{n}', String(w.sweeps_stalled))
+				: undefined
+		});
+	}
 	return out;
 }
 /** Через сколько перечитать список: 15 с — у какого-то дела идёт обработка или проход; 30 с — только на паузе, не
@@ -77,7 +89,7 @@ export function listDelay(folders: CaseFolder[]): number | null {
 		if (!c) continue;
 		const w = c.work;
 		if (w ? w.kind === 'runs' || w.sweeps > 0 : c.busy) return 15000;
-		if (w && w.kind !== 'ready') slow = true;
+		if (w && (w.kind !== 'ready' || (w.sweeps_stalled ?? 0) > 0)) slow = true;
 	}
 	return slow ? 30000 : null;
 }

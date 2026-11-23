@@ -715,3 +715,40 @@ describe('Н-2: одиночный вызов, после которого мо�
 	});
 });
 
+
+describe('проход, чьё задание ждёт в очереди, при неотвечающем обработчике заданий — стоит, а не «идёт»', () => {
+	it('обработчик заданий жив — «идёт проход»; не отвечает — «не отвечает» в «Таблицах», «Моих делах»; меню без часов', () => {
+		const going: Work = { ...work({}, 1), sweeps_stalled: 0 };
+		const held: Work = { ...work({}, 0), sweeps_stalled: 1, busy: false };
+		// «Таблицы»: строка хода
+		expect(workNote({ work: going, paused: null }, SECTION_WORK.tables, SS, 'work_note_tables')?.kind).toBe('runs');
+		expect(workNote({ work: held, paused: null }, SECTION_WORK.tables, SS, 'work_note_tables')).toEqual({
+			kind: 'waits',
+			paused: false,
+			text: SS.work_jobs_stalled.replace('{n}', '1')
+		});
+		// стоящий проход разделы обработки не трогает и часов у «Таблиц» не ставит
+		expect(workNote({ work: held, paused: null }, SECTION_WORK.chronology, SS)).toBeNull();
+		expect(marked({ ...ready, work: held })).toEqual([]);
+		expect(marked({ ...ready, work: going })).toEqual(['tables']);
+		// состав работы сменился — обзор перечитывается целиком
+		expect(workKey(held)).not.toBe(workKey(work({})));
+		// «Мои дела»
+		const list = readListing({
+			own: [
+				{ folder_id: 'g', case: { id: '1', volumes: 1, changed: null, work: view('ready', { sweeps: 1 }) } },
+				{
+					folder_id: 'h',
+					case: { id: '2', volumes: 1, changed: null, work: view('ready', { sweeps_stalled: 1 }) }
+				}
+			]
+		});
+		const [g, h] = list;
+		expect(caseMarks(g, SS).map((m) => m.key)).toEqual(['my_cases_sweeps']);
+		const mh = caseMarks(h, SS);
+		expect(mh.map((m) => m.key)).toEqual(['my_cases_stalled']);
+		expect(mh[0].why).toBe(SS.work_jobs_stalled.replace('{n}', '1'));
+		expect(listDelay([g])).toBe(15000);
+		expect(listDelay([h])).toBe(30000);
+	});
+});

@@ -63,6 +63,11 @@
 		d?.work && workCount(d.work, 'sweeps') > 0 && S.overview_sweeps_line && S.work_part_sweeps
 			? fmt(S.overview_sweeps_line, { parts: fmt(S.work_part_sweeps, { n: workCount(d.work, 'sweeps') }) })
 			: '';
+	// проходы стоят: обработчик заданий не отвечает (факт сервиса — его сердцебиение), а не «идёт проход»
+	$: sweepsHeld =
+		(d?.work?.sweeps_stalled ?? 0) > 0 && S.work_jobs_stalled
+			? fmt(S.work_jobs_stalled, { n: d?.work?.sweeps_stalled })
+			: '';
 
 	const TONE: Record<Tone, string> = { plain: '', info: 'i', warn: 'w', stop: 's' };
 	const ICON: Record<Tone, IconName> = { plain: 'ok', info: 'clock', warn: 'al', stop: 'al' };
@@ -242,6 +247,9 @@
 					</p>
 					{#if sweepsLine}
 						<p class="md soft" data-testid="case-work-sweeps">{sweepsLine}</p>
+					{/if}
+					{#if sweepsHeld}
+						<p class="md soft" data-testid="case-work-sweeps-stalled">{sweepsHeld}</p>
 					{/if}
 					{#if (d.cards_failed ?? 0) > 0 && S.map_state_failed}
 						<p class="md soft" data-testid="case-ready-failed">

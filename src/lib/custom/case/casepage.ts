@@ -162,6 +162,8 @@ export type Work = {
 	waiting_reasons?: Record<string, string[]>;
 	paused_groups?: string[];
 	sweeps: number;
+	/** проходов, чьё задание ждёт в очереди, а обработчик заданий не отвечает (они не «идут»); прежний сервис — нет */
+	sweeps_stalled?: number;
 	stalled?: boolean;
 	/** Вид дела от сервиса (Н-1) — одно правило для «Моих дел», «Обзора» и листа; прежний сервис поля не отдаёт. */
 	view?: CaseView;
@@ -176,6 +178,7 @@ export type CaseView = {
 	since?: string | null;
 	reasons: string[];
 	sweeps: number;
+	sweeps_stalled?: number;
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -487,6 +490,11 @@ export function workNote(
 		const reason = waitReasonsText(work, S, groups);
 		if (reason) return { kind: 'waiting', paused: false, text: fmt(S.work_note_waiting, { reason }) };
 	}
+	// проходы стоят: их задания ждут в очереди, а обработчик заданий не отвечает (факт сервиса — его сердцебиение)
+	const held = work?.sweeps_stalled ?? 0;
+	if (groups.includes('sweeps') && held > 0 && S.work_jobs_stalled) {
+		return { kind: 'waits', paused: false, text: fmt(S.work_jobs_stalled, { n: held }) };
+	}
 	return null;
 }
 /** Что перечитать в «Хронологии» при очередном обновлении (Р-5, Н-7): `keep` — записи не менялись (та же метка `rev`
@@ -562,7 +570,8 @@ export const workKey = (work: Work | null | undefined): string =>
 		...WORK_PROCESSING.filter((g) => (work?.waiting?.[g] ?? 0) > 0).map((g) => `w:${g}`),
 		...(work?.wait_reasons ?? []).map((r) => `wr:${r}`),
 		...(work?.paused_groups ?? []).map((g) => `pg:${g}`),
-		work?.stalled ? 'stalled' : ''
+		work?.stalled ? 'stalled' : '',
+		(work?.sweeps_stalled ?? 0) > 0 ? 'jobs_stalled' : ''
 	].join(',');
 /** Раздел следит за работой своих групп: `done` зовётся, когда она закончилась, — раздел перечитывает себя сразу. */
 export function workWatcher(groups: string[], done: () => void) {
