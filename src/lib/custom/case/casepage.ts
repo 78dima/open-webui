@@ -327,6 +327,17 @@ export const SECTION_WORK: Record<string, string[]> = {
 /** Вся обработка дела (сводка «Обзора»): проходы — работа юриста с готовым делом, в обработку не входят. */
 export const WORK_PROCESSING = ['read', 'inventory', 'cards', 'passport', 'copies', 'vectors', 'other'];
 const WORK_ORDER = [...WORK_PROCESSING, 'sweeps'];
+/** Группа работы → ключ её слов в строках сервиса. */
+const WORK_PART: Record<string, string> = {
+	read: 'work_part_read',
+	inventory: 'work_part_inventory',
+	cards: 'work_part_cards',
+	passport: 'work_part_passport',
+	copies: 'work_part_copies',
+	vectors: 'work_part_vectors',
+	other: 'work_part_other',
+	sweeps: 'work_part_sweeps'
+};
 
 /** Сколько задач группы сейчас в очереди и в работе (`sweeps` — идущих проходов). */
 export const workCount = (work: Work | null | undefined, group: string): number =>
@@ -345,7 +356,7 @@ export function workParts(
 	S: Record<string, any>
 ): string[] {
 	return WORK_ORDER.filter((g) => groups.includes(g) && workCount(work, g) > 0)
-		.map((g) => fmt(S[`work_part_${g}`], { n: workCount(work, g) }))
+		.map((g) => fmt(S[WORK_PART[g]], { n: workCount(work, g) }))
 		.filter(Boolean);
 }
 /** Состав работы без чисел: изменился — пора перечитать обзор целиком (между этим хватает лёгкого запроса). */

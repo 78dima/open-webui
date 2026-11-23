@@ -247,7 +247,7 @@
 		sw.windows_total ? Math.round((100 * (sw.windows_done ?? 0)) / sw.windows_total) : 0;
 </script>
 
-<WorkNote {state} {S} groups={SECTION_WORK.tables} />
+<WorkNote {state} {S} groups={SECTION_WORK.tables} key={'work_note_tables'} />
 
 <PauseNote {state} {S} />
 <p class="md intro">{S.runs_intro}</p>

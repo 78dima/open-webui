@@ -21,6 +21,8 @@ export type Scene = {
 	/** Ручки раздела: хвост адреса после `…/cases/<папка>/` (шаблон Playwright) → ответ или обработчик. */
 	routes?: Record<string, unknown | ((route: Route, call: Call) => unknown)>;
 	dark?: boolean;
+	/** Строки сервиса вместо снимка (прежний сервис без новых ключей). */
+	strings?: Record<string, unknown>;
 };
 
 export async function openSection(page: Page, scene: Scene = {}) {
@@ -37,7 +39,7 @@ export async function openSection(page: Page, scene: Scene = {}) {
 		calls.push({ method: r.method(), path: url.pathname.replace(API, '') + url.search, headers: r.headers(), body });
 	});
 	await page.addInitScript(() => localStorage.setItem('token', 'session-token'));
-	await page.route('**/legal-tools/api/cases/ui.json', (r) => r.fulfill({ json: { strings: S } }));
+	await page.route('**/legal-tools/api/cases/ui.json', (r) => r.fulfill({ json: { strings: scene.strings ?? S } }));
 	await page.route(`**${API}/boot`, (r) => r.fulfill({ json: { ...BOOT, ...(scene.boot ?? {}) } }));
 	await page.route(`**${API}/passport`, (r) => r.fulfill({ json: fixture('passport') }));
 	await page.route(`**${API}/folder-files`, (r) => r.fulfill({ json: fixture('folder-files') }));
