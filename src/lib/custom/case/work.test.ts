@@ -6,17 +6,23 @@ import { get } from 'svelte/store';
 import { describe, expect, it, vi } from 'vitest';
 import bootJson from '../../../../tests/custom/fixtures/case/case-boot.json';
 import readyJson from '../../../../tests/custom/fixtures/case/case-overview.json';
+import stringsJson from '../../../../tests/custom/fixtures/case/strings.json';
 import type { CaseApi } from './api';
 import {
 	SECTION_WORK,
+	WAIT_KEYS,
+	WORK_PART,
 	navGroups,
 	pollDelay,
 	processing,
 	summary,
+	waitReasonsText,
 	workActive,
 	workKey,
 	workOnly,
 	workParts,
+	workWaiting,
+	workWaitingOnly,
 	workWatcher,
 	type Boot,
 	type CaseData,
@@ -124,6 +130,51 @@ describe('работа по делу (поле work обзора)', () => {
 			]
 		});
 		expect(list.map((f) => !!f.case?.busy)).toEqual([true, false, false]);
+	});
+
+	it('Р-1: когда остались только ждущие внешнего условия задачи — waiting, редкий опрос 30 с, без часов в меню', () => {
+		const wWait: Work = {
+			busy: false,
+			groups: {},
+			running: {},
+			waiting: { cards: 3 },
+			wait_reasons: ['reprocess_limit', 'http_401'],
+			sweeps: 0,
+			stalled: false
+		};
+		const dWait: CaseData = { ...ready, work: wWait };
+		expect(workWaiting(dWait, SECTION_WORK.chronology)).toBe(true);
+		expect(workWaiting(dWait, SECTION_WORK.inventory)).toBe(false);
+		expect(workWaitingOnly(dWait)).toBe(true);
+		expect(summary(dWait).kind).toBe('waiting');
+		// даже если том не дошёл до inventory_ready — при одних ждущих задачах это waiting, а не processing
+		const readingVol = { ...ready.overview.volumes![0], status: 'reading' };
+		expect(
+			summary({ ...dWait, overview: { ...ready.overview, volumes: [readingVol] } }).kind
+		).toBe('waiting');
+		expect(processing(dWait)).toBe(false);
+		expect(pollDelay(dWait)).toBe(30000);
+		expect(marked(dWait)).toEqual([]);
+		expect(waitReasonsText(wWait, stringsJson)).toContain(stringsJson.wait_reprocess_limit);
+		expect(waitReasonsText(wWait, stringsJson)).toContain(stringsJson.wait_http_401);
+		// если рядом есть активная задача — снова processing и 5 с
+		const mixed: CaseData = {
+			...ready,
+			work: { ...wWait, busy: true, groups: { passport: 1 } }
+		};
+		expect(workWaitingOnly(mixed)).toBe(false);
+		expect(summary(mixed).kind).toBe('processing');
+		expect(pollDelay(mixed)).toBe(5000);
+	});
+
+	it('переводы групп и причин ожидания согласованы со снимком строк сервиса', () => {
+		for (const key of Object.values(WORK_PART)) {
+			expect(stringsJson).toHaveProperty(key);
+		}
+		for (const key of Object.values(WAIT_KEYS)) {
+			expect(stringsJson).toHaveProperty(key);
+		}
+		expect(stringsJson).toHaveProperty('wait_unknown');
 	});
 });
 

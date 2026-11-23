@@ -148,12 +148,15 @@ export type CaseData = {
 	/** какая работа по делу идёт сейчас (сервис, `work.of_case`); прежний сервис поля не отдаёт */
 	work?: Work | null;
 };
-/** Работа по делу — факты очереди сервиса: `groups` — задач группы в очереди и в работе, `running` — из них взято
- *  обработчиком, `sweeps` — идущих проходов, `stalled` — обработчик очереди не отвечает (задачи стоят). */
+/** Работа по делу — факты очереди сервиса: `groups` — готовых и взятых задач группы, `running` — из них взято
+ *  обработчиком, `waiting` — задачи, ждущие внешнего условия (`wait:` + `next_at > now()`), `wait_reasons` — их причины,
+ *  `sweeps` — идущих проходов, `stalled` — обработчик очереди не отвечает (задачи стоят). */
 export type Work = {
 	busy: boolean;
 	groups: Record<string, number>;
 	running?: Record<string, number>;
+	waiting?: Record<string, number>;
+	wait_reasons?: string[];
 	sweeps: number;
 	stalled?: boolean;
 };
@@ -328,7 +331,7 @@ export const SECTION_WORK: Record<string, string[]> = {
 export const WORK_PROCESSING = ['read', 'inventory', 'cards', 'passport', 'copies', 'vectors', 'other'];
 const WORK_ORDER = [...WORK_PROCESSING, 'sweeps'];
 /** Группа работы → ключ её слов в строках сервиса. */
-const WORK_PART: Record<string, string> = {
+export const WORK_PART: Record<string, string> = {
 	read: 'work_part_read',
 	inventory: 'work_part_inventory',
 	cards: 'work_part_cards',
@@ -337,6 +340,21 @@ const WORK_PART: Record<string, string> = {
 	vectors: 'work_part_vectors',
 	other: 'work_part_other',
 	sweeps: 'work_part_sweeps'
+};
+/** Код причины ожидания задачи (`work.wait_reasons`) → ключ строки сервиса (как в `work.py` и `sheetg.js`). */
+export const WAIT_KEYS: Record<string, string> = {
+	av: 'wait_av',
+	disk: 'wait_disk',
+	upload_receiving: 'wait_upload_receiving',
+	models_off: 'paused_models_off',
+	reprocess_limit: 'wait_reprocess_limit',
+	unreviewed: 'wait_unreviewed',
+	texts_missing: 'wait_texts_missing',
+	http_401: 'wait_http_401',
+	http_429: 'wait_http_429',
+	engine_not_configured: 'wait_engine_not_configured',
+	not_ready: 'wait_not_ready',
+	passport_cards: 'wait_passport_cards'
 };
 
 /** Сколько задач группы сейчас в очереди и в работе (`sweeps` — идущих проходов). */
@@ -348,6 +366,32 @@ export function workActive(
 	groups: string[] = WORK_ORDER
 ): boolean {
 	return groups.some((g) => workCount(data?.work, g) > 0);
+}
+/** Есть ли в названных группах задачи, ждущие внешнего условия (`wait:`). */
+export function workWaiting(
+	data: Pick<CaseData, 'work'> | null | undefined,
+	groups: string[] = WORK_PROCESSING
+): boolean {
+	const w = data?.work?.waiting;
+	return !!w && groups.some((g) => (w[g] ?? 0) > 0);
+}
+/** По делу остались только ждущие внешнего условия задачи (активных задач, проходов и своей передачи нет). */
+export const workWaitingOnly = (
+	data: Pick<CaseData, 'work'> | null | undefined,
+	localRunning = false
+): boolean => !localRunning && !workActive(data) && workWaiting(data, WORK_PROCESSING);
+/** Причины ожидания задач словами сервиса, без повторов. */
+export function waitReasonsText(work: Work | null | undefined, S: Record<string, any>): string {
+	const out: string[] = [];
+	for (const code of work?.wait_reasons ?? []) {
+		const txt = String(S[WAIT_KEYS[code] ?? 'wait_unknown'] ?? S.wait_unknown ?? '').trim();
+		if (txt && !out.includes(txt)) out.push(txt);
+	}
+	if (!out.length) {
+		const fb = String(S.wait_unknown ?? '').trim();
+		if (fb) out.push(fb);
+	}
+	return out.join('; ');
 }
 /** Работа названных групп словами сервиса (`work_part_<группа>`), по порядку цепочки; без строки — группа молчит. */
 export function workParts(
@@ -361,7 +405,12 @@ export function workParts(
 }
 /** Состав работы без чисел: изменился — пора перечитать обзор целиком (между этим хватает лёгкого запроса). */
 export const workKey = (work: Work | null | undefined): string =>
-	[...WORK_ORDER.filter((g) => workCount(work, g) > 0), work?.stalled ? 'stalled' : ''].join(',');
+	[
+		...WORK_ORDER.filter((g) => workCount(work, g) > 0),
+		...WORK_PROCESSING.filter((g) => (work?.waiting?.[g] ?? 0) > 0).map((g) => `w:${g}`),
+		...(work?.wait_reasons ?? []).map((r) => `wr:${r}`),
+		work?.stalled ? 'stalled' : ''
+	].join(',');
 /** Раздел следит за работой своих групп: `done` зовётся, когда она закончилась, — раздел перечитывает себя сразу. */
 export function workWatcher(groups: string[], done: () => void) {
 	let was = false;
@@ -385,8 +434,10 @@ export function intake(data: CaseData | null, localRunning = false): boolean {
 }
 
 /** Идёт ли обработка, ради которой страница переспрашивает чаще: приём и распознавание файлов и любая работа по
- *  делу, которую называет сервис (опись, карточки, паспорт, векторы, проходы). */
+ *  делу, которую называет сервис (опись, карточки, паспорт, векторы, проходы). Когда остались только ждущие внешнего
+ *  условия задачи (`wait:`), частый опрос не идёт. */
 export function processing(data: CaseData | null, localRunning = false): boolean {
+	if (workWaitingOnly(data, localRunning)) return false;
 	return intake(data, localRunning) || workActive(data);
 }
 /** Между полными обзорами хватает лёгкого запроса `…/work`: идёт только работа по делу, файлы не принимаются. */
@@ -424,9 +475,9 @@ const PAUSE_KEYS: Record<string, string> = {
 export const pauseKey = (reason: unknown): string => PAUSE_KEYS[String(reason)] ?? 'paused_unknown';
 
 export type Summary = {
-	/** empty — материалов нет; processing — идёт обработка; ready — всё распознано, опись готова и работы по делу
-	 *  (карточки, паспорт, копии, векторы) в очереди нет. */
-	kind: 'empty' | 'processing' | 'ready';
+	/** empty — материалов нет; processing — идёт обработка; waiting — остались только ждущие внешнего условия задачи;
+	 *  ready — всё распознано, опись готова и работы по делу (карточки, паспорт, копии, векторы) в очереди нет. */
+	kind: 'empty' | 'processing' | 'waiting' | 'ready';
 	indexed: number;
 	total: number;
 	/** Пауза обработки всех дел: self — пройдёт сама. */
@@ -447,18 +498,19 @@ export function summary(data: CaseData): Summary {
 		(ov.e_case ?? []).length > 0 ||
 		uploads.some((u) => UPLOAD_BUSY.has(u.phase) || u.phase === 'receiving');
 	const ic = ov.index_coverage ?? { indexed: 0, total: 0 };
+	const waitingOnly = workWaitingOnly(data);
 	const busy =
-		intake(data) ||
-		uploads.some((u) => u.phase === 'receiving') || // файл ещё передаётся — материалы в пути
-		ic.indexed < ic.total ||
-		volumes.some((v) => v.status !== 'inventory_ready') ||
-		files.some((f) => FILE_BUSY.has(String(f.status))) ||
-		// опись, карточки документов, паспорт, копии, векторы ещё в очереди или в работе: «Готово к работе» — только
-		// когда работа действительно закончена (требование владельца 23.11)
-		workActive(data, WORK_PROCESSING);
-	const p = data.paused;
+		!waitingOnly &&
+		(intake(data) ||
+			uploads.some((u) => u.phase === 'receiving') || // файл ещё передаётся — материалы в пути
+			ic.indexed < ic.total ||
+			volumes.some((v) => v.status !== 'inventory_ready') ||
+			files.some((f) => FILE_BUSY.has(String(f.status))) ||
+			// опись, карточки документов, паспорт, копии, векторы ещё в очереди или в работе: «Готово к работе» — только
+			// когда работа действительно закончена (требование владельца 23.11)
+			workActive(data, WORK_PROCESSING));
 	return {
-		kind: !some ? 'empty' : busy ? 'processing' : 'ready',
+		kind: !some ? 'empty' : waitingOnly ? 'waiting' : busy ? 'processing' : 'ready',
 		indexed: ic.indexed,
 		total: ic.total,
 		paused: pauseOf(data),

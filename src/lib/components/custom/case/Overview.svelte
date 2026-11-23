@@ -14,6 +14,7 @@
 		summary,
 		usd,
 		volumeState,
+		waitReasonsText,
 		when,
 		workParts,
 		WORK_PROCESSING,
@@ -188,6 +189,8 @@
 					<div class="row g8">
 						{#if sum.kind === 'ready'}
 							<span class="pill"><Icon name="ok" />{S.overview_state_ready}</span>
+						{:else if sum.kind === 'waiting'}
+							<span class="pill" data-testid="case-state-waiting">{S.overview_state_waiting}</span>
 						{:else if paused && paused.self}
 							<span class="pill w"
 								><Icon name="pause" />{fmt(S.overview_state_paused, {
@@ -220,6 +223,19 @@
 							? ` ${fmt(S.overview_ready_check, { checks: count(sum.checks, S.overview_tile_check_forms) })}`
 							: ''}
 					</p>
+				{:else if sum.kind === 'waiting'}
+					{#if sum.total && sum.indexed < sum.total}
+						<h2 class="big">{fmt(S.overview_recognized, { n: sum.indexed, m: sum.total })}</h2>
+					{:else if sum.total}
+						<h2 class="big">
+							{fmt(plural(sum.total, S.overview_all_recognized_forms), { n: sum.total })}
+						</h2>
+					{/if}
+					{#if S.work_waiting_line}
+						<p class="md soft" data-testid="case-work-waiting">
+							{fmt(S.work_waiting_line, { reason: waitReasonsText(d.work, S) })}
+						</p>
+					{/if}
 				{:else}
 					{#if sum.total}
 						<h2 class="big">{fmt(S.overview_recognized, { n: sum.indexed, m: sum.total })}</h2>
