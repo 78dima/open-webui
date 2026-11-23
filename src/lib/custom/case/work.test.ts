@@ -11,6 +11,12 @@ import { CaseApiError, createCaseApi, type CaseApi } from './api';
 import {
 	SECTION_WORK,
 	WAIT_KEYS,
+	caseView,
+	chronologyReread,
+	pausedNow,
+	runParts,
+	viewWhy,
+	workNote,
 	WORK_PART,
 	isPausedFor,
 	navGroups,
@@ -32,9 +38,14 @@ import {
 } from './casepage';
 import { createCaseState } from './casestore';
 import { createLoader, createReload } from './loader';
-import { readListing } from './mycases';
+import { caseMarks, listDelay, readListing, type CaseFolder } from './mycases';
 import { mergeTableRows, type Cell, type Check } from './tablescore';
-import { lastDetailGroupIndex } from '../toolStatus';
+import {
+	isMarkdownToolItem,
+	isStructuredToolItem,
+	lastDetailGroupIndex,
+	toolPreparingLabel
+} from '../toolStatus';
 
 const boot = bootJson as Boot;
 const ready = readyJson as unknown as CaseData;
@@ -85,7 +96,15 @@ describe('работа по делу (поле work обзора)', () => {
 
 	it('строка хода и признак меню — у разделов, чьи данные зависят от идущей работы', () => {
 		const cards = { ...ready, work: work({ cards: 2, passport: 1 }) };
-		expect(marked(cards).sort()).toEqual(['amounts', 'chronology', 'deadlines', 'passport']);
+		// Н-3: разбор документов пишет в строки описи название, дату и автора — у «Описи» и «Копий» тоже признак
+		expect(marked(cards).sort()).toEqual([
+			'amounts',
+			'chronology',
+			'copies',
+			'deadlines',
+			'inventory',
+			'passport'
+		]);
 		expect(marked({ ...ready, work: work({ passport: 1 }) })).toEqual(['passport']);
 		expect(marked({ ...ready, work: work({ inventory: 1 }) }).sort()).toEqual(
 			['amounts', 'chronology', 'copies', 'deadlines', 'inventory', 'passport'].sort()
@@ -99,7 +118,9 @@ describe('работа по делу (поле work обзора)', () => {
 			'собирается паспорт дела'
 		]);
 		expect(workParts(cards.work, SECTION_WORK.chronology, S)).toEqual(['разбираются документы — 2']);
-		expect(workParts(cards.work, SECTION_WORK.inventory, S)).toEqual([]);
+		expect(workParts(cards.work, SECTION_WORK.inventory, S)).toEqual(['разбираются документы — 2']);
+		expect(workParts(cards.work, SECTION_WORK.check, S)).toEqual([]);
+		expect(marked({ ...ready, work: work({ read: 4 }) })).toContain('check'); // «Проверьте листы» растёт
 		expect(workParts(cards.work, SECTION_WORK.passport, {})).toEqual([]); // прежний сервис: строк нет — молчит
 		expect(workActive(cards, SECTION_WORK.tables)).toBe(false);
 	});
@@ -148,7 +169,8 @@ describe('работа по делу (поле work обзора)', () => {
 		};
 		const dWait: CaseData = { ...ready, work: wWait };
 		expect(workWaiting(dWait, SECTION_WORK.chronology)).toBe(true);
-		expect(workWaiting(dWait, SECTION_WORK.inventory)).toBe(false);
+		expect(workWaiting(dWait, SECTION_WORK.inventory)).toBe(true); // Н-3: разбор документов пишет строки описи
+		expect(workWaiting(dWait, SECTION_WORK.check)).toBe(false);
 		expect(workWaitingOnly(dWait)).toBe(true);
 		expect(summary(dWait).kind).toBe('waiting');
 		// даже если том не дошёл до inventory_ready — при одних ждущих задачах это waiting, а не processing
@@ -514,3 +536,182 @@ describe('Р-10: отказ лёгкого опроса, отсутствие �
 		vi.useRealTimers();
 	});
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Возврат по ревью пакета 2 (23.11): вид дела одним правилом, части на паузе, «Мои дела», хронология, одиночный вызов
+// ---------------------------------------------------------------------------------------------------------------------
+const SS = stringsJson as Record<string, any>;
+const view = (kind: string, extra: Record<string, unknown> = {}) => ({
+	kind,
+	reason: null,
+	since: null,
+	reasons: [],
+	sweeps: 0,
+	...extra
+});
+
+describe('Н-1: вид дела от сервиса — одно правило для «Обзора», «Моих дел» и листа', () => {
+	it('«Обзор»: на паузе — по виду дела, в том числе пауза шага после отказов моделей (общей паузы нет)', () => {
+		const step: CaseData = {
+			...ready,
+			paused: null,
+			work: { ...work({ cards: 3 }), paused_groups: ['cards'], view: view('paused', { reason: 'step' }) as any }
+		};
+		expect(pausedNow(step)).toBe(true);
+		const sum = summary(step);
+		expect(sum.kind).toBe('processing');
+		expect(sum.paused).toEqual({ self: true, key: 'paused_step', since: null, groups: ['cards'] });
+		expect(SS[sum.paused!.key]).toBeTruthy();
+		// идёт — не на паузе, хотя общая частичная пауза (marks) есть
+		const runs: CaseData = {
+			...ready,
+			paused: { reason: 'marks', since: null, until: null, groups: ['read'] },
+			work: { ...work({ cards: 3, read: 1 }), paused_groups: ['read'], view: view('runs') as any }
+		};
+		expect(pausedNow(runs)).toBe(false);
+	});
+
+	it('без поля view (прежний сервис) — прежнее правило; без work — вида нет', () => {
+		expect(caseView(ready)).toBeNull();
+		expect(caseView({ ...ready, work: work({ cards: 1 }) })?.kind).toBe('runs');
+		expect(caseView({ ...ready, work: work({ cards: 1 }, 0, true) })?.kind).toBe('stalled');
+		const paused = { reason: 'budget', since: '2026-11-23T10:00:00+00:00', until: null, groups: null };
+		expect(caseView({ ...ready, paused, work: work({ cards: 1 }) })).toEqual(
+			view('paused', { reason: 'budget', since: paused.since })
+		);
+		expect(pausedNow({ ...ready, paused, work: work({ cards: 1 }) })).toBe(true);
+		expect(
+			caseView({
+				...ready,
+				work: { ...work({}), waiting: { cards: 1 }, waiting_reasons: { cards: ['http_429'] } }
+			})
+		).toEqual(view('waiting', { reasons: ['http_429'] }));
+		expect(caseView({ ...ready, work: work({}, 2) })).toEqual(view('ready', { sweeps: 2 }));
+		// вид от сервиса берётся как есть
+		const v = view('paused', { reason: 'manual' }) as any;
+		expect(caseView({ ...ready, work: { ...work({ cards: 1 }), view: v } })).toBe(v);
+	});
+
+	it('«Мои дела»: отметка по виду дела; пауза и ожидание — с причиной; проход — отдельно; опрос 15 / 30 с / нет', () => {
+		const list = readListing({
+			own: [
+				{ folder_id: 'r', case: { id: '1', volumes: 1, changed: null, busy: true, work: view('runs') } },
+				{
+					folder_id: 'p',
+					case: { id: '2', volumes: 1, changed: null, busy: false, work: view('paused', { reason: 'budget' }) }
+				},
+				{ folder_id: 's', case: { id: '3', volumes: 1, changed: null, busy: false, work: view('stalled') } },
+				{
+					folder_id: 'w',
+					case: {
+						id: '4',
+						volumes: 1,
+						changed: null,
+						busy: false,
+						work: view('waiting', { reasons: ['http_429'] })
+					}
+				},
+				{ folder_id: 'q', case: { id: '5', volumes: 1, changed: null, busy: false, work: view('ready', { sweeps: 1 }) } },
+				{ folder_id: 'z', case: { id: '6', volumes: 1, changed: null, busy: false, work: view('ready') } },
+				{ folder_id: 'old', case: { id: '7', volumes: 1, changed: null, busy: true } },
+				{ folder_id: 'bad', case: { id: '8', volumes: 1, changed: null, work: { kind: 'nonsense' } } }
+			]
+		});
+		const by = Object.fromEntries(list.map((f) => [f.id, f])) as Record<string, CaseFolder>;
+		const why = (w: any) => viewWhy(w, SS);
+		const keys = (id: string) => caseMarks(by[id], SS, why).map((m) => m.key);
+		expect(keys('r')).toEqual(['my_cases_busy']);
+		expect(keys('p')).toEqual(['my_cases_paused']);
+		expect(caseMarks(by.p, SS, why)[0].why?.toLowerCase()).toBe(SS.paused_budget.toLowerCase());
+		expect(keys('s')).toEqual(['my_cases_stalled']);
+		expect(keys('w')).toEqual(['my_cases_waiting']);
+		expect(caseMarks(by.w, SS, why)[0].why?.toLowerCase()).toBe(SS.wait_http_429.toLowerCase());
+		expect(keys('q')).toEqual(['my_cases_sweeps']);
+		expect(keys('z')).toEqual([]);
+		expect(keys('old')).toEqual(['my_cases_busy']); // прежний сервис: по busy
+		expect(by.bad.case?.work).toBeUndefined();
+		for (const k of ['my_cases_busy', 'my_cases_paused', 'my_cases_stalled', 'my_cases_waiting', 'my_cases_sweeps'])
+			expect(SS[k], k).toBeTruthy();
+		// опрос списка: идёт обработка или проход — 15 с; только пауза / молчание / ожидание — 30 с; ничего — нет
+		expect(listDelay([by.p, by.r])).toBe(15000);
+		expect(listDelay([by.q])).toBe(15000);
+		expect(listDelay([by.old])).toBe(15000);
+		expect(listDelay([by.p, by.s, by.w])).toBe(30000);
+		expect(listDelay([by.z, by.bad])).toBeNull();
+	});
+});
+
+describe('Н-6: при частичной паузе строка «идёт» не называет стоящее идущим', () => {
+	const w: Work = { ...work({ read: 2, cards: 3 }), paused_groups: ['read'], view: view('runs') as any };
+	it('идущие группы — словами хода, группы на паузе — «на паузе: чтение листов»', () => {
+		const held = SS.work_paused_tail.replace('{parts}', SS.work_pause_part_read);
+		expect(runParts(w, SECTION_WORK.chronology, SS)).toBe(
+			`${SS.work_part_cards.replace('{n}', '3')}; ${held}`
+		);
+		const note = workNote({ work: w, paused: null }, SECTION_WORK.chronology, SS)!;
+		expect(note.kind).toBe('runs');
+		expect(note.text).toContain(held);
+		expect(note.text).not.toContain(SS.work_part_read);
+	});
+	it('вся работа раздела на паузе — «ждут» существительными; не отвечает — «не отвечает»; ждёт — причина; нет — null', () => {
+		const all: Work = { ...work({ read: 2 }), paused_groups: ['read'] };
+		const p = workNote({ work: all, paused: null }, SECTION_WORK.check, SS)!;
+		expect(p.kind).toBe('waits');
+		expect(p.paused).toBe(true);
+		expect(p.text).toBe(SS.work_note_paused.replace('{parts}', SS.work_pause_part_read));
+		const st = workNote({ work: work({ cards: 1 }, 0, true), paused: null }, SECTION_WORK.amounts, SS)!;
+		expect(st.kind).toBe('waits');
+		expect(st.text).toContain(SS.work_part_cards.replace('{n}', '1'));
+		const wt = workNote(
+			{ work: { ...work({}), waiting: { cards: 1 }, waiting_reasons: { cards: ['http_429'] } }, paused: null },
+			SECTION_WORK.amounts,
+			SS
+		)!;
+		expect(wt).toEqual({
+			kind: 'waiting',
+			paused: false,
+			text: SS.work_note_waiting.replace('{reason}', SS.wait_http_429)
+		});
+		expect(workNote({ work: work({ vectors: 1 }), paused: null }, SECTION_WORK.amounts, SS)).toBeNull();
+		expect(workNote(ready, SECTION_WORK.amounts, SS)).toBeNull();
+	});
+});
+
+describe('Н-7: «Хронология» перечитывает весь объём один раз, а не на каждую смену rev', () => {
+	const base = { shownRev: 'r1', sameAsked: true, loadedPages: 5, working: false };
+	it('та же метка — ничего; идёт работа или прежний сервис без rev — только первая порция; конец работы — всё', () => {
+		expect(chronologyReread({ ...base, rev: 'r1' })).toBe('keep');
+		expect(chronologyReread({ ...base, rev: 'r2', working: true })).toBe('first');
+		expect(chronologyReread({ ...base, rev: null })).toBe('first');
+		expect(chronologyReread({ ...base, rev: undefined, working: true })).toBe('first');
+		// работа кончилась (метка показанного не обновлялась, пока шла работа) — перечитать весь загруженный объём
+		expect(chronologyReread({ ...base, rev: 'r9' })).toBe('all');
+		// одна порция или сменился отбор — один запрос
+		expect(chronologyReread({ ...base, rev: 'r2', loadedPages: 1, working: true })).toBe('all');
+		expect(chronologyReread({ ...base, rev: 'r1', sameAsked: false })).toBe('all');
+	});
+});
+
+describe('Н-2: одиночный вызов, после которого модель работает, — признак хода, как у группы', () => {
+	it('последний вызов — и группа, и одиночный, на обоих путях; строка «Выполнено, готовлю ответ: …»', () => {
+		const md = [
+			{ type: 'details', attributes: { type: 'tool_calls' } },
+			{ type: 'space' }
+		];
+		expect(lastDetailGroupIndex(md, isMarkdownToolItem, (t) => t.type === 'space')).toBe(0);
+		expect(
+			lastDetailGroupIndex([...md, { type: 'paragraph' }], isMarkdownToolItem, (t) => t.type === 'space')
+		).toBe(-1);
+		// «рассуждение» (details без tool_calls) — не вызов
+		expect(
+			lastDetailGroupIndex([{ type: 'details', attributes: { type: 'reasoning' } }], isMarkdownToolItem, () => false)
+		).toBe(-1);
+		const so = [{ type: 'detail_single', token: { attributes: { type: 'tool_calls' } } }, { type: 'message', text: ' ' }];
+		const empty = (it: any) => it.type === 'message' && !it.text.trim();
+		expect(lastDetailGroupIndex(so, isStructuredToolItem, empty)).toBe(0);
+		expect(lastDetailGroupIndex([...so, { type: 'message', text: 'Ответ' }], isStructuredToolItem, empty)).toBe(-1);
+		expect(toolPreparingLabel('legal-tools_kplus_search')).toMatch(/^Выполнено, готовлю ответ: /);
+		expect(toolPreparingLabel('legal-tools_kplus_search')).not.toMatch(/legal-tools|kplus/);
+	});
+});
+

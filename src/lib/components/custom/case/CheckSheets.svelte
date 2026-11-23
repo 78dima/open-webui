@@ -4,10 +4,17 @@
 	// длинный перечень — под «Показать ещё», выбор тома. Отметки «проверено» нет — второй этап. Свёрнутое, раскрытое и
 	// выбранный том — состояние компонента: обновление обзора его не сбрасывает.
 	import type { CaseState } from '$lib/custom/case/casestore';
-	import { checkGroups, checkVolumes, inVolume, type CheckGroup } from '$lib/custom/case/casepage';
+	import {
+		checkGroups,
+		checkVolumes,
+		inVolume,
+		SECTION_WORK,
+		type CheckGroup
+	} from '$lib/custom/case/casepage';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import Icon, { type IconName } from './Icon.svelte';
 	import SheetRef from './SheetRef.svelte';
+	import WorkNote from './WorkNote.svelte';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
@@ -41,6 +48,9 @@
 	const volumeTitle = (label: string | null) =>
 		label ? fmt(S.volume_title, { label }) : S.volume_no_label_g;
 </script>
+
+<!-- перечень растёт, пока читаются листы (Н-3): строка хода по чтению; данные — из обзора, перечитываются с ним -->
+<WorkNote {state} {S} groups={SECTION_WORK.check} />
 
 <div class="row sp g12" data-testid="case-check">
 	<p class="md lead">{S.check_hint}</p>

@@ -49,7 +49,11 @@
 	type PendingVolume = { volume_id: number; label: string | null };
 	const { boot, data } = state;
 	const loader = createLoader(() =>
-		state.api.get<{ deltas: Delta[]; pending_volumes?: PendingVolume[] }>(casePath(state, '/deltas'))
+		state.api.get<{
+			deltas: Delta[];
+			pending_volumes?: PendingVolume[];
+			pending_unassigned?: number;
+		}>(casePath(state, '/deltas'))
 	);
 	const { data: answer, error } = loader;
 	$: ($data, void loader.refresh());
@@ -63,6 +67,8 @@
 	// Тома, в которых есть новый файл в чтении или в ожидании сверки копий — факт сервиса (`pending_volumes` ответа
 	// `…/deltas`), без угадывания по числу файлов (Р-4). Прежний сервис поля не отдаёт — строки нет.
 	$: pendingVolumes = !S.replace_reading ? [] : ($answer?.pending_volumes ?? []);
+	// Н-11: читаются файлы без тома (том при загрузке не выбран) — это может быть повторная загрузка; факт сервиса
+	$: unassigned = !S.replace_reading_unassigned ? 0 : ($answer?.pending_unassigned ?? 0);
 	$: canWrite = !!$boot?.can_write;
 
 	const CHIPS = 12; // листов в перечне до «ещё N»
@@ -139,6 +145,12 @@
 
 <p class="md lead">{S.replace_hint}</p>
 
+{#if unassigned > 0}
+	<div class="note i" role="status" data-testid="case-replace-unassigned">
+		<Icon name="clock" klass="l" />
+		<p>{fmt(S.replace_reading_unassigned, { n: unassigned })}</p>
+	</div>
+{/if}
 {#if pendingVolumes.length}
 	<div class="note i" role="status" data-testid="case-replace-reading">
 		<Icon name="clock" klass="l" />
@@ -162,7 +174,7 @@
 	</section>
 {:else if !$answer}
 	<section class="card"><p class="mut" role="status">{S.loading}</p></section>
-{:else if !deltas.length && pendingVolumes.length}
+{:else if !deltas.length && (pendingVolumes.length || unassigned > 0)}
 	<!-- сверки ещё нет, но файл тома в обработке: «томов нет» сказать нельзя — строка хода выше -->
 {:else if !deltas.length}
 	<section class="card" data-testid="case-replace-empty">

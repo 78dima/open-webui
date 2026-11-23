@@ -11,9 +11,76 @@ export type CaseFolder = {
 	write: boolean;
 	owner: boolean;
 	shared: boolean;
-	/** `busy` — по делу сейчас идёт работа (очередь обработки или проход): факт сервиса; прежний сервис его не отдаёт. */
-	case: { id: string; volumes: number; changed: string | null; busy?: boolean } | null;
+	/** `work` — вид дела от сервиса (Н-1: то же правило, что у «Обзора» и листа); `busy` — признак прежнего сервиса
+	 *  «идёт обработка» (новый сервис отдаёт его только при `work.kind === 'runs'`); прежний сервис может не отдать
+	 *  ни того, ни другого. */
+	case: {
+		id: string;
+		volumes: number;
+		changed: string | null;
+		busy?: boolean;
+		work?: CaseWork;
+	} | null;
 };
+/** Вид дела от сервиса (`work.view`). */
+export type CaseWork = {
+	kind: 'runs' | 'paused' | 'stalled' | 'waiting' | 'ready';
+	reason: string | null;
+	since?: string | null;
+	reasons: string[];
+	sweeps: number;
+};
+const KINDS = new Set(['runs', 'paused', 'stalled', 'waiting', 'ready']);
+function readWork(raw: unknown): CaseWork | null {
+	const w = (raw ?? null) as Record<string, unknown> | null;
+	if (!w || typeof w !== 'object' || !KINDS.has(String(w.kind))) return null;
+	return {
+		kind: w.kind as CaseWork['kind'],
+		reason: typeof w.reason === 'string' ? w.reason : null,
+		since: typeof w.since === 'string' ? w.since : null,
+		reasons: Array.isArray(w.reasons) ? w.reasons.filter((x): x is string => typeof x === 'string') : [],
+		sweeps: Number.isFinite(Number(w.sweeps)) ? Math.max(0, Number(w.sweeps)) : 0
+	};
+}
+/** Отметка дела в списке: ключ строки, тон, значок и причина (подсказка) — словами строк сервиса. */
+export type CaseMark = { key: string; tone: 'i' | 'w' | 's'; icon: 'clock' | 'pause' | 'al'; why?: string };
+const MARK: Record<string, Omit<CaseMark, 'why'>> = {
+	runs: { key: 'my_cases_busy', tone: 'i', icon: 'clock' },
+	paused: { key: 'my_cases_paused', tone: 'w', icon: 'pause' },
+	stalled: { key: 'my_cases_stalled', tone: 'w', icon: 'al' },
+	waiting: { key: 'my_cases_waiting', tone: 'w', icon: 'pause' }
+};
+/** Отметки дела (Н-1): обработка — идёт / на паузе (причина) / не отвечает / ждёт (причина); проход — отдельно,
+ *  «идёт проход» (данные дела при этом готовы). Прежний сервис без вида — «идёт обработка» по `busy`. Причины —
+ *  функцией `why(kind, work)` страницы: ей нужны слова причин паузы и ожидания. */
+export function caseMarks(
+	f: CaseFolder,
+	S: Record<string, any>,
+	why: (w: CaseWork) => string = () => ''
+): CaseMark[] {
+	const c = f.case;
+	if (!c) return [];
+	const w = c.work;
+	if (!w) return c.busy && S.my_cases_busy ? [{ ...MARK.runs }] : [];
+	const out: CaseMark[] = [];
+	const m = MARK[w.kind];
+	if (m && S[m.key]) out.push(w.kind === 'runs' ? { ...m } : { ...m, why: why(w) || undefined });
+	if (w.sweeps > 0 && S.my_cases_sweeps) out.push({ key: 'my_cases_sweeps', tone: 'i', icon: 'clock' });
+	return out;
+}
+/** Через сколько перечитать список: 15 с — у какого-то дела идёт обработка или проход; 30 с — только на паузе, не
+ *  отвечает или ждёт (как редкий опрос «Обзора»); null — работы нет, список не спрашивается. */
+export function listDelay(folders: CaseFolder[]): number | null {
+	let slow = false;
+	for (const f of folders) {
+		const c = f.case;
+		if (!c) continue;
+		const w = c.work;
+		if (w ? w.kind === 'runs' || w.sweeps > 0 : c.busy) return 15000;
+		if (w && w.kind !== 'ready') slow = true;
+	}
+	return slow ? 30000 : null;
+}
 
 /** Папка из дерева чата (`/api/v1/folders/` и `/api/v1/folders/shared`): нужна только связь с родителем. */
 export type FolderNode = { id?: unknown; parent_id?: unknown };
@@ -62,7 +129,8 @@ export function readListing(raw: unknown): CaseFolder[] {
 								id: text(c.id),
 								volumes: Number.isFinite(Number(c.volumes)) ? Math.max(0, Number(c.volumes)) : 0,
 								changed: text(c.changed) || null,
-								...(c.busy === true ? { busy: true } : {})
+								...(c.busy === true ? { busy: true } : {}),
+								...(readWork(c.work) ? { work: readWork(c.work)! } : {})
 							}
 						: null
 			});

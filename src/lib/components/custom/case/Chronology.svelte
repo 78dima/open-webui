@@ -10,7 +10,12 @@
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { useHead } from '$lib/custom/case/head';
 	import { createLoader, createReload } from '$lib/custom/case/loader';
-	import { SECTION_WORK, workWatcher } from '$lib/custom/case/casepage';
+	import {
+		chronologyReread,
+		SECTION_WORK,
+		workActive,
+		workWatcher
+	} from '$lib/custom/case/casepage';
 	import WorkNote from './WorkNote.svelte';
 	import {
 		LINES,
@@ -138,7 +143,24 @@
 			// Р-5: решение «сохранить догруженное» принимается по факту сервиса (`rev`), а не по первой порции.
 			// Версия та же и отбор тот же — догруженные порции и место юриста остаются; изменилась — перечитать
 			// столько же порций, сколько было загружено, сохраняя место юриста.
-			if (d.rev && askedKey === shownAsked && d.rev === shownRev) return d;
+			// Р-5, Н-7: что перечитать — по факту сервиса (`rev`) и идущей работе групп раздела (`chronologyReread`)
+			const how = chronologyReread({
+				rev: d.rev,
+				shownRev,
+				sameAsked: askedKey === shownAsked,
+				loadedPages,
+				working: workActive($data, SECTION_WORK.chronology)
+			});
+			if (how === 'keep') return d;
+			if (how === 'first') {
+				const first = new Set(d.facts.map(rowKey));
+				extra = extra.filter((x) => !first.has(rowKey(x)));
+				const freshFirst = new Set(d.facts.filter((x) => !x.group).map((x) => (x as Fact).id));
+				patched = Object.fromEntries(
+					Object.entries(patched).filter(([k]) => !freshFirst.has(Number(k)))
+				);
+				return d;
+			}
 			const keepCount = askedKey === shownAsked && loadedPages > 1 ? loadedPages : 1;
 			let nextExtra: (Fact | Group)[] = [];
 			let nextP: number | null = d.next_page ?? null;
