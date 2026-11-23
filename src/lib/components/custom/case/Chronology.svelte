@@ -9,7 +9,9 @@
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { useHead } from '$lib/custom/case/head';
-	import { createLoader } from '$lib/custom/case/loader';
+	import { createLoader, createReload } from '$lib/custom/case/loader';
+	import { SECTION_WORK, workWatcher } from '$lib/custom/case/casepage';
+	import WorkNote from './WorkNote.svelte';
 	import {
 		LINES,
 		STATUSES,
@@ -33,6 +35,7 @@
 	import FormDialog from './FormDialog.svelte';
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon from './Icon.svelte';
+	import Busy from './Busy.svelte';
 	import SheetRef from './SheetRef.svelte';
 	import FactRow from './FactRow.svelte';
 
@@ -138,6 +141,13 @@
 	);
 	const { data: answer, error } = loader;
 	$: ($data, void loader.refresh());
+	// работа по делу, от которой зависят записи раздела, закончилась — раздел перечитывается сразу, не дожидаясь
+	// своего промежутка (пока она идёт, вверху раздела стоит строка хода `WorkNote`)
+	const watchWork = workWatcher(SECTION_WORK.chronology, () => {
+		loader.touch();
+		void loader.refresh();
+	});
+	$: watchWork($data);
 	onDestroy(() => loader.stop());
 	$: rows = [...($answer?.facts ?? []), ...extra]
 		.filter((f) => f.group || !gone.has(f.id))
@@ -299,16 +309,23 @@
 	let historyId: number | null = null;
 	let historyOpen = false;
 	$: loader.hold(editOpen || historyOpen);
+	// «Обновить»: кнопка занята, пока идёт запрос; по ответу — «Обновлено», и когда записи не изменились
+	const reload = createReload(loader, () => S.refreshed && caseToast(S.refreshed));
+	const { busy: reloading } = reload;
 	const setHead = useHead();
 	$: setHead([
 		{
 			id: 'refresh',
 			text: S.map_refresh,
-			run: () => void loader.refresh(true),
+			run: () => void reload.run(),
+			busy: $reloading,
+			busyText: S.busy_refresh,
 			testid: 'case-map-refresh'
 		}
 	]);
 </script>
+
+<WorkNote {state} {S} groups={SECTION_WORK.chronology} />
 
 <div class="note n" data-testid="case-facts-note">
 	<Icon name="info" klass="l" />
@@ -432,6 +449,12 @@
 						</div>
 						{#if groupRows[rowKey(f)]}
 							<div class="col sub" data-testid="case-fact-group-rows">
+								{#if groupRows[rowKey(f)].busy && !groupRows[rowKey(f)].rows.length}
+									<!-- группа раскрыта, первая порция ещё в пути: не пустое место, а «Загрузка…» -->
+									<p class="sm mut" role="status" data-testid="case-fact-group-loading">
+										{S.loading}
+									</p>
+								{/if}
 								{#each groupRows[rowKey(f)].rows.filter((x) => !gone.has(x.id)) as r (r.id)}
 									<FactRow
 										f={patched[r.id] ?? r}
@@ -453,8 +476,10 @@
 										disabled={groupRows[rowKey(f)].busy}
 										data-testid="case-fact-group-more"
 										on:click={() => f.group && loadGroup(f, groupRows[rowKey(f)].next ?? 0)}
-										>{fmt(S.shown_of, { n: groupRows[rowKey(f)].rows.length, total: f.n })} ·
-										{S.map_show_more}</button
+										><Busy on={groupRows[rowKey(f)].busy} text={S.loading}
+											>{fmt(S.shown_of, { n: groupRows[rowKey(f)].rows.length, total: f.n })} ·
+											{S.map_show_more}</Busy
+										></button
 									>
 								{/if}
 							</div>
@@ -483,7 +508,8 @@
 					class="btn"
 					disabled={moreBusy}
 					on:click={more}
-					data-testid="case-facts-more">{S.map_show_more}</button
+					data-testid="case-facts-more"
+					><Busy on={moreBusy} text={S.loading}>{S.map_show_more}</Busy></button
 				>
 				<span class="sm mut">{fmt(S.shown_of, { n: rows.length, total: $answer.total })}</span>
 			</div>

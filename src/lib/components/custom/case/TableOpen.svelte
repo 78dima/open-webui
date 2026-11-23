@@ -6,7 +6,7 @@
 	// переспрашивании обзора не перерисовывается (юрист в ней работает): данные читаются при открытии и порциями по
 	// «Показать ещё». Ручки `GET …/tables/<id>?page=`, `PUT …/tables/<id>/checks`, `POST …/tables/<id>/catch-up`,
 	// `GET …/tables/<id>/export.xlsx`. Поведение — прежний `sections/tables.js`.
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { saveBlob } from '$lib/custom/case/loader';
 	import { inVolume, volumeOf } from '$lib/custom/case/casepage';
@@ -41,6 +41,7 @@
 	import FormDialog from './FormDialog.svelte';
 	import GotoForm from './GotoForm.svelte';
 	import Icon from './Icon.svelte';
+	import Busy from './Busy.svelte';
 	import SheetRef from './SheetRef.svelte';
 
 	export let state: CaseState;
@@ -110,6 +111,7 @@
 		if (busy) return;
 		const reqId = id;
 		busy = true;
+		paged = page > 0;
 		try {
 			const d = await state.api.get<View>(path(`?page=${page}`));
 			if (reqId !== id) return;
@@ -128,10 +130,40 @@
 			if (reqId === id) busy = false;
 		}
 	}
+	// Открытая таблица идущего прохода перечитывает себя раз в 5 с, пока проход не закончен: признак — статус
+	// прохода в ответе сервиса (`queued` / `running`), а не таймер; закончился — последнее перечитывание даёт итог.
+	// Юрист дочитал дальше первой порции («Показать ещё») — строки остаются на месте, обновляется шапка с ходом.
+	const LIVE_MS = 5000;
+	const live = (s: Sweep | undefined | null) =>
+		!!s && (s.status === 'running' || s.status === 'queued');
+	let paged = false;
+	async function tick() {
+		if (busy || !live(sw) || (typeof document !== 'undefined' && document.hidden)) return;
+		const reqId = id;
+		try {
+			const d = await state.api.get<View>(path('?page=0'));
+			if (reqId !== id || busy) return;
+			if (paged && live(d.sweep) && view) {
+				view = { ...view, sweep: d.sweep, summary: d.summary };
+				return;
+			}
+			paged = false;
+			view = d;
+			if (d.kind === 'table') rows = d.rows ?? [];
+			else findings = d.findings ?? [];
+		} catch {
+			// сбой одного перечитывания признака не меняет: следующее — через тот же срок
+		}
+	}
+	let liveTimer: ReturnType<typeof setInterval> | null = null;
 	onMount(() => {
 		mounted = true;
 		loadedId = id;
 		void load(0);
+		liveTimer = setInterval(() => void tick(), LIVE_MS);
+	});
+	onDestroy(() => {
+		if (liveTimer !== null) clearInterval(liveTimer);
 	});
 	// переход по ссылке «есть более новый проход» меняет id без пересоздания компонента
 	$: if (mounted && id && id !== loadedId) {
@@ -371,8 +403,13 @@
 	{#if refAction}<GotoForm action={refAction} {volumes} {S} />{/if}
 	{#if sw}
 		<div class="row g8">
-			<button type="button" class="btn" disabled={exporting} on:click={exportXlsx}
-				><Icon name="dl" />{S.tables_export}</button
+			<button
+				type="button"
+				class="btn"
+				disabled={exporting}
+				on:click={exportXlsx}
+				data-testid="case-table-export"
+				><Busy on={exporting} text={S.busy_file}><Icon name="dl" />{S.tables_export}</Busy></button
 			>
 		</div>
 	{/if}
@@ -399,7 +436,8 @@
 						class="btn p"
 						disabled={acting}
 						on:click={() => press(a)}
-						data-testid="case-table-action">{a.text}</button
+						data-testid="case-table-action"
+						><Busy on={acting} text={S.busy_wait}>{a.text}</Busy></button
 					>
 				{/each}
 			</div>
@@ -464,7 +502,8 @@
 						class="btn p"
 						disabled={acting}
 						on:click={() => press(a)}
-						data-testid="case-table-action">{a.text}</button
+						data-testid="case-table-action"
+						><Busy on={acting} text={S.busy_wait}>{a.text}</Busy></button
 					>
 				{/each}
 			</div>
@@ -484,7 +523,8 @@
 						class="btn p"
 						disabled={acting}
 						on:click={() => press(a)}
-						data-testid="case-table-action">{a.text}</button
+						data-testid="case-table-action"
+						><Busy on={acting} text={S.busy_wait}>{a.text}</Busy></button
 					>
 				{/each}
 			</div>
@@ -705,7 +745,8 @@
 				class="btn"
 				disabled={busy}
 				on:click={() => load(view?.next_page ?? 0)}
-				data-testid="case-table-more">{S.tables_more}</button
+				data-testid="case-table-more"
+				><Busy on={busy} text={S.loading}>{S.tables_more}</Busy></button
 			>
 		</div>
 	{/if}

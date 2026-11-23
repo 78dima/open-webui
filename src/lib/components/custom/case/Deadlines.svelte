@@ -9,7 +9,9 @@
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { when } from '$lib/custom/case/casepage';
 	import { useHead } from '$lib/custom/case/head';
-	import { createLoader } from '$lib/custom/case/loader';
+	import { createLoader, createReload } from '$lib/custom/case/loader';
+	import { SECTION_WORK, workWatcher } from '$lib/custom/case/casepage';
+	import WorkNote from './WorkNote.svelte';
 	import { day, deadlineDates, quoteMore } from '$lib/custom/case/mapcore';
 	import { casePath, errorText, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
@@ -57,6 +59,13 @@
 	);
 	const { data: answer, error } = loader;
 	$: ($data, void loader.refresh());
+	// работа по делу, от которой зависят записи раздела, закончилась — раздел перечитывается сразу, не дожидаясь
+	// своего промежутка (пока она идёт, вверху раздела стоит строка хода `WorkNote`)
+	const watchWork = workWatcher(SECTION_WORK.deadlines, () => {
+		loader.touch();
+		void loader.refresh();
+	});
+	$: watchWork($data);
 	onDestroy(() => loader.stop());
 	$: rows = $answer?.deadlines ?? [];
 	$: canWrite = !!$answer?.can_write;
@@ -110,12 +119,17 @@
 	let historyId: number | null = null;
 	let historyOpen = false;
 	$: loader.hold(winOpen || historyOpen);
+	// «Обновить»: кнопка занята, пока идёт запрос; по ответу — «Обновлено», и когда записи не изменились
+	const reload = createReload(loader, () => S.refreshed && caseToast(S.refreshed));
+	const { busy: reloading } = reload;
 	const setHead = useHead();
 	$: setHead([
 		{
 			id: 'refresh',
 			text: S.map_refresh,
-			run: () => void loader.refresh(true),
+			run: () => void reload.run(),
+			busy: $reloading,
+			busyText: S.busy_refresh,
 			testid: 'case-map-refresh'
 		},
 		...(canWrite
@@ -132,6 +146,8 @@
 			: [])
 	]);
 </script>
+
+<WorkNote {state} {S} groups={SECTION_WORK.deadlines} />
 
 <div class="note n" data-testid="case-deadlines-note">
 	<Icon name="info" klass="l" />

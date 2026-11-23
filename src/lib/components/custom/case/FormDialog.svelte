@@ -5,6 +5,7 @@
 	// кнопка не нажимается. Без `submit` — только чтение (кнопка «Закрыть»).
 	import { errorText } from '$lib/custom/case/sections';
 	import Dialog from './Dialog.svelte';
+	import Busy from './Busy.svelte';
 	import Icon from './Icon.svelte';
 
 	export let open = false;
@@ -74,8 +75,12 @@
 						>{submit ? S.cancel : S.close}</button
 					>
 					{#if submit}
-						<button type="submit" class="btn {danger ? 'dp' : 'p'}" disabled={busy}
-							>{submitText || S.save}</button
+						<button
+							type="submit"
+							class="btn {danger ? 'dp' : 'p'}"
+							disabled={busy}
+							data-testid="case-dialog-submit"
+							><Busy on={busy} text={S.busy_wait}>{submitText || S.save}</Busy></button
 						>
 					{/if}
 				</div>

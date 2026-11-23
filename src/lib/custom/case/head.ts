@@ -12,6 +12,9 @@ export type HeadAction = {
 	main?: boolean;
 	icon?: string;
 	testid?: string;
+	/** Действие идёт: кнопка не нажимается и показывает `busyText` со значком часов (`Busy.svelte`). */
+	busy?: boolean;
+	busyText?: string;
 };
 type Head = { owner: symbol | null; actions: HeadAction[] };
 const KEY = 'cg-case-head';

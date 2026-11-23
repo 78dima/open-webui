@@ -2,6 +2,7 @@
 	// ai-dvokat: меню разделов дела (макеты K-overview и K-menu-phone): группы с подписями, счётчики из ответа обзора,
 	// состав — по настройке разделов сервиса и правам (`navGroups`).
 	import type { NavGroup } from '$lib/custom/case/casepage';
+	import Icon from './Icon.svelte';
 	export let groups: NavGroup[] = [];
 	export let current = '';
 	export let S: Record<string, any> = {};
@@ -20,7 +21,29 @@
 			href={hrefOf(item.slug)}
 			data-testid="case-nav-{item.slug || 'overview'}"
 			on:click={onPick}
-			>{S[item.key]}{#if item.count}<span class="n" class:w={item.warn}>{item.count}</span>{/if}</a
+			>{S[item.key]}{#if item.work && S.work_nav_title}<span
+					class="navwork"
+					title={S.work_nav_title}
+					data-testid="case-nav-work"
+					><Icon name="clock" size={14} /><span class="sr">{S.work_nav_title}</span></span
+				>{/if}{#if item.count}<span class="n" class:w={item.warn}>{item.count}</span>{/if}</a
 		>
 	{/each}
 {/each}
+
+<style>
+	/* признак «данные раздела обновляются» у пункта меню — тот же значок часов, что у тома «в очереди» */
+	.navwork {
+		display: inline-flex;
+		align-items: center;
+		color: var(--info);
+	}
+	.sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
+</style>

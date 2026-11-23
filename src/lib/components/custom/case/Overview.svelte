@@ -15,6 +15,8 @@
 		usd,
 		volumeState,
 		when,
+		workParts,
+		WORK_PROCESSING,
 		type State,
 		type Tone
 	} from '$lib/custom/case/casepage';
@@ -42,6 +44,11 @@
 	$: paused = sum?.paused ?? null;
 	$: pausedText = paused ? cap(fmt(S[paused.key], { time: when(paused.since) })) : '';
 	$: percent = sum && sum.total ? Math.round((100 * sum.indexed) / sum.total) : 0;
+	// что сейчас в очереди и в работе по делу (поле `work` сервиса) — словами, под ходом распознавания
+	$: workLine =
+		d?.work && S.overview_work_line
+			? workParts(d.work, WORK_PROCESSING, S).join(', ')
+			: '';
 
 	const TONE: Record<Tone, string> = { plain: '', info: 'i', warn: 'w', stop: 's' };
 	const ICON: Record<Tone, IconName> = { plain: 'ok', info: 'clock', warn: 'al', stop: 'al' };
@@ -219,6 +226,13 @@
 						<div class="bar wide" aria-hidden="true">
 							<i class:off={!!paused} style:width="{percent}%"></i>
 						</div>
+					{/if}
+					{#if workLine}
+						<p class="md soft" data-testid="case-work-line">
+							{fmt(d.work?.stalled && S.work_stalled ? S.work_stalled : S.overview_work_line, {
+								parts: workLine
+							})}
+						</p>
 					{/if}
 					<p class="md soft">{paused ? pausedText : S.overview_can_close}</p>
 				{/if}

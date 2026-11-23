@@ -26,6 +26,9 @@
 	import FormDialog from './FormDialog.svelte';
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon from './Icon.svelte';
+	import Busy from './Busy.svelte';
+	import WorkNote from './WorkNote.svelte';
+	import { SECTION_WORK, workWatcher } from '$lib/custom/case/casepage';
 	import SheetRef from './SheetRef.svelte';
 
 	export let state: CaseState;
@@ -116,6 +119,15 @@
 		void load(true);
 	}
 	const pickVolume = () => void load(true);
+	// чтение листов или опись тома закончились — опись перечитывается сразу (пока идут — вверху строка хода); пока
+	// открыто окно правки — подождать, как при смене версии дела
+	let workEnded = false;
+	const watchWork = workWatcher(SECTION_WORK.inventory, () => (workEnded = true));
+	$: watchWork($data);
+	$: if (workEnded && started && !winOpen && !historyOpen) {
+		workEnded = false;
+		void load(true);
+	}
 
 	// ---- выгрузка ----
 	let exporting = '';
@@ -276,6 +288,7 @@
 			.join(' · ');
 </script>
 
+<WorkNote {state} {S} groups={SECTION_WORK.inventory} />
 <div class="note n" data-testid="case-inventory-note">
 	<Icon name="info" klass="l" />
 	<p>{S.inventory_note_g_cards}</p>
@@ -303,7 +316,9 @@
 					disabled={merging}
 					on:click={merge}
 					data-testid="case-inventory-merge"
-					>{selected.size ? fmt(S.doc_merge_n, { n: selected.size }) : S.doc_merge}</button
+					><Busy on={merging} text={S.busy_saving}
+						>{selected.size ? fmt(S.doc_merge_n, { n: selected.size }) : S.doc_merge}</Busy
+					></button
 				>
 			{/if}
 		</div>
@@ -312,13 +327,21 @@
 				type="button"
 				class="btn s"
 				disabled={exporting === 'docx'}
-				on:click={() => exportAs('docx')}><Icon name="dl" />{S.export_docx}</button
+				on:click={() => exportAs('docx')}
+				data-testid="case-inventory-docx"
+				><Busy on={exporting === 'docx'} text={S.busy_file}
+					><Icon name="dl" />{S.export_docx}</Busy
+				></button
 			>
 			<button
 				type="button"
 				class="btn s"
 				disabled={exporting === 'xlsx'}
-				on:click={() => exportAs('xlsx')}><Icon name="dl" />{S.export_xlsx}</button
+				on:click={() => exportAs('xlsx')}
+				data-testid="case-inventory-xlsx"
+				><Busy on={exporting === 'xlsx'} text={S.busy_file}
+					><Icon name="dl" />{S.export_xlsx}</Busy
+				></button
 			>
 		</div>
 	</div>
@@ -411,9 +434,11 @@
 								disabled={loading}
 								on:click={() => load(false)}
 								data-testid="case-inventory-more"
-								>{total > docs.length
-									? fmt(S.show_more_n, { n: Math.min(100, total - docs.length) })
-									: S.inventory_more}</button
+								><Busy on={loading} text={S.loading}
+									>{total > docs.length
+										? fmt(S.show_more_n, { n: Math.min(100, total - docs.length) })
+										: S.inventory_more}</Busy
+								></button
 							>
 						{/if}
 						<span class="sm mut">{fmt(S.shown_of, { n: docs.length, total })}</span>

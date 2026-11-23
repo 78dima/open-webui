@@ -4,7 +4,7 @@
 import { get, writable, type Readable } from 'svelte/store';
 import type { CaseApi } from './api';
 import { CaseApiError } from './api';
-import { pollDelay, type Boot, type CaseData } from './casepage';
+import { pollDelay, workKey, workOnly, type Boot, type CaseData, type Work } from './casepage';
 import { createPoller } from './poll';
 import { createUploads, type Uploads } from './uploads';
 
@@ -28,6 +28,9 @@ export type FolderFilesState = {
 	loading: boolean;
 };
 
+/** Пока идёт только работа по делу (карточки, паспорт, проходы…), страница раз в 5 с спрашивает лёгкую ручку
+ *  `…/work`, а обзор целиком — когда состав работы изменился, после действия юриста и не реже этого срока (мс). */
+export const FULL_EVERY_MS = 30000;
 /** Короткое окно сведения частых записей в один запрос обзора (мс). */
 export const WRITE_COALESCE_MS = 300;
 const FOLDER_UPLOAD_BUSY = new Set(['receiving', 'received', 'intake']);
@@ -78,6 +81,8 @@ export function createCaseState(
 	let coalesceTimer: ReturnType<typeof setTimeout> | null = null;
 	let lastWriteRefreshAt = 0;
 	let prevBusyUploads: string | null = null;
+	let fullAt = 0; // когда обзор пришёл целиком
+	let wantFull = true; // следующий запрос — обзор целиком (первый, после действия, по возвращении вкладки)
 
 	function scheduleRefresh() {
 		if (stopped) return;
@@ -85,6 +90,7 @@ export function createCaseState(
 		const elapsed = now - lastWriteRefreshAt;
 		if (!coalesceTimer && elapsed >= coalesceMs) {
 			lastWriteRefreshAt = now;
+			wantFull = true;
 			void poller.refresh(true);
 			return;
 		}
@@ -94,6 +100,7 @@ export function createCaseState(
 					coalesceTimer = null;
 					if (stopped) return;
 					lastWriteRefreshAt = Date.now();
+					wantFull = true;
 					void poller.refresh(true);
 				},
 				Math.max(0, coalesceMs - elapsed)
@@ -136,8 +143,34 @@ export function createCaseState(
 	const poller = createPoller({
 		run: async (signal) => {
 			try {
+				const cur = get(data);
+				if (
+					cur &&
+					!wantFull &&
+					workOnly(cur, uploads.running()) &&
+					Date.now() - fullAt < FULL_EVERY_MS
+				) {
+					// лёгкий запрос: счёт задач в строке хода тикает, обзор целиком не собирается
+					const light = await rawApi.get<{ work: Work; paused: CaseData['paused'] }>(
+						path('/work'),
+						{ signal }
+					);
+					if (stopped) return;
+					const same =
+						workKey(light.work) === workKey(cur.work) &&
+						(light.paused?.reason ?? '') === (cur.paused?.reason ?? '');
+					if (same) {
+						if (JSON.stringify(light.work) !== JSON.stringify(cur.work))
+							data.set({ ...cur, work: light.work, paused: light.paused });
+						stale.set(null);
+						return;
+					}
+					// состав работы изменился (группа закончилась или началась) — обзор целиком тем же заходом
+				}
+				wantFull = false;
 				const next = await rawApi.get<CaseData>(path(), { signal });
 				if (stopped) return;
+				fullAt = Date.now();
 				data.set(next);
 				stale.set(null);
 				uploads.nudge(next.uploads ?? []);
@@ -177,8 +210,10 @@ export function createCaseState(
 			!document.hidden &&
 			get(boot)?.has_case &&
 			!get(bootError)
-		)
+		) {
+			wantFull = true;
 			void poller.refresh();
+		}
 	};
 
 	let folderFilesSeq = 0;
@@ -224,7 +259,10 @@ export function createCaseState(
 		api,
 		folderId,
 		start,
-		refresh: () => poller.refresh(true),
+		refresh: () => {
+			wantFull = true;
+			return poller.refresh(true);
+		},
 		reloadFolderFiles: loadFolderFiles,
 		keep<T extends object>(key: string, initial: T): T {
 			if (!kept.has(key)) kept.set(key, initial);

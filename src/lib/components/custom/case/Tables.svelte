@@ -10,6 +10,8 @@
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { when } from '$lib/custom/case/casepage';
 	import { createLoader } from '$lib/custom/case/loader';
+	import { SECTION_WORK, workActive, workWatcher } from '$lib/custom/case/casepage';
+	import WorkNote from './WorkNote.svelte';
 	import { casePath, errorText, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
 	import {
@@ -29,6 +31,7 @@
 	import { readListing, type CaseFolder } from '$lib/custom/case/mycases';
 	import FormDialog from './FormDialog.svelte';
 	import Icon from './Icon.svelte';
+	import Busy from './Busy.svelte';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
@@ -56,7 +59,24 @@
 	);
 	const { data: answer, error } = loader;
 	$: ($data, void loader.refresh());
+	// работа по делу, от которой зависят записи раздела, закончилась — раздел перечитывается сразу, не дожидаясь
+	// своего промежутка (пока она идёт, вверху раздела стоит строка хода `WorkNote`)
+	const watchWork = workWatcher(SECTION_WORK.tables, () => {
+		loader.touch();
+		void loader.refresh();
+	});
+	$: watchWork($data);
 	onDestroy(() => loader.stop());
+	// Пока идёт хотя бы один проход, перечень перечитывается раз в 5 с — ход «прочитано частей N из M» и «готово»
+	// приходят сами. Признак — факты сервиса: идущие проходы в поле `work` обзора или статус строки перечня.
+	const LIVE_MS = 5000;
+	$: liveRuns =
+		workActive($data, SECTION_WORK.tables) ||
+		($answer?.tables ?? []).some((t) => t.status === 'running' || t.status === 'queued');
+	const liveTimer = setInterval(() => {
+		if (liveRuns && !(typeof document !== 'undefined' && document.hidden)) void loader.refresh();
+	}, LIVE_MS);
+	onDestroy(() => clearInterval(liveTimer));
 	$: canWrite = !!$boot?.can_write;
 	$: tables = $answer?.tables ?? [];
 	// со страницы — наборы по всему делу или томам; рассчитанные на один документ и с уточнениями идут из чата
@@ -227,6 +247,8 @@
 		sw.windows_total ? Math.round((100 * (sw.windows_done ?? 0)) / sw.windows_total) : 0;
 </script>
 
+<WorkNote {state} {S} groups={SECTION_WORK.tables} />
+
 <PauseNote {state} {S} />
 <p class="md intro">{S.runs_intro}</p>
 
@@ -357,7 +379,8 @@
 					class="btn big p"
 					disabled={starting || estimating}
 					on:click={press}
-					data-testid="case-tables-start">{startText}</button
+					data-testid="case-tables-start"
+					><Busy on={starting} text={S.busy_wait}>{startText}</Busy></button
 				>
 			</div>
 			<div class="col g8 sep other" data-testid="case-tables-other">
@@ -394,9 +417,11 @@
 							disabled={!otherTable || otherBusy}
 							data-testid="case-tables-other-start"
 							on:click={pressOther}
-							>{otherScope?.pages && otherPriced
-								? fmt(S.runs_start_usd, { usd: usd(otherScope.estimate_usd) })
-								: S.tables_from_other_start}</button
+							><Busy on={otherBusy} text={S.busy_wait}
+								>{otherScope?.pages && otherPriced
+									? fmt(S.runs_start_usd, { usd: usd(otherScope.estimate_usd) })
+									: S.tables_from_other_start}</Busy
+							></button
 						>
 					</div>
 					<p class="xs mut">{S.tables_from_other_hint}</p>

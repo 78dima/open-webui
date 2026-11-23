@@ -216,10 +216,33 @@
 	const volumesText = (f: CaseFolder) =>
 		f.case && f.case.volumes > 0 ? count(f.case.volumes, S.volumes_forms) : S.volumes_none;
 
+	// Пока хотя бы у одного дела списка идёт обработка (признак `busy` сервиса), список тихо перечитывается раз в
+	// 15 с — отметка «идёт обработка» сама уходит, когда работа закончилась; без таких дел список не спрашивается.
+	const BUSY_MS = 15000;
+	let quiet = false;
+	async function refreshBusy() {
+		if (quiet || phase !== 'ready' || !folders.some((f) => f.case?.busy)) return;
+		if (typeof document !== 'undefined' && document.hidden) return;
+		quiet = true;
+		const own = controller;
+		try {
+			const listing = await api.get('api/cases');
+			if (controller === own && phase === 'ready') folders = readListing(listing);
+		} catch {
+			// сбой тихого перечитывания списка не трогает: следующее — через тот же срок
+		} finally {
+			quiet = false;
+		}
+	}
+	let busyTimer: ReturnType<typeof setInterval> | null = null;
 	onMount(() => {
 		void load();
+		busyTimer = setInterval(() => void refreshBusy(), BUSY_MS);
 	});
-	onDestroy(() => controller?.abort());
+	onDestroy(() => {
+		controller?.abort();
+		if (busyTimer !== null) clearInterval(busyTimer);
+	});
 </script>
 
 <div class="shell mc" data-testid="my-cases" data-phase={phase}>
@@ -450,6 +473,10 @@
 											data-sveltekit-reload={caseHref ? undefined : ''}
 											>{f.title || S.folder_untitled}</a
 										>
+										{#if f.case?.busy && S.my_cases_busy}<span
+												class="mc-pill busy"
+												data-testid="case-row-busy"><Icon name="clock" />{S.my_cases_busy}</span
+											>{/if}
 									</div>
 									<span class="vol" class:none={!f.case?.volumes} role="cell">{volumesText(f)}</span
 									>
@@ -489,7 +516,9 @@
 									<span class="tag"
 										><span class="mc-pill {access(f)}"
 											><Icon name={a.icon} size={15} />{S[a.key]}</span
-										></span
+										>{#if f.case?.busy && S.my_cases_busy}<span class="mc-pill busy"
+												><Icon name="clock" size={15} />{S.my_cases_busy}</span
+											>{/if}</span
 									>
 								</span>
 								<Icon name="r" size={20} />
@@ -1013,6 +1042,13 @@
 		font-weight: 500;
 		color: var(--fg2);
 		white-space: nowrap;
+	}
+	/* «идёт обработка» у дела — в тоне плашек хода страницы дела (.pill.i) */
+	.mc-pill.busy {
+		align-self: flex-start;
+		border-color: transparent;
+		background: var(--info-bg);
+		color: var(--info);
 	}
 	.mc-pill.shared {
 		color: var(--info);

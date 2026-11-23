@@ -13,6 +13,9 @@ export type Loader<T> = {
 	/** Заменить данные ответом действия (правка вернула новое состояние раздела). */
 	set: (value: T | null) => void;
 	hold: (on: boolean) => void;
+	/** Данные устарели (работа по делу закончилась): следующее обычное перечитывание промежутка не ждёт; открытое
+	 *  окно (`hold`) по-прежнему придерживает. */
+	touch: () => void;
 	stop: () => void;
 };
 
@@ -29,15 +32,11 @@ export function createLoader<T>(
 	let held = false;
 	let stopped = false;
 	let at = -Infinity;
-	let again = false;
+	// просьба о свежих данных, пока идёт прежний запрос: force — действие юриста, soft — данные устарели (`touch`)
+	let again: null | 'force' | 'soft' = null;
+	let current: Promise<void> | null = null;
 
-	async function refresh(force = false): Promise<void> {
-		if (stopped) return;
-		if (busy) {
-			again = again || force; // действие просит свежие данные, пока идёт прежний запрос
-			return;
-		}
-		if (!force && (held || now() - at < gap)) return;
+	async function run(): Promise<void> {
 		busy = true;
 		at = now();
 		try {
@@ -53,11 +52,25 @@ export function createLoader<T>(
 			if (!stopped) error.set(e ?? new Error());
 		} finally {
 			busy = false;
+			current = null;
 			if (again && !stopped) {
-				again = false;
-				void refresh(true);
+				const force = again === 'force';
+				again = null;
+				if (!force) at = -Infinity;
+				await refresh(force); // зовущий «Обновить» дожидается ответа, собранного после его нажатия
 			}
 		}
+	}
+
+	function refresh(force = false): Promise<void> {
+		if (stopped) return Promise.resolve();
+		if (busy) {
+			if (force) again = 'force'; // действие просит свежие данные, пока идёт прежний запрос
+			return current ?? Promise.resolve();
+		}
+		if (!force && (held || now() - at < gap)) return Promise.resolve();
+		current = run();
+		return current;
 	}
 
 	return {
@@ -71,8 +84,35 @@ export function createLoader<T>(
 		hold: (on) => {
 			held = on;
 		},
+		touch: () => {
+			at = -Infinity;
+			if (busy && !again) again = 'soft'; // идущий запрос мог быть собран до конца работы
+		},
 		stop: () => {
 			stopped = true;
+		}
+	};
+}
+
+/** «Обновить» раздела: кнопка занята, пока идёт запрос; по ответу зовётся `done` — и когда данные не изменились
+ *  (загрузчик одинаковый ответ не перерисовывает, и без этого у нажатия не было бы видимого ответа). Отказ запроса
+ *  показывает сам раздел (`StaleNote`), `done` тогда не зовётся. */
+export function createReload<T>(
+	loader: Loader<T>,
+	done: () => void
+): { busy: Readable<boolean>; run: () => Promise<void> } {
+	const busy = writable(false);
+	return {
+		busy: { subscribe: busy.subscribe },
+		async run() {
+			if (get(busy)) return;
+			busy.set(true);
+			try {
+				await loader.refresh(true);
+				if (!get(loader.error)) done();
+			} finally {
+				busy.set(false);
+			}
 		}
 	};
 }

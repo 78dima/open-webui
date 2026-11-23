@@ -7,7 +7,9 @@
 	// раза в 20 с и не пока открыто окно. Поведение — прежний `sections/mapcore.js` (`drawAmounts`, `editAmount`).
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
-	import { createLoader } from '$lib/custom/case/loader';
+	import { createLoader, createReload } from '$lib/custom/case/loader';
+	import { SECTION_WORK, workWatcher } from '$lib/custom/case/casepage';
+	import WorkNote from './WorkNote.svelte';
 	import { quoteMore, rub, stateLines, type MapState } from '$lib/custom/case/mapcore';
 	import { casePath, errorText, query, reasonText } from '$lib/custom/case/sections';
 	import { fmt } from '$lib/custom/case/strings';
@@ -15,6 +17,7 @@
 	import FormDialog from './FormDialog.svelte';
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon from './Icon.svelte';
+	import Busy from './Busy.svelte';
 	import SheetRef from './SheetRef.svelte';
 	import AmountRow from './AmountRow.svelte';
 
@@ -59,16 +62,28 @@
 	);
 	const { data: answer, error } = loader;
 	// «Обновить» — в шапке раздела, как у паспорта и сроков (на прежней странице суммы перечитывало «Обновить» паспорта)
+	// «Обновить»: кнопка занята, пока идёт запрос; по ответу — «Обновлено», и когда записи не изменились
+	const reload = createReload(loader, () => S.refreshed && caseToast(S.refreshed));
+	const { busy: reloading } = reload;
 	const setHead = useHead();
 	$: setHead([
 		{
 			id: 'refresh',
 			text: S.map_refresh,
-			run: () => void loader.refresh(true),
+			run: () => void reload.run(),
+			busy: $reloading,
+			busyText: S.busy_refresh,
 			testid: 'case-map-refresh'
 		}
 	]);
 	$: ($data, void loader.refresh());
+	// работа по делу, от которой зависят записи раздела, закончилась — раздел перечитывается сразу, не дожидаясь
+	// своего промежутка (пока она идёт, вверху раздела стоит строка хода `WorkNote`)
+	const watchWork = workWatcher(SECTION_WORK.amounts, () => {
+		loader.touch();
+		void loader.refresh();
+	});
+	$: watchWork($data);
 	onDestroy(() => loader.stop());
 	$: rows = ($answer?.amounts ?? [])
 		.filter((a) => a.group || !gone.has(a.id))
@@ -83,6 +98,8 @@
 	};
 	const rowKey = (a: Amount | Group) => (a.group ? `g${a.document_id}` : `a${a.id}`);
 	let groupRows: Record<string, Amount[]> = {};
+	// группы, чьи суммы запрошены и ещё в пути: кнопка занята, под группой «Загрузка…»
+	let opening = new Set<string>();
 	async function flipGroup(g: Group) {
 		const k = `g${g.document_id}`;
 		if (groupRows[k]) {
@@ -90,6 +107,8 @@
 			groupRows = rest;
 			return;
 		}
+		if (opening.has(k)) return;
+		opening = new Set(opening).add(k);
 		try {
 			const d = await state.api.get<{ amounts: (Amount | Group)[] }>(
 				casePath(
@@ -100,6 +119,10 @@
 			groupRows = { ...groupRows, [k]: d.amounts.filter((a): a is Amount => !a.group) };
 		} catch (e) {
 			caseToast(errorText(S, e), true);
+		} finally {
+			const next = new Set(opening);
+			next.delete(k);
+			opening = next;
 		}
 	}
 	// действие над суммой — сумма заменяется на месте ответом сервиса (ревью 22.11 Б-1): место в списке и раскрытая
@@ -143,6 +166,8 @@
 	let historyOpen = false;
 	$: loader.hold(editOpen || historyOpen);
 </script>
+
+<WorkNote {state} {S} groups={SECTION_WORK.amounts} />
 
 <div class="note n" data-testid="case-amounts-note">
 	<Icon name="info" klass="l" />
@@ -210,8 +235,12 @@
 									type="button"
 									class="btn t"
 									aria-expanded={!!groupRows[rowKey(a)]}
+									disabled={opening.has(rowKey(a))}
+									data-testid="case-amount-group-open"
 									on:click={() => a.group && flipGroup(a)}
-									>{groupRows[rowKey(a)] ? S.map_table_close : S.map_table_open}</button
+									><Busy on={opening.has(rowKey(a))} text={S.loading}
+										>{groupRows[rowKey(a)] ? S.map_table_close : S.map_table_open}</Busy
+									></button
 								>
 							</span>
 						</div>

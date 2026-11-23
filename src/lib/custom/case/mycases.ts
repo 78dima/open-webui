@@ -11,7 +11,8 @@ export type CaseFolder = {
 	write: boolean;
 	owner: boolean;
 	shared: boolean;
-	case: { id: string; volumes: number; changed: string | null } | null;
+	/** `busy` — по делу сейчас идёт работа (очередь обработки или проход): факт сервиса; прежний сервис его не отдаёт. */
+	case: { id: string; volumes: number; changed: string | null; busy?: boolean } | null;
 };
 
 /** Папка из дерева чата (`/api/v1/folders/` и `/api/v1/folders/shared`): нужна только связь с родителем. */
@@ -60,7 +61,8 @@ export function readListing(raw: unknown): CaseFolder[] {
 						? {
 								id: text(c.id),
 								volumes: Number.isFinite(Number(c.volumes)) ? Math.max(0, Number(c.volumes)) : 0,
-								changed: text(c.changed) || null
+								changed: text(c.changed) || null,
+								...(c.busy === true ? { busy: true } : {})
 							}
 						: null
 			});

@@ -19,6 +19,7 @@
 	import { provideHead, type HeadAction } from '$lib/custom/case/head';
 	import { caseToast } from '$lib/custom/case/toast';
 	import Amounts from './Amounts.svelte';
+	import Busy from './Busy.svelte';
 	import CaseNav from './CaseNav.svelte';
 	import CheckSheets from './CheckSheets.svelte';
 	import Chronology from './Chronology.svelte';
@@ -231,7 +232,7 @@
 					testid="case-none"
 				>
 					<button type="button" class="btn big p act" disabled={creating} on:click={createCase}
-						>{creating ? S.create_case_busy : S.create_case}</button
+						><Busy on={creating} text={S.create_case_busy}>{S.create_case}</Busy></button
 					>
 				</StateCard>
 			{:else}
@@ -255,8 +256,12 @@
 										{/if}
 									</span>
 									{#each quiet as a (a.id)}
-										<button type="button" class="btn t" on:click={a.run} data-testid={a.testid}
-											>{a.text}</button
+										<button
+											type="button"
+											class="btn t"
+											disabled={!!a.busy}
+											on:click={a.run}
+											data-testid={a.testid}><Busy on={!!a.busy} text={a.busyText}>{a.text}</Busy></button
 										>
 									{/each}
 								</div>
@@ -270,8 +275,15 @@
 								<a class="btn big p" href={chatHref}><Icon name="chat" />{S.chat_of_case}</a>
 							{/if}
 							{#each main as a (a.id)}
-								<button type="button" class="btn big p" on:click={a.run} data-testid={a.testid}
-									>{#if a.icon}<Icon name={a.icon} />{/if}{a.text}</button
+								<button
+									type="button"
+									class="btn big p"
+									disabled={!!a.busy}
+									on:click={a.run}
+									data-testid={a.testid}
+									><Busy on={!!a.busy} text={a.busyText}
+										>{#if a.icon}<Icon name={a.icon} />{/if}{a.text}</Busy
+									></button
 								>
 							{/each}
 						</div>

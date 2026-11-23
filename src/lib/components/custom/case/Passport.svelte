@@ -8,7 +8,9 @@
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { useHead } from '$lib/custom/case/head';
-	import { createLoader } from '$lib/custom/case/loader';
+	import { createLoader, createReload } from '$lib/custom/case/loader';
+	import { SECTION_WORK, workWatcher } from '$lib/custom/case/casepage';
+	import WorkNote from './WorkNote.svelte';
 	import {
 		lines,
 		passportName,
@@ -66,6 +68,13 @@
 	});
 	const { data: answer, error } = loader;
 	$: ($data, void loader.refresh());
+	// работа по делу, от которой зависят записи раздела, закончилась — раздел перечитывается сразу, не дожидаясь
+	// своего промежутка (пока она идёт, вверху раздела стоит строка хода `WorkNote`)
+	const watchWork = workWatcher(SECTION_WORK.passport, () => {
+		loader.touch();
+		void loader.refresh();
+	});
+	$: watchWork($data);
 	onDestroy(() => loader.stop());
 
 	const OWN_CARD = new Set(['parties', 'key_dates', 'key_amounts']);
@@ -146,16 +155,23 @@
 		historyOpen = true;
 	};
 	$: loader.hold(editOpen || historyOpen);
+	// «Обновить»: кнопка занята, пока идёт запрос; по ответу — «Обновлено», и когда записи не изменились
+	const reload = createReload(loader, () => S.refreshed && caseToast(S.refreshed));
+	const { busy: reloading } = reload;
 	const setHead = useHead();
 	$: setHead([
 		{
 			id: 'refresh',
 			text: S.map_refresh,
-			run: () => void loader.refresh(true),
+			run: () => void reload.run(),
+			busy: $reloading,
+			busyText: S.busy_refresh,
 			testid: 'case-map-refresh'
 		}
 	]);
 </script>
+
+<WorkNote {state} {S} groups={SECTION_WORK.passport} />
 
 <div class="note n" data-testid="case-passport-note">
 	<Icon name="info" klass="l" />

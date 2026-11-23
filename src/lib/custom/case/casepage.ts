@@ -145,6 +145,17 @@ export type CaseData = {
 	uploads?: Upload[];
 	counts?: Record<string, number>;
 	deadlines_next?: Deadline[];
+	/** какая работа по делу идёт сейчас (сервис, `work.of_case`); прежний сервис поля не отдаёт */
+	work?: Work | null;
+};
+/** Работа по делу — факты очереди сервиса: `groups` — задач группы в очереди и в работе, `running` — из них взято
+ *  обработчиком, `sweeps` — идущих проходов, `stalled` — обработчик очереди не отвечает (задачи стоят). */
+export type Work = {
+	busy: boolean;
+	groups: Record<string, number>;
+	running?: Record<string, number>;
+	sweeps: number;
+	stalled?: boolean;
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -184,6 +195,8 @@ export type NavItem = {
 	count?: number;
 	warn?: boolean;
 	quiet?: boolean;
+	/** данные раздела сейчас пересобираются (`sectionWork`) — у пункта меню значок часов */
+	work?: boolean;
 };
 export type NavGroup = { cap?: string; rule?: boolean; items: NavItem[] };
 
@@ -256,7 +269,9 @@ export function navGroups(
 	return groups
 		.map((g) => ({
 			...g,
-			items: g.items.filter((i) => sectionOpen(i.slug, boot, folderFiles, folderFilesFailed))
+			items: g.items
+				.filter((i) => sectionOpen(i.slug, boot, folderFiles, folderFilesFailed))
+				.map((i) => (workActive(data, SECTION_WORK[i.slug]) ? { ...i, work: true } : i))
 		}))
 		.filter((g) => g.items.length);
 }
@@ -294,8 +309,59 @@ export function gotoVolumes(volumes: Volume[] | undefined): string[] {
 const UPLOAD_BUSY = new Set(['received', 'intake']);
 const FILE_BUSY = new Set(['queued', 'splitting', 'reading']);
 
-/** Идёт ли обработка, ради которой обзор переспрашивается чаще, — правило прежней страницы (`processing`). */
-export function processing(data: CaseData | null, localRunning = false): boolean {
+// ---- работа по делу (поле `work` обзора): один источник признака хода для сводки, разделов, меню и срока опроса ----
+
+/** Группы работы, от которых зависят данные раздела: пока они в очереди или в работе, записи раздела пересобираются.
+ *  Работа выше по цепочке входит тоже (чтение листов кончится описью, опись — карточками, карточки — паспортом). */
+export const SECTION_WORK: Record<string, string[]> = {
+	inventory: ['read', 'inventory'],
+	copies: ['read', 'inventory', 'copies'],
+	passport: ['read', 'inventory', 'cards', 'passport'],
+	amounts: ['read', 'inventory', 'cards'],
+	chronology: ['read', 'inventory', 'cards'],
+	deadlines: ['read', 'inventory', 'cards'],
+	tables: ['sweeps']
+};
+/** Вся обработка дела (сводка «Обзора»): проходы — работа юриста с готовым делом, в обработку не входят. */
+export const WORK_PROCESSING = ['read', 'inventory', 'cards', 'passport', 'copies', 'vectors', 'other'];
+const WORK_ORDER = [...WORK_PROCESSING, 'sweeps'];
+
+/** Сколько задач группы сейчас в очереди и в работе (`sweeps` — идущих проходов). */
+export const workCount = (work: Work | null | undefined, group: string): number =>
+	!work ? 0 : group === 'sweeps' ? (work.sweeps ?? 0) : (work.groups?.[group] ?? 0);
+/** Идёт ли работа названных групп (без групп — любая). */
+export function workActive(
+	data: Pick<CaseData, 'work'> | null | undefined,
+	groups: string[] = WORK_ORDER
+): boolean {
+	return groups.some((g) => workCount(data?.work, g) > 0);
+}
+/** Работа названных групп словами сервиса (`work_part_<группа>`), по порядку цепочки; без строки — группа молчит. */
+export function workParts(
+	work: Work | null | undefined,
+	groups: string[],
+	S: Record<string, any>
+): string[] {
+	return WORK_ORDER.filter((g) => groups.includes(g) && workCount(work, g) > 0)
+		.map((g) => fmt(S[`work_part_${g}`], { n: workCount(work, g) }))
+		.filter(Boolean);
+}
+/** Состав работы без чисел: изменился — пора перечитать обзор целиком (между этим хватает лёгкого запроса). */
+export const workKey = (work: Work | null | undefined): string =>
+	[...WORK_ORDER.filter((g) => workCount(work, g) > 0), work?.stalled ? 'stalled' : ''].join(',');
+/** Раздел следит за работой своих групп: `done` зовётся, когда она закончилась, — раздел перечитывает себя сразу. */
+export function workWatcher(groups: string[], done: () => void) {
+	let was = false;
+	return (data: Pick<CaseData, 'work'> | null | undefined): void => {
+		if (!data) return;
+		const now = workActive(data, groups);
+		if (was && !now) done();
+		was = now;
+	};
+}
+
+/** Приём и распознавание файлов — правило прежней страницы (`processing`): ради них обзор спрашивается целиком. */
+export function intake(data: CaseData | null, localRunning = false): boolean {
 	if (!data) return localRunning;
 	// незавершённая загрузка из другой вкладки (receiving) опрос не ускоряет: её части шлёт не эта страница
 	if ((data.uploads ?? []).some((u) => UPLOAD_BUSY.has(u.phase))) return true;
@@ -304,6 +370,15 @@ export function processing(data: CaseData | null, localRunning = false): boolean
 		return true;
 	return localRunning;
 }
+
+/** Идёт ли обработка, ради которой страница переспрашивает чаще: приём и распознавание файлов и любая работа по
+ *  делу, которую называет сервис (опись, карточки, паспорт, векторы, проходы). */
+export function processing(data: CaseData | null, localRunning = false): boolean {
+	return intake(data, localRunning) || workActive(data);
+}
+/** Между полными обзорами хватает лёгкого запроса `…/work`: идёт только работа по делу, файлы не принимаются. */
+export const workOnly = (data: CaseData | null, localRunning = false): boolean =>
+	!!data && workActive(data) && !intake(data, localRunning);
 
 /** Срок до следующего запроса обзора: 5 с при обработке, 30 с без неё. */
 export const pollDelay = (data: CaseData | null, localRunning = false): number =>
@@ -336,7 +411,8 @@ const PAUSE_KEYS: Record<string, string> = {
 export const pauseKey = (reason: unknown): string => PAUSE_KEYS[String(reason)] ?? 'paused_unknown';
 
 export type Summary = {
-	/** empty — материалов нет; processing — идёт обработка; ready — всё распознано и опись готова. */
+	/** empty — материалов нет; processing — идёт обработка; ready — всё распознано, опись готова и работы по делу
+	 *  (карточки, паспорт, копии, векторы) в очереди нет. */
 	kind: 'empty' | 'processing' | 'ready';
 	indexed: number;
 	total: number;
@@ -363,7 +439,10 @@ export function summary(data: CaseData): Summary {
 		uploads.some((u) => u.phase === 'receiving') || // файл ещё передаётся — материалы в пути
 		ic.indexed < ic.total ||
 		volumes.some((v) => v.status !== 'inventory_ready') ||
-		files.some((f) => FILE_BUSY.has(String(f.status)));
+		files.some((f) => FILE_BUSY.has(String(f.status))) ||
+		// опись, карточки документов, паспорт, копии, векторы ещё в очереди или в работе: «Готово к работе» — только
+		// когда работа действительно закончена (требование владельца 23.11)
+		workActive(data, WORK_PROCESSING);
 	const p = data.paused;
 	return {
 		kind: !some ? 'empty' : busy ? 'processing' : 'ready',

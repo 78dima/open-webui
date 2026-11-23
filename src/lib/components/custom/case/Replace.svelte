@@ -6,9 +6,9 @@
 	// вместе с обзором дела; раскрытые списки — состояние компонента. Поведение — прежний `sections/whatsnew.js`.
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
-	import { splitLabel, when } from '$lib/custom/case/casepage';
+	import { splitLabel, when, workActive } from '$lib/custom/case/casepage';
 	import { createLoader } from '$lib/custom/case/loader';
-	import { casePath, sheetHref, reasonText } from '$lib/custom/case/sections';
+	import { casePath, sheetHref, reasonText, volumeTitle } from '$lib/custom/case/sections';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import { caseToast } from '$lib/custom/case/toast';
 	import FormDialog from './FormDialog.svelte';
@@ -52,6 +52,16 @@
 	$: ($data, void loader.refresh());
 	onDestroy(() => loader.stop());
 	$: deltas = $answer?.deltas ?? [];
+	// Том, получивший ещё один файл, пока тот обрабатывается (факты обзора: в томе больше одного файла и том ещё не
+	// готов, либо в очереди дела стоит сверка копий — её шаг и считает «что нового»). Повторная ли это загрузка,
+	// код узнает только сверкой, поэтому строка говорит «если это повторная загрузка», а не обещает запись.
+	$: pendingVolumes = !S.replace_reading
+		? []
+		: ($data?.overview.volumes ?? []).filter(
+				(v) =>
+					(v.files ?? []).filter((f) => f.status !== 'removed').length > 1 &&
+					(v.status !== 'inventory_ready' || workActive($data, ['copies']))
+			);
 	$: canWrite = !!$boot?.can_write;
 
 	const CHIPS = 12; // листов в перечне до «ещё N»
@@ -128,6 +138,17 @@
 
 <p class="md lead">{S.replace_hint}</p>
 
+{#if pendingVolumes.length}
+	<div class="note i" role="status" data-testid="case-replace-reading">
+		<Icon name="clock" klass="l" />
+		<p>
+			{fmt(S.replace_reading, {
+				volumes: pendingVolumes.map((v) => volumeTitle(v.label, S)).join(', ')
+			})}
+		</p>
+	</div>
+{/if}
+
 {#if $error && $answer}<StaleNote {S} error={$error} retry={() => loader.refresh(true)} />{/if}
 {#if $error && !$answer}
 	<section class="card" data-testid="case-replace-error">
@@ -140,6 +161,8 @@
 	</section>
 {:else if !$answer}
 	<section class="card"><p class="mut" role="status">{S.loading}</p></section>
+{:else if !deltas.length && pendingVolumes.length}
+	<!-- сверки ещё нет, но файл тома в обработке: «томов нет» сказать нельзя — строка хода выше -->
 {:else if !deltas.length}
 	<section class="card" data-testid="case-replace-empty">
 		<p class="mut">{S.whatsnew_empty}</p>

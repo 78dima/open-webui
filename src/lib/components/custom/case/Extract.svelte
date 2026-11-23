@@ -6,6 +6,7 @@
 	import { saveBlob } from '$lib/custom/case/loader';
 	import { casePath, reasonText } from '$lib/custom/case/sections';
 	import Icon from './Icon.svelte';
+	import Busy from './Busy.svelte';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
@@ -54,8 +55,8 @@
 				on:input={() => (error = '')}
 			/></label
 		>
-		<button type="submit" class="btn big p" disabled={busy}
-			><Icon name="dl" />{S.extract_submit}</button
+		<button type="submit" class="btn big p" disabled={busy} data-testid="case-extract-submit"
+			><Busy on={busy} text={S.busy_file}><Icon name="dl" />{S.extract_submit}</Busy></button
 		>
 	</form>
 	{#if error}

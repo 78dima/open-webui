@@ -8,6 +8,8 @@
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
 	import { createLoader } from '$lib/custom/case/loader';
+	import { SECTION_WORK, workWatcher } from '$lib/custom/case/casepage';
+	import WorkNote from './WorkNote.svelte';
 	import { casePath, sheetHref, reasonText } from '$lib/custom/case/sections';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import Icon from './Icon.svelte';
@@ -46,6 +48,13 @@
 	const loader = createLoader(() => state.api.get<{ copies: Pair[] }>(casePath(state, '/copies')));
 	const { data: answer, error } = loader;
 	$: ($data, void loader.refresh());
+	// работа по делу, от которой зависят записи раздела, закончилась — раздел перечитывается сразу, не дожидаясь
+	// своего промежутка (пока она идёт, вверху раздела стоит строка хода `WorkNote`)
+	const watchWork = workWatcher(SECTION_WORK.copies, () => {
+		loader.touch();
+		void loader.refresh();
+	});
+	$: watchWork($data);
 	onDestroy(() => loader.stop());
 
 	// копия — когда по описи совпал реквизит (дата или номер) и ни один не расходится; остальные пары — похожие документы
@@ -84,6 +93,8 @@
 		d.confirmed === true ? '' : d.confirmed === false ? S.copies_note_ocr : S.copies_note_single;
 	const place = (p: Place) => sheetHref(state, p.page_id, `?hl=${p.start}-${p.end}`);
 </script>
+
+<WorkNote {state} {S} groups={SECTION_WORK.copies} />
 
 <div class="note n" data-testid="case-copies-hint">
 	<Icon name="info" klass="l" />
