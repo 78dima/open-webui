@@ -36,8 +36,12 @@
 		{#if a.quote_changed}<span class="pill w t" data-testid="case-quote-changed"
 				><Icon name="al" />{S.quote_changed}</span
 			>{/if}
-		{#if a.own_value?.length && S.map_own_value_pill}<span class="pill w t" data-testid="case-own-value"
-				><Icon name="al" />{S.map_own_value_pill}</span
+		{#if a.own_value?.length && S.map_own_value_pill}<a
+				class="pill w t"
+				href={a.own_value[0].url}
+				target="_blank"
+				rel="noopener"
+				data-testid="case-own-value"><Icon name="al" />{S.map_own_value_pill}</a
 			>{/if}
 		{#if a.sheet_checks?.length && S.map_sheet_check_pill}<span
 				class="pill w t"
@@ -72,8 +76,15 @@
 	<!-- отметка суммы (пакет 23.11, Д-9): расходится её собственное число — оба прочтения; лист помечен целиком -->
 	{#if a.own_value?.length && S.map_own_sum}<p class="sm c-warn why" data-testid="case-own-value-why">
 			{fmt(S.map_own_sum, {
-				values: a.own_value.map((v: string[]) => `«${v[0]}» / «${v[1]}»`).join('; ')
+				values: a.own_value.map((v: { a: string; b: string }) => `«${v.a}» / «${v.b}»`).join('; ')
 			})}
+			{#if S.map_own_value_open}<a
+					class="ref"
+					href={a.own_value[0].url}
+					target="_blank"
+					rel="noopener"
+					data-testid="case-own-value-open">{S.map_own_value_open}</a
+				>{/if}
 		</p>{/if}
 	{#if a.sheet_checks?.length && S.map_sheet_check_amount}<p
 			class="sm c-warn why"

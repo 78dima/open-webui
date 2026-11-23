@@ -45,9 +45,12 @@
 			{#if f.quote_changed}<span class="pill t w" data-testid="case-quote-changed"
 					>{S.quote_changed}</span
 				>{/if}
-			{#if f.own_value?.length && S.map_own_value_pill}<span
+			{#if f.own_value?.length && S.map_own_value_pill}<a
 					class="pill t w"
-					data-testid="case-own-value">{S.map_own_value_pill}</span
+					href={f.own_value[0].url}
+					target="_blank"
+					rel="noopener"
+					data-testid="case-own-value">{S.map_own_value_pill}</a
 				>{/if}
 			{#if f.sheet_checks?.length && S.map_sheet_check_pill}<span
 					class="pill t w"
@@ -62,8 +65,15 @@
 		     причины словами списка; лист — ссылкой ниже -->
 		{#if f.own_value?.length && S.map_own_date}<p class="sm c-warn" data-testid="case-own-value-why">
 				{fmt(S.map_own_date, {
-					values: f.own_value.map((v: string[]) => `«${v[0]}» / «${v[1]}»`).join('; ')
+					values: f.own_value.map((v: { a: string; b: string }) => `«${v.a}» / «${v.b}»`).join('; ')
 				})}
+				{#if S.map_own_value_open}<a
+						class="ref"
+						href={f.own_value[0].url}
+						target="_blank"
+						rel="noopener"
+						data-testid="case-own-value-open">{S.map_own_value_open}</a
+					>{/if}
 			</p>{/if}
 		{#if f.sheet_checks?.length && S.map_sheet_check}<p
 				class="sm c-warn"

@@ -40,8 +40,8 @@
 			quote_rest?: number | null;
 			quote_changed?: boolean;
 			sheet_checks?: { code: string; reason: string }[];
-			own_value?: string[][];
-			quote_marks?: { start: number; end: number; a: string; b: string }[];
+			own_value?: { a: string; b: string; url?: string }[];
+			quote_marks?: { start: number; end: number; a: string; b: string; url?: string }[];
 		};
 		calc?: string | null;
 		norm?: string | null;
@@ -195,14 +195,24 @@
 							><Icon name="al" />{S.quote_changed}</span
 						>{/if}
 					<!-- отметка срока (пакет 23.11, Д-10): расходится его дата — оба прочтения; лист-основание помечен целиком -->
-					{#if x.basis.own_value?.length && S.map_own_deadline}<span
+					{#if x.basis.own_value?.length && S.map_own_deadline}<a
 							class="pill w t as"
-							data-testid="case-own-value"><Icon name="al" />{S.map_own_value_pill}</span
+							href={x.basis.own_value[0].url}
+							target="_blank"
+							rel="noopener"
+							data-testid="case-own-value"><Icon name="al" />{S.map_own_value_pill}</a
 						>
 						<p class="sm c-warn" data-testid="case-own-value-why">
 							{fmt(S.map_own_deadline, {
-								values: x.basis.own_value.map((v) => `«${v[0]}» / «${v[1]}»`).join('; ')
+								values: x.basis.own_value.map((v) => `«${v.a}» / «${v.b}»`).join('; ')
 							})}
+							{#if S.map_own_value_open}<a
+									class="ref"
+									href={x.basis.own_value[0].url}
+									target="_blank"
+									rel="noopener"
+									data-testid="case-own-value-open">{S.map_own_value_open}</a
+								>{/if}
 						</p>{/if}
 					{#if x.basis.sheet_checks?.length && S.map_sheet_check_deadline}<span
 							class="pill w t as"
