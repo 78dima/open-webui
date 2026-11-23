@@ -15,7 +15,7 @@
 		applyFilter,
 		buildSections,
 		caseMarks,
-		listDelay,
+		LIST_EVERY_MS,
 		day,
 		flatSections,
 		parentMap,
@@ -223,24 +223,24 @@
 	// отметки дела (Н-1): идёт обработка / на паузе / не отвечает / ждёт / идёт проход — по виду дела от сервиса
 	const marks = (f: CaseFolder) => caseMarks(f, S, (w) => viewWhy(w, S));
 
-	// Пока у какого-то дела идёт обработка или проход, список тихо перечитывается раз в 15 с; когда остались только
-	// пауза, молчащий обработчик или ожидание — раз в 30 с (как редкий опрос «Обзора»); без работы список не
-	// спрашивается. Отметка сама уходит, когда работа закончилась.
+	// Пока вкладка видна, список тихо перечитывается раз в 10 с при любом состоянии дел (вид дела — в ответе списка):
+	// открытые заранее «Мои дела» видят, что дело занялось, и отметка сама уходит, когда работа кончилась. Скрытая
+	// вкладка не спрашивает, вернувшаяся — сразу (Д-8, Д-9 живой проверки 23.11).
 	let quiet = false;
 	let gone = false;
 	let busyTimer: ReturnType<typeof setTimeout> | null = null;
+	const hidden = () => typeof document !== 'undefined' && document.hidden;
 	function schedule() {
 		if (busyTimer !== null) clearTimeout(busyTimer);
 		busyTimer = null;
 		if (gone) return;
-		// без работы — проверить снова через 30 с: список мог прийти позже (загрузка) или дело заведено в другой вкладке
-		busyTimer = setTimeout(() => void refreshBusy(), listDelay(folders) ?? 30000);
+		busyTimer = setTimeout(() => void refreshBusy(), LIST_EVERY_MS);
 	}
 	async function refreshBusy() {
+		if (busyTimer !== null) clearTimeout(busyTimer);
 		busyTimer = null;
 		try {
-			if (quiet || phase !== 'ready' || listDelay(folders) === null) return;
-			if (typeof document !== 'undefined' && document.hidden) return;
+			if (quiet || phase !== 'ready' || hidden()) return;
 			quiet = true;
 			const own = controller;
 			try {
@@ -255,14 +255,19 @@
 			schedule();
 		}
 	}
+	const onVisible = () => {
+		if (!gone && !hidden()) void refreshBusy();
+	};
 	onMount(() => {
 		void load();
 		schedule();
+		document.addEventListener('visibilitychange', onVisible);
 	});
 	onDestroy(() => {
 		gone = true;
 		controller?.abort();
 		if (busyTimer !== null) clearTimeout(busyTimer);
+		if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
 	});
 </script>
 

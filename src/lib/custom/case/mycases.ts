@@ -80,19 +80,11 @@ export function caseMarks(
 	}
 	return out;
 }
-/** Через сколько перечитать список: 15 с — у какого-то дела идёт обработка или проход; 30 с — только на паузе, не
- *  отвечает или ждёт (как редкий опрос «Обзора»); null — работы нет, список не спрашивается. */
-export function listDelay(folders: CaseFolder[]): number | null {
-	let slow = false;
-	for (const f of folders) {
-		const c = f.case;
-		if (!c) continue;
-		const w = c.work;
-		if (w ? w.kind === 'runs' || w.sweeps > 0 : c.busy) return 15000;
-		if (w && (w.kind !== 'ready' || (w.sweeps_stalled ?? 0) > 0)) slow = true;
-	}
-	return slow ? 30000 : null;
-}
+/** Раз во сколько мс «Мои дела», пока вкладка видна, тихо перечитывают список (`GET /api/cases`, вид дела — в нём):
+ *  открытые заранее видят, что дело занялось, и что работа кончилась. Скрытая вкладка не спрашивает, вернувшаяся —
+ *  сразу. Отдельной лёгкой ручки списка нет: права на папки всё равно проверяет тот же `list_folders`, и по цене
+ *  она почти не отличалась бы (Д-8, Д-9 живой проверки 23.11, решение координатора). */
+export const LIST_EVERY_MS = 10000;
 
 /** Папка из дерева чата (`/api/v1/folders/` и `/api/v1/folders/shared`): нужна только связь с родителем. */
 export type FolderNode = { id?: unknown; parent_id?: unknown };

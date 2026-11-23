@@ -38,7 +38,7 @@ import {
 } from './casepage';
 import { createCaseState } from './casestore';
 import { createLoader, createReload } from './loader';
-import { caseMarks, listDelay, readListing, type CaseFolder } from './mycases';
+import { caseMarks, LIST_EVERY_MS, readListing, type CaseFolder } from './mycases';
 import { mergeTableRows, type Cell, type Check } from './tablescore';
 import {
 	isMarkdownToolItem,
@@ -351,7 +351,7 @@ describe('страница дела: лёгкий опрос, пока идёт 
 		post: () => Promise.resolve({}) as Promise<any>
 	});
 
-	it('между полными обзорами — ручка work; состав работы изменился — обзор целиком; работы нет — 30 с', async () => {
+	it('между полными обзорами — ручка work; состав работы изменился — обзор целиком; без работы — work раз в 10 с', async () => {
 		vi.useFakeTimers();
 		const calls: string[] = [];
 		let current: Work = work({ cards: 3 });
@@ -377,10 +377,19 @@ describe('страница дела: лёгкий опрос, пока идёт 
 		await vi.advanceTimersByTimeAsync(5000);
 		expect([only('/'), only('/work')]).toEqual([3, 3]);
 		expect(get(state.data)?.work?.busy).toBe(false);
-		await vi.advanceTimersByTimeAsync(25000);
-		expect([only('/'), only('/work')]).toEqual([3, 3]); // работы нет — ни лёгких, ни частых запросов
-		await vi.advanceTimersByTimeAsync(5000);
-		expect([only('/'), only('/work')]).toEqual([4, 3]);
+		// работы нет (Д-8): лёгкий запрос раз в 10 с, обзор целиком — не реже 30 с, как был
+		await vi.advanceTimersByTimeAsync(10000);
+		expect([only('/'), only('/work')]).toEqual([3, 4]);
+		await vi.advanceTimersByTimeAsync(10000);
+		expect([only('/'), only('/work')]).toEqual([3, 5]);
+		await vi.advanceTimersByTimeAsync(10000);
+		expect([only('/'), only('/work')]).toEqual([4, 5]);
+		// работа началась в другой вкладке: лёгкий запрос в простое её видит не позже чем через 10 с — и тем же
+		// заходом обзор целиком (строка хода, часы в меню, сводка)
+		current = work({ inventory: 1 });
+		await vi.advanceTimersByTimeAsync(10000);
+		expect([only('/'), only('/work')]).toEqual([5, 6]);
+		expect(get(state.data)?.work?.groups.inventory).toBe(1);
 		state.stop();
 		vi.useRealTimers();
 	});
@@ -397,7 +406,7 @@ describe('страница дела: лёгкий опрос, пока идёт 
 		const state = createCaseState(api, 'f1');
 		await state.start();
 		await vi.advanceTimersByTimeAsync(60000);
-		expect(calls.filter((c) => c.endsWith('/work'))).toEqual([]);
+		expect(calls.filter((c) => c.endsWith('/work'))).toEqual([]); // и в простое (Д-8) — только у нового сервиса
 		expect(calls.filter((c) => c === 'api/cases/f1').length).toBe(3);
 		state.stop();
 		vi.useRealTimers();
@@ -632,12 +641,8 @@ describe('Н-1: вид дела от сервиса — одно правило 
 		expect(by.bad.case?.work).toBeUndefined();
 		for (const k of ['my_cases_busy', 'my_cases_paused', 'my_cases_stalled', 'my_cases_waiting', 'my_cases_sweeps'])
 			expect(SS[k], k).toBeTruthy();
-		// опрос списка: идёт обработка или проход — 15 с; только пауза / молчание / ожидание — 30 с; ничего — нет
-		expect(listDelay([by.p, by.r])).toBe(15000);
-		expect(listDelay([by.q])).toBe(15000);
-		expect(listDelay([by.old])).toBe(15000);
-		expect(listDelay([by.p, by.s, by.w])).toBe(30000);
-		expect(listDelay([by.z, by.bad])).toBeNull();
+		// опрос списка — раз в 10 с при любом состоянии дел, пока вкладка видна (Д-8, Д-9)
+		expect(LIST_EVERY_MS).toBe(10000);
 	});
 });
 
@@ -748,7 +753,5 @@ describe('проход, чьё задание ждёт в очереди, при
 		const mh = caseMarks(h, SS);
 		expect(mh.map((m) => m.key)).toEqual(['my_cases_stalled']);
 		expect(mh[0].why).toBe(SS.work_jobs_stalled.replace('{n}', '1'));
-		expect(listDelay([g])).toBe(15000);
-		expect(listDelay([h])).toBe(30000);
 	});
 });
