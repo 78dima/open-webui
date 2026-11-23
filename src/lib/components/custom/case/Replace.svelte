@@ -6,7 +6,7 @@
 	// вместе с обзором дела; раскрытые списки — состояние компонента. Поведение — прежний `sections/whatsnew.js`.
 	import { onDestroy } from 'svelte';
 	import type { CaseState } from '$lib/custom/case/casestore';
-	import { splitLabel, when, workActive } from '$lib/custom/case/casepage';
+	import { SECTION_WORK, splitLabel, when, workWatcher } from '$lib/custom/case/casepage';
 	import { createLoader } from '$lib/custom/case/loader';
 	import { casePath, sheetHref, reasonText, volumeTitle } from '$lib/custom/case/sections';
 	import { count, fmt } from '$lib/custom/case/strings';
@@ -46,22 +46,23 @@
 		replaced_by_name?: string | null;
 	};
 
+	type PendingVolume = { volume_id: number; label: string | null };
 	const { boot, data } = state;
-	const loader = createLoader(() => state.api.get<{ deltas: Delta[] }>(casePath(state, '/deltas')));
+	const loader = createLoader(() =>
+		state.api.get<{ deltas: Delta[]; pending_volumes?: PendingVolume[] }>(casePath(state, '/deltas'))
+	);
 	const { data: answer, error } = loader;
 	$: ($data, void loader.refresh());
+	const watchWork = workWatcher(SECTION_WORK.copies, () => {
+		loader.touch();
+		void loader.refresh();
+	});
+	$: watchWork($data);
 	onDestroy(() => loader.stop());
 	$: deltas = $answer?.deltas ?? [];
-	// Том, получивший ещё один файл, пока тот обрабатывается (факты обзора: в томе больше одного файла и том ещё не
-	// готов, либо в очереди дела стоит сверка копий — её шаг и считает «что нового»). Повторная ли это загрузка,
-	// код узнает только сверкой, поэтому строка говорит «если это повторная загрузка», а не обещает запись.
-	$: pendingVolumes = !S.replace_reading
-		? []
-		: ($data?.overview.volumes ?? []).filter(
-				(v) =>
-					(v.files ?? []).filter((f) => f.status !== 'removed').length > 1 &&
-					(v.status !== 'inventory_ready' || workActive($data, ['copies']))
-			);
+	// Тома, в которых есть новый файл в чтении или в ожидании сверки копий — факт сервиса (`pending_volumes` ответа
+	// `…/deltas`), без угадывания по числу файлов (Р-4). Прежний сервис поля не отдаёт — строки нет.
+	$: pendingVolumes = !S.replace_reading ? [] : ($answer?.pending_volumes ?? []);
 	$: canWrite = !!$boot?.can_write;
 
 	const CHIPS = 12; // листов в перечне до «ещё N»
