@@ -41,7 +41,8 @@
 			quote_changed?: boolean;
 			sheet_checks?: { code: string; reason: string }[];
 			own_value?: { a: string; b: string; url?: string }[];
-			quote_marks?: { start: number; end: number; a: string; b: string; url?: string }[];
+			quote_marks?: { start: number; end: number; a: string; b: string; hl?: string }[];
+			place_base?: string | null;
 		};
 		calc?: string | null;
 		norm?: string | null;
@@ -225,7 +226,7 @@
 						</p>{/if}
 					{#if x.basis.quote}
 						<p class="q">
-							<QuoteText quote={x.basis.quote} marks={x.basis.quote_marks} {S} />{#if quoteMore(x.basis.quote_rest, S)}{' '}<span class="mut"
+							<QuoteText quote={x.basis.quote} marks={x.basis.quote_marks} base={x.basis.place_base} {S} />{#if quoteMore(x.basis.quote_rest, S)}{' '}<span class="mut"
 									>{quoteMore(x.basis.quote_rest, S)}</span
 								>{/if}
 						</p>

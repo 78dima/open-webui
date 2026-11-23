@@ -127,7 +127,7 @@ test.describe('Д-9, Д-10: отметка у записи и подчёркив
 		const d = fixture('facts');
 		const q = d.facts[0].quote as string;
 		const word = q.slice(4, 9);
-		Object.assign(d.facts[0], { own_value: [{ a: '12.05.2025', b: '12.05.2026', url: '/legal-tools/case/x/p/7?v=3&hl=10-20&pick=1' }], sheet_checks: [], quote_marks: [{ start: 4, end: 9, a: word, b: 'иначе', url: '/legal-tools/case/x/p/7?v=3&hl=4-9&pick=1' }] });
+		Object.assign(d.facts[0], { own_value: [{ a: '12.05.2025', b: '12.05.2026', url: '/legal-tools/case/x/p/7?v=3&hl=10-20&pick=1' }], sheet_checks: [], place_base: '/legal-tools/case/x/p/7?v=3', quote_marks: [{ start: 4, end: 9, a: word, b: 'иначе', hl: '4-9' }] });
 		Object.assign(d.facts[1], { own_value: [], sheet_checks: whole, quote_marks: [] });
 		for (const k of ['own_value', 'sheet_checks', 'quote_marks']) delete d.facts[2][k]; // прежний сервис полей не присылает
 		d.facts.push({ group: true, document_id: 5, document: 'Выписка', n: 12, date_from: '2025-04-01', date_to: '2025-05-31', page_id: 1, label: 'т. 2, л.д. 5', on_check: 4 });
@@ -149,7 +149,7 @@ test.describe('Д-9, Д-10: отметка у записи и подчёркив
 		await rows.nth(0).getByRole('button', { name: S.quote_toggle }).click();
 		const mark = rows.nth(0).getByTestId('case-quote-mark');
 		await expect(mark).toHaveText(word);
-		await expect(rows.nth(0).getByTestId('case-quote-mark-link')).toHaveAttribute('href', /hl=4-9&pick=1$/);
+		await expect(rows.nth(0).getByTestId('case-quote-mark-link')).toHaveAttribute('href', '/legal-tools/case/x/p/7?v=3&hl=4-9&pick=1');
 		await expect(rows.nth(0).getByTestId('case-quote-mark-link')).toHaveAttribute('title', `прочитано по-разному: «${word}» / «иначе» — открыть лист и выбрать верное`);
 		expect((await rows.nth(0).locator('.q').first().innerText()).replace(/\s+/g, ' ')).toContain(q.slice(0, 30).replace(/\s+/g, ' '));
 		await rows.nth(1).getByRole('button', { name: S.quote_toggle }).click();

@@ -96,7 +96,7 @@
 		</p>{/if}
 	{#if a.quote && quoteOpen}
 		<p class="q">
-			<QuoteText quote={a.quote} marks={a.quote_marks} {S} />{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
+			<QuoteText quote={a.quote} marks={a.quote_marks} base={a.place_base} {S} />{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
 					>{quoteMore(a.quote_rest, S)}</span
 				>{/if}
 		</p>
