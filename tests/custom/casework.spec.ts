@@ -34,10 +34,11 @@ test.describe('работа по делу идёт', () => {
 		await expect(page.getByTestId('case-work-line')).toHaveText(
 			S.overview_work_line.replace('{parts}', `${S.work_part_cards.replace('{n}', '3')}, ${S.work_part_passport}`)
 		);
-		// признак у пунктов меню — только у разделов, чьи данные зависят от этой работы
-		for (const slug of ['passport', 'amounts', 'chronology', 'deadlines'])
+		// признак у пунктов меню — только у разделов, чьи данные зависят от этой работы (Н-3: разбор документов пишет
+		// в строки описи название, дату и автора — у «Описи» и «Копий» тоже)
+		for (const slug of ['passport', 'amounts', 'chronology', 'deadlines', 'inventory', 'copies'])
 			await expect(page.getByTestId(`case-nav-${slug}`).getByTestId('case-nav-work')).toHaveCount(1);
-		for (const slug of ['inventory', 'copies', 'tables', 'volumes', 'check'])
+		for (const slug of ['tables', 'volumes', 'check'])
 			await expect(page.getByTestId(`case-nav-${slug}`).getByTestId('case-nav-work')).toHaveCount(0);
 		// работа закончилась: страница сама (опрос 5 с) приходит к «Готово к работе», признаков не остаётся
 		w = work({});
@@ -274,11 +275,15 @@ test.describe('«Замена тома» и «Мои дела»', () => {
 		const v = base.overview.volumes[0];
 		const two = { ...v, status: 'reading', files: [...(v.files ?? []), { id: 9001, filename: 'Том (пересъёмка).pdf', status: 'reading', pages: 8, pages_indexed: 2 }] };
 		let d: any = { ...base, overview: { ...base.overview, volumes: [two, ...base.overview.volumes.slice(1)] }, work: work({ read: 12 }) };
-		await openSection(page, { section: 'replace', data: () => d, routes: { deltas: fixture('deltas-empty'), work: (r: Route) => r.fulfill({ json: { work: d.work, paused: null } }) } });
+		// том с новым файлом в чтении — факт сервиса `pending_volumes` ответа …/deltas (Р-4, Н-11), а не догадка страницы
+		let pending: any[] = [{ volume_id: v.id, label: v.label }];
+		const deltas = (r: Route) => r.fulfill({ json: { ...fixture('deltas-empty'), pending_volumes: pending, pending_unassigned: 0 } });
+		await openSection(page, { section: 'replace', data: () => d, routes: { deltas, work: (r: Route) => r.fulfill({ json: { work: d.work, paused: null } }) } });
 		await expect(page.getByTestId('case-replace-reading')).toBeVisible();
 		await expect(page.getByTestId('case-replace-empty')).toHaveCount(0);
 		// файл прочитан, сверка посчитана и записи нет (это было продолжение тома) — обычное «томов нет»
 		d = { ...base, overview: { ...base.overview, volumes: [{ ...two, status: 'inventory_ready' }, ...base.overview.volumes.slice(1)] }, work: work({}) };
+		pending = [];
 		await expect(page.getByTestId('case-replace-reading')).toHaveCount(0, { timeout: 9000 });
 		await expect(page.getByTestId('case-replace-empty')).toHaveText(S.whatsnew_empty);
 	});

@@ -11,9 +11,17 @@ import { CaseApiError, createCaseApi, type CaseApi } from './api';
 import {
 	SECTION_WORK,
 	WAIT_KEYS,
+	caseView,
+	chronologyReread,
+	pausedNow,
+	runParts,
+	viewWhy,
+	workNote,
 	WORK_PART,
 	isPausedFor,
 	navGroups,
+	volumeState,
+	type Volume,
 	pauseOf,
 	pollDelay,
 	processing,
@@ -32,9 +40,14 @@ import {
 } from './casepage';
 import { createCaseState } from './casestore';
 import { createLoader, createReload } from './loader';
-import { readListing } from './mycases';
+import { caseMarks, LIST_EVERY_MS, readListing, type CaseFolder } from './mycases';
 import { mergeTableRows, type Cell, type Check } from './tablescore';
-import { lastDetailGroupIndex } from '../toolStatus';
+import {
+	isMarkdownToolItem,
+	isStructuredToolItem,
+	lastDetailGroupIndex,
+	toolPreparingLabel
+} from '../toolStatus';
 
 const boot = bootJson as Boot;
 const ready = readyJson as unknown as CaseData;
@@ -85,7 +98,15 @@ describe('работа по делу (поле work обзора)', () => {
 
 	it('строка хода и признак меню — у разделов, чьи данные зависят от идущей работы', () => {
 		const cards = { ...ready, work: work({ cards: 2, passport: 1 }) };
-		expect(marked(cards).sort()).toEqual(['amounts', 'chronology', 'deadlines', 'passport']);
+		// Н-3: разбор документов пишет в строки описи название, дату и автора — у «Описи» и «Копий» тоже признак
+		expect(marked(cards).sort()).toEqual([
+			'amounts',
+			'chronology',
+			'copies',
+			'deadlines',
+			'inventory',
+			'passport'
+		]);
 		expect(marked({ ...ready, work: work({ passport: 1 }) })).toEqual(['passport']);
 		expect(marked({ ...ready, work: work({ inventory: 1 }) }).sort()).toEqual(
 			['amounts', 'chronology', 'copies', 'deadlines', 'inventory', 'passport'].sort()
@@ -99,9 +120,50 @@ describe('работа по делу (поле work обзора)', () => {
 			'собирается паспорт дела'
 		]);
 		expect(workParts(cards.work, SECTION_WORK.chronology, S)).toEqual(['разбираются документы — 2']);
-		expect(workParts(cards.work, SECTION_WORK.inventory, S)).toEqual([]);
+		expect(workParts(cards.work, SECTION_WORK.inventory, S)).toEqual(['разбираются документы — 2']);
+		expect(workParts(cards.work, SECTION_WORK.check, S)).toEqual([]);
+		expect(marked({ ...ready, work: work({ read: 4 }) })).toContain('check'); // «Проверьте листы» растёт
 		expect(workParts(cards.work, SECTION_WORK.passport, {})).toEqual([]); // прежний сервис: строк нет — молчит
 		expect(workActive(cards, SECTION_WORK.tables)).toBe(false);
+	});
+
+	it('Д-11: работа раздела стоит (пауза, обработчик молчит) — у пункта меню значок паузы, а не часы', () => {
+		const items = (data: CaseData) =>
+			navGroups(boot, data)
+				.flatMap((g) => g.items)
+				.filter((i) => i.work);
+		const runs = items({ ...ready, work: work({ cards: 2 }) });
+		expect(runs.length).toBeGreaterThan(0);
+		expect(runs.every((i) => i.held === undefined)).toBe(true);
+		const stalled = items({ ...ready, work: work({ cards: 2 }, 0, true) });
+		expect(stalled.every((i) => i.held === 'stalled')).toBe(true);
+		// на паузе только чтение листов: у «Проверьте листы» (одно чтение) — пауза; у «Хронологии», где идут ещё и
+		// карточки, — часы
+		const part = items({ ...ready, work: { ...work({ cards: 2, read: 1 }), paused_groups: ['read'] } });
+		expect(part.find((i) => i.slug === 'check')?.held).toBe('paused');
+		expect(part.find((i) => i.slug === 'chronology')?.held).toBeUndefined();
+		const all = items({
+			...ready,
+			work: work({ cards: 2 }),
+			paused: { reason: 'manual', since: null } as CaseData['paused']
+		});
+		expect(all.every((i) => i.held === 'paused')).toBe(true);
+	});
+
+	it('Д-11: том распознан, а опись ждёт, на паузе или обработчик молчит — «распознан» без часов, а не «составляется опись»', () => {
+		const v = { id: 1, label: '1', status: 'indexed', pages: 10, files: [] } as unknown as Volume;
+		expect(volumeState(v).key).toBe('volume_state_indexed'); // прежний сервис — как было
+		expect(volumeState(v, { ...ready, work: work({ inventory: 1 }) })).toEqual({
+			tone: 'info',
+			key: 'volume_state_indexed'
+		});
+		const waiting = { ...work({}), waiting: { inventory: 1 } } as Work;
+		expect(volumeState(v, { ...ready, work: waiting })).toEqual({ tone: 'plain', key: 'file_state_indexed' });
+		expect(volumeState(v, { ...ready, work: work({ inventory: 1 }, 0, true) }).key).toBe('file_state_indexed');
+		expect(
+			volumeState(v, { ...ready, work: { ...work({ inventory: 1 }), paused_groups: ['inventory'] } }).key
+		).toBe('file_state_indexed');
+		expect((stringsJson as Record<string, string>).file_state_indexed).toBeTruthy();
 	});
 
 	it('состав работы без чисел: счёт тикает — ключ тот же; группа закончилась — другой', () => {
@@ -148,7 +210,8 @@ describe('работа по делу (поле work обзора)', () => {
 		};
 		const dWait: CaseData = { ...ready, work: wWait };
 		expect(workWaiting(dWait, SECTION_WORK.chronology)).toBe(true);
-		expect(workWaiting(dWait, SECTION_WORK.inventory)).toBe(false);
+		expect(workWaiting(dWait, SECTION_WORK.inventory)).toBe(true); // Н-3: разбор документов пишет строки описи
+		expect(workWaiting(dWait, SECTION_WORK.check)).toBe(false);
 		expect(workWaitingOnly(dWait)).toBe(true);
 		expect(summary(dWait).kind).toBe('waiting');
 		// даже если том не дошёл до inventory_ready — при одних ждущих задачах это waiting, а не processing
@@ -329,7 +392,7 @@ describe('страница дела: лёгкий опрос, пока идёт 
 		post: () => Promise.resolve({}) as Promise<any>
 	});
 
-	it('между полными обзорами — ручка work; состав работы изменился — обзор целиком; работы нет — 30 с', async () => {
+	it('между полными обзорами — ручка work; состав работы изменился — обзор целиком; без работы — work раз в 10 с', async () => {
 		vi.useFakeTimers();
 		const calls: string[] = [];
 		let current: Work = work({ cards: 3 });
@@ -355,10 +418,19 @@ describe('страница дела: лёгкий опрос, пока идёт 
 		await vi.advanceTimersByTimeAsync(5000);
 		expect([only('/'), only('/work')]).toEqual([3, 3]);
 		expect(get(state.data)?.work?.busy).toBe(false);
-		await vi.advanceTimersByTimeAsync(25000);
-		expect([only('/'), only('/work')]).toEqual([3, 3]); // работы нет — ни лёгких, ни частых запросов
-		await vi.advanceTimersByTimeAsync(5000);
-		expect([only('/'), only('/work')]).toEqual([4, 3]);
+		// работы нет (Д-8): лёгкий запрос раз в 10 с, обзор целиком — не реже 30 с, как был
+		await vi.advanceTimersByTimeAsync(10000);
+		expect([only('/'), only('/work')]).toEqual([3, 4]);
+		await vi.advanceTimersByTimeAsync(10000);
+		expect([only('/'), only('/work')]).toEqual([3, 5]);
+		await vi.advanceTimersByTimeAsync(10000);
+		expect([only('/'), only('/work')]).toEqual([4, 5]);
+		// работа началась в другой вкладке: лёгкий запрос в простое её видит не позже чем через 10 с — и тем же
+		// заходом обзор целиком (строка хода, часы в меню, сводка)
+		current = work({ inventory: 1 });
+		await vi.advanceTimersByTimeAsync(10000);
+		expect([only('/'), only('/work')]).toEqual([5, 6]);
+		expect(get(state.data)?.work?.groups.inventory).toBe(1);
 		state.stop();
 		vi.useRealTimers();
 	});
@@ -375,7 +447,7 @@ describe('страница дела: лёгкий опрос, пока идёт 
 		const state = createCaseState(api, 'f1');
 		await state.start();
 		await vi.advanceTimersByTimeAsync(60000);
-		expect(calls.filter((c) => c.endsWith('/work'))).toEqual([]);
+		expect(calls.filter((c) => c.endsWith('/work'))).toEqual([]); // и в простое (Д-8) — только у нового сервиса
 		expect(calls.filter((c) => c === 'api/cases/f1').length).toBe(3);
 		state.stop();
 		vi.useRealTimers();
@@ -512,5 +584,215 @@ describe('Р-10: отказ лёгкого опроса, отсутствие �
 		expect(err).toBeInstanceOf(CaseApiError);
 		expect((err as CaseApiError).kind).toBe('network');
 		vi.useRealTimers();
+	});
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Возврат по ревью пакета 2 (23.11): вид дела одним правилом, части на паузе, «Мои дела», хронология, одиночный вызов
+// ---------------------------------------------------------------------------------------------------------------------
+const SS = stringsJson as Record<string, any>;
+const view = (kind: string, extra: Record<string, unknown> = {}) => ({
+	kind,
+	reason: null,
+	since: null,
+	reasons: [],
+	sweeps: 0,
+	...extra
+});
+
+describe('Н-1: вид дела от сервиса — одно правило для «Обзора», «Моих дел» и листа', () => {
+	it('«Обзор»: на паузе — по виду дела, в том числе пауза шага после отказов моделей (общей паузы нет)', () => {
+		const step: CaseData = {
+			...ready,
+			paused: null,
+			work: { ...work({ cards: 3 }), paused_groups: ['cards'], view: view('paused', { reason: 'step' }) as any }
+		};
+		expect(pausedNow(step)).toBe(true);
+		const sum = summary(step);
+		expect(sum.kind).toBe('processing');
+		expect(sum.paused).toEqual({ self: true, key: 'paused_step', since: null, groups: ['cards'] });
+		expect(SS[sum.paused!.key]).toBeTruthy();
+		// идёт — не на паузе, хотя общая частичная пауза (marks) есть
+		const runs: CaseData = {
+			...ready,
+			paused: { reason: 'marks', since: null, until: null, groups: ['read'] },
+			work: { ...work({ cards: 3, read: 1 }), paused_groups: ['read'], view: view('runs') as any }
+		};
+		expect(pausedNow(runs)).toBe(false);
+	});
+
+	it('без поля view (прежний сервис) — прежнее правило; без work — вида нет', () => {
+		expect(caseView(ready)).toBeNull();
+		expect(caseView({ ...ready, work: work({ cards: 1 }) })?.kind).toBe('runs');
+		expect(caseView({ ...ready, work: work({ cards: 1 }, 0, true) })?.kind).toBe('stalled');
+		const paused = { reason: 'budget', since: '2026-11-23T10:00:00+00:00', until: null, groups: null };
+		expect(caseView({ ...ready, paused, work: work({ cards: 1 }) })).toEqual(
+			view('paused', { reason: 'budget', since: paused.since })
+		);
+		expect(pausedNow({ ...ready, paused, work: work({ cards: 1 }) })).toBe(true);
+		expect(
+			caseView({
+				...ready,
+				work: { ...work({}), waiting: { cards: 1 }, waiting_reasons: { cards: ['http_429'] } }
+			})
+		).toEqual(view('waiting', { reasons: ['http_429'] }));
+		expect(caseView({ ...ready, work: work({}, 2) })).toEqual(view('ready', { sweeps: 2 }));
+		// вид от сервиса берётся как есть
+		const v = view('paused', { reason: 'manual' }) as any;
+		expect(caseView({ ...ready, work: { ...work({ cards: 1 }), view: v } })).toBe(v);
+	});
+
+	it('«Мои дела»: отметка по виду дела; пауза и ожидание — с причиной; проход — отдельно; опрос 15 / 30 с / нет', () => {
+		const list = readListing({
+			own: [
+				{ folder_id: 'r', case: { id: '1', volumes: 1, changed: null, busy: true, work: view('runs') } },
+				{
+					folder_id: 'p',
+					case: { id: '2', volumes: 1, changed: null, busy: false, work: view('paused', { reason: 'budget' }) }
+				},
+				{ folder_id: 's', case: { id: '3', volumes: 1, changed: null, busy: false, work: view('stalled') } },
+				{
+					folder_id: 'w',
+					case: {
+						id: '4',
+						volumes: 1,
+						changed: null,
+						busy: false,
+						work: view('waiting', { reasons: ['http_429'] })
+					}
+				},
+				{ folder_id: 'q', case: { id: '5', volumes: 1, changed: null, busy: false, work: view('ready', { sweeps: 1 }) } },
+				{ folder_id: 'z', case: { id: '6', volumes: 1, changed: null, busy: false, work: view('ready') } },
+				{ folder_id: 'old', case: { id: '7', volumes: 1, changed: null, busy: true } },
+				{ folder_id: 'bad', case: { id: '8', volumes: 1, changed: null, work: { kind: 'nonsense' } } }
+			]
+		});
+		const by = Object.fromEntries(list.map((f) => [f.id, f])) as Record<string, CaseFolder>;
+		const why = (w: any) => viewWhy(w, SS);
+		const keys = (id: string) => caseMarks(by[id], SS, why).map((m) => m.key);
+		expect(keys('r')).toEqual(['my_cases_busy']);
+		expect(keys('p')).toEqual(['my_cases_paused']);
+		expect(caseMarks(by.p, SS, why)[0].why?.toLowerCase()).toBe(SS.paused_budget.toLowerCase());
+		expect(keys('s')).toEqual(['my_cases_stalled']);
+		expect(keys('w')).toEqual(['my_cases_waiting']);
+		expect(caseMarks(by.w, SS, why)[0].why?.toLowerCase()).toBe(SS.wait_http_429.toLowerCase());
+		expect(keys('q')).toEqual(['my_cases_sweeps']);
+		expect(keys('z')).toEqual([]);
+		expect(keys('old')).toEqual(['my_cases_busy']); // прежний сервис: по busy
+		expect(by.bad.case?.work).toBeUndefined();
+		for (const k of ['my_cases_busy', 'my_cases_paused', 'my_cases_stalled', 'my_cases_waiting', 'my_cases_sweeps'])
+			expect(SS[k], k).toBeTruthy();
+		// опрос списка — раз в 10 с при любом состоянии дел, пока вкладка видна (Д-8, Д-9)
+		expect(LIST_EVERY_MS).toBe(10000);
+	});
+});
+
+describe('Н-6: при частичной паузе строка «идёт» не называет стоящее идущим', () => {
+	const w: Work = { ...work({ read: 2, cards: 3 }), paused_groups: ['read'], view: view('runs') as any };
+	it('идущие группы — словами хода, группы на паузе — «на паузе: чтение листов»', () => {
+		const held = SS.work_paused_tail.replace('{parts}', SS.work_pause_part_read);
+		expect(runParts(w, SECTION_WORK.chronology, SS)).toBe(
+			`${SS.work_part_cards.replace('{n}', '3')}; ${held}`
+		);
+		const note = workNote({ work: w, paused: null }, SECTION_WORK.chronology, SS)!;
+		expect(note.kind).toBe('runs');
+		expect(note.text).toContain(held);
+		expect(note.text).not.toContain(SS.work_part_read);
+	});
+	it('вся работа раздела на паузе — «ждут» существительными; не отвечает — «не отвечает»; ждёт — причина; нет — null', () => {
+		const all: Work = { ...work({ read: 2 }), paused_groups: ['read'] };
+		const p = workNote({ work: all, paused: null }, SECTION_WORK.check, SS)!;
+		expect(p.kind).toBe('waits');
+		expect(p.paused).toBe(true);
+		expect(p.text).toBe(SS.work_note_paused.replace('{parts}', SS.work_pause_part_read));
+		const st = workNote({ work: work({ cards: 1 }, 0, true), paused: null }, SECTION_WORK.amounts, SS)!;
+		expect(st.kind).toBe('waits');
+		expect(st.text).toContain(SS.work_part_cards.replace('{n}', '1'));
+		const wt = workNote(
+			{ work: { ...work({}), waiting: { cards: 1 }, waiting_reasons: { cards: ['http_429'] } }, paused: null },
+			SECTION_WORK.amounts,
+			SS
+		)!;
+		expect(wt).toEqual({
+			kind: 'waiting',
+			paused: false,
+			text: SS.work_note_waiting.replace('{reason}', SS.wait_http_429)
+		});
+		expect(workNote({ work: work({ vectors: 1 }), paused: null }, SECTION_WORK.amounts, SS)).toBeNull();
+		expect(workNote(ready, SECTION_WORK.amounts, SS)).toBeNull();
+	});
+});
+
+describe('Н-7: «Хронология» перечитывает весь объём один раз, а не на каждую смену rev', () => {
+	const base = { shownRev: 'r1', sameAsked: true, loadedPages: 5, working: false };
+	it('та же метка — ничего; идёт работа или прежний сервис без rev — только первая порция; конец работы — всё', () => {
+		expect(chronologyReread({ ...base, rev: 'r1' })).toBe('keep');
+		expect(chronologyReread({ ...base, rev: 'r2', working: true })).toBe('first');
+		expect(chronologyReread({ ...base, rev: null })).toBe('first');
+		expect(chronologyReread({ ...base, rev: undefined, working: true })).toBe('first');
+		// работа кончилась (метка показанного не обновлялась, пока шла работа) — перечитать весь загруженный объём
+		expect(chronologyReread({ ...base, rev: 'r9' })).toBe('all');
+		// одна порция или сменился отбор — один запрос
+		expect(chronologyReread({ ...base, rev: 'r2', loadedPages: 1, working: true })).toBe('all');
+		expect(chronologyReread({ ...base, rev: 'r1', sameAsked: false })).toBe('all');
+	});
+});
+
+describe('Н-2: одиночный вызов, после которого модель работает, — признак хода, как у группы', () => {
+	it('последний вызов — и группа, и одиночный, на обоих путях; строка «Выполнено, готовлю ответ: …»', () => {
+		const md = [
+			{ type: 'details', attributes: { type: 'tool_calls' } },
+			{ type: 'space' }
+		];
+		expect(lastDetailGroupIndex(md, isMarkdownToolItem, (t) => t.type === 'space')).toBe(0);
+		expect(
+			lastDetailGroupIndex([...md, { type: 'paragraph' }], isMarkdownToolItem, (t) => t.type === 'space')
+		).toBe(-1);
+		// «рассуждение» (details без tool_calls) — не вызов
+		expect(
+			lastDetailGroupIndex([{ type: 'details', attributes: { type: 'reasoning' } }], isMarkdownToolItem, () => false)
+		).toBe(-1);
+		const so = [{ type: 'detail_single', token: { attributes: { type: 'tool_calls' } } }, { type: 'message', text: ' ' }];
+		const empty = (it: any) => it.type === 'message' && !it.text.trim();
+		expect(lastDetailGroupIndex(so, isStructuredToolItem, empty)).toBe(0);
+		expect(lastDetailGroupIndex([...so, { type: 'message', text: 'Ответ' }], isStructuredToolItem, empty)).toBe(-1);
+		expect(toolPreparingLabel('legal-tools_kplus_search')).toMatch(/^Выполнено, готовлю ответ: /);
+		expect(toolPreparingLabel('legal-tools_kplus_search')).not.toMatch(/legal-tools|kplus/);
+	});
+});
+
+
+describe('проход, чьё задание ждёт в очереди, при неотвечающем обработчике заданий — стоит, а не «идёт»', () => {
+	it('обработчик заданий жив — «идёт проход»; не отвечает — «не отвечает» в «Таблицах», «Моих делах»; меню без часов', () => {
+		const going: Work = { ...work({}, 1), sweeps_stalled: 0 };
+		const held: Work = { ...work({}, 0), sweeps_stalled: 1, busy: false };
+		// «Таблицы»: строка хода
+		expect(workNote({ work: going, paused: null }, SECTION_WORK.tables, SS, 'work_note_tables')?.kind).toBe('runs');
+		expect(workNote({ work: held, paused: null }, SECTION_WORK.tables, SS, 'work_note_tables')).toEqual({
+			kind: 'waits',
+			paused: false,
+			text: SS.work_jobs_stalled.replace('{n}', '1')
+		});
+		// стоящий проход разделы обработки не трогает и часов у «Таблиц» не ставит
+		expect(workNote({ work: held, paused: null }, SECTION_WORK.chronology, SS)).toBeNull();
+		expect(marked({ ...ready, work: held })).toEqual([]);
+		expect(marked({ ...ready, work: going })).toEqual(['tables']);
+		// состав работы сменился — обзор перечитывается целиком
+		expect(workKey(held)).not.toBe(workKey(work({})));
+		// «Мои дела»
+		const list = readListing({
+			own: [
+				{ folder_id: 'g', case: { id: '1', volumes: 1, changed: null, work: view('ready', { sweeps: 1 }) } },
+				{
+					folder_id: 'h',
+					case: { id: '2', volumes: 1, changed: null, work: view('ready', { sweeps_stalled: 1 }) }
+				}
+			]
+		});
+		const [g, h] = list;
+		expect(caseMarks(g, SS).map((m) => m.key)).toEqual(['my_cases_sweeps']);
+		const mh = caseMarks(h, SS);
+		expect(mh.map((m) => m.key)).toEqual(['my_cases_stalled']);
+		expect(mh[0].why).toBe(SS.work_jobs_stalled.replace('{n}', '1'));
 	});
 });

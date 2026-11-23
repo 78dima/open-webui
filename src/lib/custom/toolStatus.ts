@@ -83,8 +83,24 @@ export function toolGroupText(
 	};
 }
 
-/** Индекс последней группы вызовов (`detail_group`), после которой ещё нет непустого текста ответа; -1, если такой нет.
- *  Общее правило для обоих путей отрисовки чата: Markdown (`MarkdownTokens.svelte`) и структурного (`StructuredOutputRenderer.svelte`). */
+/** Строка одиночного вызова, после которого модель ещё работает над ответом (Н-2): «Выполнено, готовлю ответ: …» —
+ *  тот же вид, что у группы вызовов (`toolGroupText(…, preparing)`). */
+export function toolPreparingLabel(name: unknown): string {
+	const g = toolGroupText([name], false, false, true);
+	return `${g.prefix} ${g.detail}`;
+}
+
+/** Индекс последнего вызова — группы (`detail_group`) или одиночного вызова (Н-2), — после которого ещё нет непустого
+ *  текста ответа; -1, если такого нет. Общее правило для обоих путей отрисовки чата: Markdown (`MarkdownTokens.svelte`)
+ *  и структурного (`StructuredOutputRenderer.svelte`); `isGroup` у них признаёт и группу, и одиночный вызов. */
+/** Вызов на пути Markdown: группа вызовов или одиночный вызов (`details` с `type = tool_calls`). */
+export const isMarkdownToolItem = (t: any): boolean =>
+	t?.type === 'detail_group' || (t?.type === 'details' && t?.attributes?.type === 'tool_calls');
+/** Вызов на структурном пути: группа вызовов или одиночный вызов (`detail_single` с `type = tool_calls`). */
+export const isStructuredToolItem = (it: any): boolean =>
+	it?.type === 'detail_group' ||
+	(it?.type === 'detail_single' && it?.token?.attributes?.type === 'tool_calls');
+
 export function lastDetailGroupIndex<T>(
 	items: readonly T[],
 	isGroup: (item: T) => boolean,

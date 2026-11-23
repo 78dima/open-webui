@@ -21,7 +21,7 @@
 	// ai-dvokat: структурный путь (StructuredOutputRenderer, Ф-1) — две группы вызовов в незаконченном сообщении
 	const fc = (id: string, name: string) => [
 		{ type: 'function_call', id, call_id: id, name, arguments: '{"query":"x"}' },
-		{ type: 'function_call_output', call_id: id, output: result, status: 'completed' }
+		{ type: 'function_call_output', call_id: id, output: [{ type: 'output_text', text: result }], status: 'completed' }
 	];
 	const structuredTwoGroups = [
 		...fc('s1', 'legal-tools_case_search'),
@@ -33,6 +33,12 @@
 	const structuredWithTailText = [
 		...structuredTwoGroups,
 		{ type: 'message', id: 'm2', role: 'assistant', content: [{ type: 'output_text', text: 'Итоговый ответ уже пишется.' }] }
+	];
+	// ai-dvokat: одиночный вызов (Н-2) — первый ход модели почти всегда один вызов; без текста после него и с текстом
+	const structuredSingle = [...fc('o1', 'legal-tools_case_overview')];
+	const structuredSingleTail = [
+		...structuredSingle,
+		{ type: 'message', id: 'm3', role: 'assistant', content: [{ type: 'output_text', text: 'Ответ пишется.' }] }
 	];
 </script>
 
@@ -85,4 +91,17 @@
 </section>
 <section data-testid="structured-with-tail">
 	<StructuredOutputRenderer id="so-tail" output={structuredWithTailText} done={false} renderMarkdown={false} />
+</section>
+<!-- ai-dvokat: одиночный вызов (Н-2): последний и сообщение не закончено — признак хода; с текстом после — галка -->
+<section data-testid="single-preparing">
+	<ToolCallDisplay id="single-preparing" attributes={call('sp1', 'legal-tools_case_overview')} isLast={true} messageDone={false} />
+</section>
+<section data-testid="single-earlier">
+	<ToolCallDisplay id="single-earlier" attributes={call('se1', 'legal-tools_case_overview')} isLast={false} messageDone={false} />
+</section>
+<section data-testid="structured-single">
+	<StructuredOutputRenderer id="so-single" output={structuredSingle} done={false} renderMarkdown={false} />
+</section>
+<section data-testid="structured-single-tail">
+	<StructuredOutputRenderer id="so-single-tail" output={structuredSingleTail} done={false} renderMarkdown={false} />
 </section>

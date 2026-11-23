@@ -4,7 +4,7 @@
 import { get, writable, type Readable } from 'svelte/store';
 import type { CaseApi } from './api';
 import { CaseApiError } from './api';
-import { pollDelay, workKey, workOnly, type Boot, type CaseData, type Work } from './casepage';
+import { intake, pollDelay, workKey, workOnly, type Boot, type CaseData, type Work } from './casepage';
 import { createPoller } from './poll';
 import { createUploads, type Uploads } from './uploads';
 
@@ -31,6 +31,11 @@ export type FolderFilesState = {
 /** Пока идёт только работа по делу (карточки, паспорт, проходы…), страница раз в 5 с спрашивает лёгкую ручку
  *  `…/work`, а обзор целиком — когда состав работы изменился, после действия юриста и не реже этого срока (мс). */
 export const FULL_EVERY_MS = 30000;
+/** В простое (работы нет, файлы не принимаются) открытая и видимая страница спрашивает лёгкую ручку `…/work` с этим
+ *  сроком (мс), обзор целиком — по-прежнему не реже `FULL_EVERY_MS` и сразу при смене состава работы: вторая вкладка
+ *  и страница, открытая до действия, узнают о работе не позже чем через 10 с (Д-8 живой проверки 23.11, решение
+ *  координатора). Скрытая вкладка не спрашивает (`poll.ts`). Прежний сервис без поля `work` — прежние 30 с. */
+export const IDLE_WORK_EVERY_MS = 10000;
 /** Тайм-аут запросов опроса (лёгкого `…/work` и обзора в цикле), мс; у действий юриста тайм-аута нет (Р-10). */
 export const POLL_TIMEOUT_MS = 15000;
 /** Короткое окно сведения частых записей в один запрос обзора (мс). */
@@ -143,6 +148,13 @@ export function createCaseState(
 		serverUploads: () => get(data)?.uploads ?? []
 	});
 
+	/** Хватает ли между полными обзорами лёгкого `…/work`: идёт только работа по делу (Р-10) или работы нет вовсе
+	 *  (простой, Д-8) — файлы не принимаются, а сервис отдаёт поле `work` (прежний сервис без него — только обзор). */
+	const lightOk = (cur: CaseData | null): cur is CaseData =>
+		!!cur &&
+		(workOnly(cur, uploads.running()) ||
+			(cur.work !== undefined && cur.work !== null && !intake(cur, uploads.running())));
+
 	const poller = createPoller({
 		run: async (signal) => {
 			try {
@@ -152,7 +164,7 @@ export function createCaseState(
 					cur &&
 					!wantFull &&
 					!noWorkEndpoint &&
-					workOnly(cur, uploads.running()) &&
+					lightOk(cur) &&
 					Date.now() - fullAt < FULL_EVERY_MS
 				) {
 					// лёгкий запрос: счёт задач в строке хода тикает, обзор целиком не собирается; при сбое лёгкого
@@ -215,7 +227,11 @@ export function createCaseState(
 				throw error;
 			}
 		},
-		delay: () => pollDelay(get(data), uploads.running())
+		delay: () => {
+			const cur = get(data);
+			const d = pollDelay(cur, uploads.running());
+			return d > IDLE_WORK_EVERY_MS && !noWorkEndpoint && lightOk(cur) ? IDLE_WORK_EVERY_MS : d;
+		}
 	});
 
 	const onVisible = () => {

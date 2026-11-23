@@ -73,8 +73,12 @@
 	$: liveRuns =
 		workActive($data, SECTION_WORK.tables) ||
 		($answer?.tables ?? []).some((t) => t.status === 'running' || t.status === 'queued');
+	// тик в пути: перечитывание перечня может идти дольше 5 с — следующий тик не накладывается (как у открытой таблицы)
+	let ticking = false;
 	const liveTimer = setInterval(() => {
-		if (liveRuns && !(typeof document !== 'undefined' && document.hidden)) void loader.refresh();
+		if (ticking || !liveRuns || (typeof document !== 'undefined' && document.hidden)) return;
+		ticking = true;
+		void loader.refresh().finally(() => (ticking = false));
 	}, LIVE_MS);
 	onDestroy(() => clearInterval(liveTimer));
 	$: canWrite = !!$boot?.can_write;

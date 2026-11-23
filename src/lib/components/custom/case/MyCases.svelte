@@ -14,6 +14,8 @@
 		access,
 		applyFilter,
 		buildSections,
+		caseMarks,
+		LIST_EVERY_MS,
 		day,
 		flatSections,
 		parentMap,
@@ -25,6 +27,7 @@
 		type Order,
 		type Scope
 	} from '$lib/custom/case/mycases';
+	import { viewWhy } from '$lib/custom/case/casepage';
 	import FormDialog from './FormDialog.svelte';
 	import Icon, { type IconName } from './Icon.svelte';
 	import Busy from './Busy.svelte';
@@ -217,32 +220,54 @@
 	const volumesText = (f: CaseFolder) =>
 		f.case && f.case.volumes > 0 ? count(f.case.volumes, S.volumes_forms) : S.volumes_none;
 
-	// Пока хотя бы у одного дела списка идёт обработка (признак `busy` сервиса), список тихо перечитывается раз в
-	// 15 с — отметка «идёт обработка» сама уходит, когда работа закончилась; без таких дел список не спрашивается.
-	const BUSY_MS = 15000;
+	// отметки дела (Н-1): идёт обработка / на паузе / не отвечает / ждёт / идёт проход — по виду дела от сервиса
+	const marks = (f: CaseFolder) => caseMarks(f, S, (w) => viewWhy(w, S));
+
+	// Пока вкладка видна, список тихо перечитывается раз в 10 с при любом состоянии дел (вид дела — в ответе списка):
+	// открытые заранее «Мои дела» видят, что дело занялось, и отметка сама уходит, когда работа кончилась. Скрытая
+	// вкладка не спрашивает, вернувшаяся — сразу (Д-8, Д-9 живой проверки 23.11).
 	let quiet = false;
+	let gone = false;
+	let busyTimer: ReturnType<typeof setTimeout> | null = null;
+	const hidden = () => typeof document !== 'undefined' && document.hidden;
+	function schedule() {
+		if (busyTimer !== null) clearTimeout(busyTimer);
+		busyTimer = null;
+		if (gone) return;
+		busyTimer = setTimeout(() => void refreshBusy(), LIST_EVERY_MS);
+	}
 	async function refreshBusy() {
-		if (quiet || phase !== 'ready' || !folders.some((f) => f.case?.busy)) return;
-		if (typeof document !== 'undefined' && document.hidden) return;
-		quiet = true;
-		const own = controller;
+		if (busyTimer !== null) clearTimeout(busyTimer);
+		busyTimer = null;
 		try {
-			const listing = await api.get('api/cases');
-			if (controller === own && phase === 'ready') folders = readListing(listing);
-		} catch {
-			// сбой тихого перечитывания списка не трогает: следующее — через тот же срок
+			if (quiet || phase !== 'ready' || hidden()) return;
+			quiet = true;
+			const own = controller;
+			try {
+				const listing = await api.get('api/cases');
+				if (controller === own && phase === 'ready') folders = readListing(listing);
+			} catch {
+				// сбой тихого перечитывания списка не трогает: следующее — через тот же срок
+			} finally {
+				quiet = false;
+			}
 		} finally {
-			quiet = false;
+			schedule();
 		}
 	}
-	let busyTimer: ReturnType<typeof setInterval> | null = null;
+	const onVisible = () => {
+		if (!gone && !hidden()) void refreshBusy();
+	};
 	onMount(() => {
 		void load();
-		busyTimer = setInterval(() => void refreshBusy(), BUSY_MS);
+		schedule();
+		document.addEventListener('visibilitychange', onVisible);
 	});
 	onDestroy(() => {
+		gone = true;
 		controller?.abort();
-		if (busyTimer !== null) clearInterval(busyTimer);
+		if (busyTimer !== null) clearTimeout(busyTimer);
+		if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
 	});
 </script>
 
@@ -474,10 +499,12 @@
 											data-sveltekit-reload={caseHref ? undefined : ''}
 											>{f.title || S.folder_untitled}</a
 										>
-										{#if f.case?.busy && S.my_cases_busy}<span
-												class="mc-pill busy"
-												data-testid="case-row-busy"><Icon name="clock" />{S.my_cases_busy}</span
-											>{/if}
+										{#each marks(f) as m (m.key)}<span
+												class="mc-pill busy {m.tone}"
+												title={m.why}
+												data-testid="case-row-busy"
+												data-mark={m.key}><Icon name={m.icon} />{S[m.key]}</span
+											>{/each}
 									</div>
 									<span class="vol" class:none={!f.case?.volumes} role="cell">{volumesText(f)}</span
 									>
@@ -517,9 +544,11 @@
 									<span class="tag"
 										><span class="mc-pill {access(f)}"
 											><Icon name={a.icon} size={15} />{S[a.key]}</span
-										>{#if f.case?.busy && S.my_cases_busy}<span class="mc-pill busy"
-												><Icon name="clock" size={15} />{S.my_cases_busy}</span
-											>{/if}</span
+										>{#each marks(f) as m (m.key)}<span
+												class="mc-pill busy {m.tone}"
+												title={m.why}
+												data-mark={m.key}><Icon name={m.icon} size={15} />{S[m.key]}</span
+											>{/each}</span
 									>
 								</span>
 								<Icon name="r" size={20} />
@@ -1051,6 +1080,11 @@
 		border-color: transparent;
 		background: var(--info-bg);
 		color: var(--info);
+	}
+	/* на паузе, не отвечает, ждёт — в тоне записки о паузе страницы дела */
+	.mc-pill.busy.w {
+		background: var(--warn-bg);
+		color: var(--warn);
 	}
 	.mc-pill.shared {
 		color: var(--info);

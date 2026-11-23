@@ -8,6 +8,8 @@
 	export let S: Record<string, any> = {};
 	export let hrefOf: (slug: string) => string;
 	export let onPick: () => void = () => {};
+	// работа раздела стоит — подпись значка паузы теми же словами, что отметка дела в «Моих делах»
+	const HELD: Record<string, string> = { paused: 'my_cases_paused', stalled: 'my_cases_stalled' };
 </script>
 
 {#each groups as g, n (n)}
@@ -21,7 +23,13 @@
 			href={hrefOf(item.slug)}
 			data-testid="case-nav-{item.slug || 'overview'}"
 			on:click={onPick}
-			>{S[item.key]}{#if item.work && S.work_nav_title}<span
+			>{S[item.key]}{#if item.work && item.held && S[HELD[item.held]]}<span
+					class="navwork"
+					title={S[HELD[item.held]]}
+					data-testid="case-nav-work"
+					data-held={item.held}
+					><Icon name="pause" size={14} /><span class="sr">{S[HELD[item.held]]}</span></span
+				>{:else if item.work && S.work_nav_title}<span
 					class="navwork"
 					title={S.work_nav_title}
 					data-testid="case-nav-work"
@@ -38,6 +46,7 @@
 		align-items: center;
 		color: var(--info);
 	}
+
 	.sr {
 		position: absolute;
 		width: 1px;

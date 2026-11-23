@@ -157,7 +157,18 @@
 		}
 		return out;
 	}
+	// тик в пути (Н-13): перечитывание по концу прохода может идти дольше 5 с — следующий тик не накладывается
+	let ticking = false;
 	async function tick() {
+		if (ticking) return;
+		ticking = true;
+		try {
+			await tickOnce();
+		} finally {
+			ticking = false;
+		}
+	}
+	async function tickOnce() {
 		if (busy || !live(sw) || (typeof document !== 'undefined' && document.hidden)) return;
 		const reqId = id;
 		const startedSeq = checkSeq;

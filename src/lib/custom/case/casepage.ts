@@ -173,7 +173,23 @@ export type Work = {
 	waiting_reasons?: Record<string, string[]>;
 	paused_groups?: string[];
 	sweeps: number;
+	/** проходов, чьё задание ждёт в очереди, а обработчик заданий не отвечает (они не «идут»); прежний сервис — нет */
+	sweeps_stalled?: number;
 	stalled?: boolean;
+	/** Вид дела от сервиса (Н-1) — одно правило для «Моих дел», «Обзора» и листа; прежний сервис поля не отдаёт. */
+	view?: CaseView;
+};
+/** Вид дела: runs — обработка идёт; paused — вся идущая обработка на паузе (`reason`: manual, budget, marks, fuse…,
+ *  `step` — пауза шага после отказов моделей; `since` — с какого времени общая пауза); stalled — обработчик не
+ *  отвечает; waiting — остались задачи, ждущие внешнего условия (`reasons`); ready — обработки нет. `sweeps` —
+ *  идущих проходов: проход читает готовое дело и в обработку не входит. */
+export type CaseView = {
+	kind: 'runs' | 'paused' | 'stalled' | 'waiting' | 'ready';
+	reason: string | null;
+	since?: string | null;
+	reasons: string[];
+	sweeps: number;
+	sweeps_stalled?: number;
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -215,6 +231,9 @@ export type NavItem = {
 	quiet?: boolean;
 	/** данные раздела сейчас пересобираются (`sectionWork`) — у пункта меню значок часов */
 	work?: boolean;
+	/** работа раздела стоит: на паузе или обработчик не отвечает — у пункта меню значок паузы, а не часы (Д-11),
+	 *  как у строки хода раздела (`workNote` → `waits`) */
+	held?: 'paused' | 'stalled';
 };
 export type NavGroup = { cap?: string; rule?: boolean; items: NavItem[] };
 
@@ -289,9 +308,16 @@ export function navGroups(
 			...g,
 			items: g.items
 				.filter((i) => sectionOpen(i.slug, boot, folderFiles, folderFilesFailed))
-				.map((i) =>
-					SECTION_WORK[i.slug] && workActive(data, SECTION_WORK[i.slug]) ? { ...i, work: true } : i
-				)
+				.map((i) => {
+					const groups = SECTION_WORK[i.slug];
+					if (!groups || !workActive(data, groups)) return i;
+					const held = data?.work?.stalled
+						? ('stalled' as const)
+						: isPausedFor(data, groups)
+							? ('paused' as const)
+							: undefined;
+					return held ? { ...i, work: true, held } : { ...i, work: true };
+				})
 		}))
 		.filter((g) => g.items.length);
 }
@@ -334,8 +360,11 @@ const FILE_BUSY = new Set(['queued', 'splitting', 'reading']);
 /** Группы работы, от которых зависят данные раздела: пока они в очереди или в работе, записи раздела пересобираются.
  *  Работа выше по цепочке входит тоже (чтение листов кончится описью, опись — карточками, карточки — паспортом). */
 export const SECTION_WORK: Record<string, string[]> = {
-	inventory: ['read', 'inventory'],
-	copies: ['read', 'inventory', 'copies'],
+	// разбор документов (cards) пишет в строки описи название, дату и автора документа (Н-3); сверка копий идёт по
+	// дате и номеру строк описи
+	inventory: ['read', 'inventory', 'cards'],
+	copies: ['read', 'inventory', 'cards', 'copies'],
+	check: ['read'],
 	passport: ['read', 'inventory', 'cards', 'passport'],
 	amounts: ['read', 'inventory', 'cards'],
 	chronology: ['read', 'inventory', 'cards'],
@@ -355,6 +384,16 @@ export const WORK_PART: Record<string, string> = {
 	vectors: 'work_part_vectors',
 	other: 'work_part_other',
 	sweeps: 'work_part_sweeps'
+};
+/** Группа работы на паузе → ключ её слов-существительных («чтение листов», Н-6). */
+export const WORK_PAUSE_PART: Record<string, string> = {
+	read: 'work_pause_part_read',
+	inventory: 'work_pause_part_inventory',
+	cards: 'work_pause_part_cards',
+	passport: 'work_pause_part_passport',
+	copies: 'work_pause_part_copies',
+	vectors: 'work_pause_part_vectors',
+	other: 'work_pause_part_other'
 };
 /** Код причины ожидания задачи (`work.wait_reasons`) → ключ строки сервиса (как в `work.py` и `sheetg.js`). */
 export const WAIT_KEYS: Record<string, string> = {
@@ -415,6 +454,126 @@ export function waitReasonsText(
 	}
 	return out.join('; ');
 }
+/** Работа названных групп на паузе словами-существительными (`work_pause_part_<группа>`: «чтение листов»). */
+export function pausedParts(
+	work: Work | null | undefined,
+	groups: string[],
+	S: Record<string, any>
+): string[] {
+	return WORK_ORDER.filter((g) => groups.includes(g) && workCount(work, g) > 0)
+		.map((g) => fmt(S[WORK_PAUSE_PART[g]] ?? S[WORK_PART[g]], { n: workCount(work, g) }))
+		.filter(Boolean);
+}
+/** Части строки «идёт» (Н-6): идущие группы словами хода, группы на паузе (`work.paused_groups`) — отдельно,
+ *  «на паузе: …» (как `work.run_parts_text` сервиса). */
+export function runParts(work: Work | null | undefined, groups: string[], S: Record<string, any>): string {
+	const pg = work?.paused_groups ?? [];
+	const runs = workParts(
+		work,
+		groups.filter((g) => !pg.includes(g)),
+		S
+	).join(', ');
+	const held = pausedParts(
+		work,
+		groups.filter((g) => pg.includes(g)),
+		S
+	).join(', ');
+	const tail = held && S.work_paused_tail ? fmt(S.work_paused_tail, { parts: held }) : '';
+	return [runs, tail].filter(Boolean).join('; ');
+}
+/** Строка хода раздела (`WorkNote`): идёт / на паузе / не отвечает / ждёт — по работе групп раздела; работы нет — null. */
+export function workNote(
+	data: Pick<CaseData, 'work' | 'paused'> | null | undefined,
+	groups: string[],
+	S: Record<string, any>,
+	key = 'work_note'
+): null | { kind: 'runs' | 'waits' | 'waiting'; paused: boolean; text: string } {
+	const work = data?.work;
+	if (workActive(data, groups)) {
+		if (work?.stalled && S.work_note_stalled) {
+			return {
+				kind: 'waits',
+				paused: false,
+				text: fmt(S.work_note_stalled, { parts: workParts(work, groups, S).join(', ') })
+			};
+		}
+		if (isPausedFor(data, groups) && S.work_note_paused) {
+			return {
+				kind: 'waits',
+				paused: true,
+				text: fmt(S.work_note_paused, { parts: pausedParts(work, groups, S).join(', ') })
+			};
+		}
+		const parts = runParts(work, groups, S);
+		return parts ? { kind: 'runs', paused: false, text: fmt(S[key], { parts }) } : null;
+	}
+	if (workWaiting(data, groups) && S.work_note_waiting) {
+		const reason = waitReasonsText(work, S, groups);
+		if (reason) return { kind: 'waiting', paused: false, text: fmt(S.work_note_waiting, { reason }) };
+	}
+	// проходы стоят: их задания ждут в очереди, а обработчик заданий не отвечает (факт сервиса — его сердцебиение)
+	const held = work?.sweeps_stalled ?? 0;
+	if (groups.includes('sweeps') && held > 0 && S.work_jobs_stalled) {
+		return { kind: 'waits', paused: false, text: fmt(S.work_jobs_stalled, { n: held }) };
+	}
+	return null;
+}
+/** Что перечитать в «Хронологии» при очередном обновлении (Р-5, Н-7): `keep` — записи не менялись (та же метка `rev`
+ *  и тот же отбор), ничего; `first` — только первую порцию, догруженные остаются на месте: идёт работа групп раздела
+ *  (записи меняются почти каждый опрос) или прежний сервис без `rev`; `all` — весь загруженный объём (метка сменилась
+ *  без идущей работы — в том числе по её концу, — или сменился отбор, тогда объём — одна порция). */
+export function chronologyReread(o: {
+	rev: string | null | undefined;
+	shownRev: string;
+	sameAsked: boolean;
+	loadedPages: number;
+	working: boolean;
+}): 'keep' | 'first' | 'all' {
+	if (o.rev && o.sameAsked && o.rev === o.shownRev) return 'keep';
+	if (o.sameAsked && o.loadedPages > 1 && (!o.rev || o.working)) return 'first';
+	return 'all';
+}
+/** Причина у отметки дела «на паузе» / «ждёт» (подсказка в «Моих делах», Н-1) словами строк сервиса. */
+export function viewWhy(
+	w: Pick<CaseView, 'kind' | 'reason' | 'since' | 'reasons'>,
+	S: Record<string, any>
+): string {
+	if (w.kind === 'paused' && w.reason) {
+		const t = fmt(S[pauseKey(w.reason)], { time: when(w.since ?? null) });
+		return t ? t[0].toLocaleUpperCase('ru-RU') + t.slice(1) : '';
+	}
+	if (w.kind === 'waiting') {
+		const t = waitReasonsText({ wait_reasons: w.reasons } as Work, S);
+		return t ? t[0].toLocaleUpperCase('ru-RU') + t.slice(1) : '';
+	}
+	return '';
+}
+/** Вид дела: от сервиса (`work.view`, Н-1); прежний сервис без поля — по прежним признакам `work` и `paused`; без
+ *  `work` — null (страница живёт по прежним правилам). */
+export function caseView(data: Pick<CaseData, 'work' | 'paused'> | null | undefined): CaseView | null {
+	const work = data?.work;
+	if (!work) return null;
+	if (work.view) return work.view;
+	const sweeps = work.sweeps ?? 0;
+	const base = { reason: null, since: null, reasons: [] as string[], sweeps };
+	if (workActive(data, WORK_PROCESSING)) {
+		if (work.stalled) return { ...base, kind: 'stalled' };
+		if (isPausedFor(data, WORK_PROCESSING)) {
+			return {
+				...base,
+				kind: 'paused',
+				reason: data?.paused?.reason ?? null,
+				since: data?.paused?.since ?? null
+			};
+		}
+		return { ...base, kind: 'runs' };
+	}
+	if (workWaiting(data, WORK_PROCESSING)) {
+		const reasons = [...new Set(WORK_PROCESSING.flatMap((g) => work.waiting_reasons?.[g] ?? []))];
+		return { ...base, kind: 'waiting', reasons: reasons.length ? reasons : (work.wait_reasons ?? []) };
+	}
+	return { ...base, kind: 'ready' };
+}
 /** Работа названных групп словами сервиса (`work_part_<группа>`), по порядку цепочки; без строки — группа молчит. */
 export function workParts(
 	work: Work | null | undefined,
@@ -432,7 +591,8 @@ export const workKey = (work: Work | null | undefined): string =>
 		...WORK_PROCESSING.filter((g) => (work?.waiting?.[g] ?? 0) > 0).map((g) => `w:${g}`),
 		...(work?.wait_reasons ?? []).map((r) => `wr:${r}`),
 		...(work?.paused_groups ?? []).map((g) => `pg:${g}`),
-		work?.stalled ? 'stalled' : ''
+		work?.stalled ? 'stalled' : '',
+		(work?.sweeps_stalled ?? 0) > 0 ? 'jobs_stalled' : ''
 	].join(',');
 /** Раздел следит за работой своих групп: `done` зовётся, когда она закончилась, — раздел перечитывает себя сразу. */
 export function workWatcher(groups: string[], done: () => void) {
@@ -472,7 +632,7 @@ export const pollDelay = (data: CaseData | null, localRunning = false): number =
 	processing(data, localRunning) ? 5000 : 30000;
 
 /** Паузы, которые проходят сами (опись § 2.3); остальные ждут администратора. */
-const PAUSE_SELF = new Set(['daily', 'fuse', 'rate', 'marks', 'limiter']);
+const PAUSE_SELF = new Set(['daily', 'fuse', 'rate', 'marks', 'limiter', 'step']);
 /** Пауза обработки для показа: проходит ли сама, ключ фразы причины, с какого времени, какие группы остановлены
  *  (`groups: null` — общая пауза всех групп). `rate` (3 с ограничения скорости) паузой для юриста не считается. */
 export function pauseOf(
@@ -483,6 +643,22 @@ export function pauseOf(
 	const groups = p.groups ?? null;
 	if (Array.isArray(groups) && !groups.length) return null;
 	return { self: PAUSE_SELF.has(p.reason), key: pauseKey(p.reason), since: p.since, groups };
+}
+/** Пауза шага после отказов моделей (Н-4): общей паузы нет, а вид дела от сервиса — «на паузе» с причиной `step`. */
+export function stepPause(
+	data: Pick<CaseData, 'paused' | 'work'> | null | undefined
+): null | { self: boolean; key: string; since: string | null; groups: string[] | null } {
+	const v = data?.work?.view;
+	if (!v || v.kind !== 'paused' || v.reason !== 'step') return null;
+	return { self: true, key: pauseKey('step'), since: v.since ?? null, groups: data?.work?.paused_groups ?? [] };
+}
+/** Стоит ли обработка дела на паузе (вид дела «Обзора»): по виду от сервиса, а у прежнего сервиса — по прежнему
+ *  правилу (общая пауза или пауза всех идущих групп). */
+export function pausedNow(data: Pick<CaseData, 'paused' | 'work'> | null | undefined): boolean {
+	const v = data?.work?.view;
+	if (v) return v.kind === 'paused';
+	const p = pauseOf(data);
+	return !!p && (p.groups === null || isPausedFor(data, WORK_PROCESSING));
 }
 /** Остановлена ли паузой вся активная работа названных групп (Ф-4: по готовому `work.paused_groups` от сервиса,
  *  вычисленному по шагам; при прежнем сервисе без `paused_groups` — по `paused`). */
@@ -512,7 +688,8 @@ const PAUSE_KEYS: Record<string, string> = {
 	marks: 'paused_marks',
 	models_off: 'paused_models_off',
 	sweep: 'paused_sweep',
-	limiter: 'paused_limiter'
+	limiter: 'paused_limiter',
+	step: 'paused_step'
 };
 /** Ключ фразы причины паузы (как `Core.pauseKey`): незнакомая причина — нейтральная фраза. */
 export const pauseKey = (reason: unknown): string => PAUSE_KEYS[String(reason)] ?? 'paused_unknown';
@@ -556,7 +733,7 @@ export function summary(data: CaseData): Summary {
 		kind: !some ? 'empty' : waitingOnly ? 'waiting' : busy ? 'processing' : 'ready',
 		indexed: ic.indexed,
 		total: ic.total,
-		paused: pauseOf(data),
+		paused: pauseOf(data) ?? stepPause(data),
 		volumes: volumes.length,
 		documents: ov.size?.documents ?? 0,
 		checks: Math.max(data.check_total ?? 0, (ov.check_sheets ?? []).length)
@@ -566,10 +743,18 @@ export function summary(data: CaseData): Summary {
 export type Tone = 'plain' | 'info' | 'warn' | 'stop';
 export type State = { tone: Tone; key: string; vars?: Record<string, unknown> };
 
-/** Слова состояния тома (решение владельца 19.11): «готов» — только когда у тома готово всё. */
-export function volumeState(v: Volume): State {
+/** Слова состояния тома (решение владельца 19.11): «готов» — только когда у тома готово всё. Том распознан, а опись
+ *  не составляется — ждёт внешнего условия, стоит на паузе или обработчик не отвечает (факт сервиса `work`), — просто
+ *  «распознан», без часов: «составляется опись» было бы неправдой, а почему стоит, говорит плашка обзора (Д-11). */
+export function volumeState(v: Volume, data?: Pick<CaseData, 'work' | 'paused'> | null): State {
 	if (v.status === 'inventory_ready') return { tone: 'plain', key: 'volume_state_ready' };
-	if (v.status === 'indexed') return { tone: 'info', key: 'volume_state_indexed' };
+	if (v.status === 'indexed') {
+		const inv = ['inventory'];
+		const held = workActive(data, inv)
+			? !!data?.work?.stalled || isPausedFor(data, inv)
+			: workWaiting(data, inv);
+		return held ? { tone: 'plain', key: 'file_state_indexed' } : { tone: 'info', key: 'volume_state_indexed' };
+	}
 	if (v.status === 'reading') {
 		const done = (v.files ?? []).reduce((a, f) => a + (f.pages_indexed ?? 0), 0);
 		return { tone: 'info', key: 'volume_state_reading', vars: { n: done, m: v.pages ?? 0 } };

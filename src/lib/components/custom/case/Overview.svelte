@@ -9,7 +9,9 @@
 		ecaseFiles,
 		filesState,
 		fileStuck,
-		isPausedFor,
+		pausedNow,
+		pausedParts,
+		runParts,
 		sectionOpen,
 		since,
 		summary,
@@ -17,7 +19,7 @@
 		volumeState,
 		waitReasonsText,
 		when,
-		workParts,
+		workCount,
 		WORK_PROCESSING,
 		type State,
 		type Tone
@@ -46,13 +48,27 @@
 	$: failed = uploads.filter((u) => u.phase === 'failed' || u.phase === 'intake_failed').length;
 	$: pending = volumes.some((v) => v.status !== 'inventory_ready');
 	$: paused = sum?.paused ?? null;
-	$: pausedHere = !!paused && (paused.groups === null || isPausedFor(d, WORK_PROCESSING));
+	// на паузе — по виду дела от сервиса (Н-1; в том числе пауза шага после отказов моделей, Н-4)
+	$: pausedHere = !!paused && pausedNow(d);
 	$: pausedText = paused ? cap(fmt(S[paused.key], { time: when(paused.since) })) : '';
 	$: percent = sum && sum.total ? Math.round((100 * sum.indexed) / sum.total) : 0;
-	// что сейчас в очереди и в работе по делу (поле `work` сервиса) — словами, под ходом распознавания
+	// что сейчас в очереди и в работе по делу (поле `work` сервиса) — словами, под ходом распознавания; группы на паузе
+	// названы отдельно («на паузе: чтение листов», Н-6), вся обработка на паузе — существительными
 	$: workLine =
 		d?.work && S.overview_work_line
-			? workParts(d.work, WORK_PROCESSING, S).join(', ')
+			? pausedHere
+				? pausedParts(d.work, WORK_PROCESSING, S).join(', ')
+				: runParts(d.work, WORK_PROCESSING, S)
+			: '';
+	// идёт проход: данные дела готовы, проход читает их (решение координатора по Н-1)
+	$: sweepsLine =
+		d?.work && workCount(d.work, 'sweeps') > 0 && S.overview_sweeps_line && S.work_part_sweeps
+			? fmt(S.overview_sweeps_line, { parts: fmt(S.work_part_sweeps, { n: workCount(d.work, 'sweeps') }) })
+			: '';
+	// проходы стоят: обработчик заданий не отвечает (факт сервиса — его сердцебиение), а не «идёт проход»
+	$: sweepsHeld =
+		(d?.work?.sweeps_stalled ?? 0) > 0 && S.work_jobs_stalled
+			? fmt(S.work_jobs_stalled, { n: d?.work?.sweeps_stalled })
 			: '';
 
 	const TONE: Record<Tone, string> = { plain: '', info: 'i', warn: 'w', stop: 's' };
@@ -246,6 +262,12 @@
 							? ` ${fmt(S.overview_ready_check, { checks: count(sum.checks, S.overview_tile_check_forms) })}`
 							: ''}
 					</p>
+					{#if sweepsLine}
+						<p class="md soft" data-testid="case-work-sweeps">{sweepsLine}</p>
+					{/if}
+					{#if sweepsHeld}
+						<p class="md soft" data-testid="case-work-sweeps-stalled">{sweepsHeld}</p>
+					{/if}
 					{#if (d.cards_failed ?? 0) > 0 && S.map_state_failed}
 						<p class="md soft" data-testid="case-ready-failed">
 							{fmt(S.map_state_failed, { n: d.cards_failed })}
@@ -401,7 +423,7 @@
 			<h2 class="comphead">{S.overview_composition}</h2>
 			<div class="t-comp">
 				{#each volumes as v (v.id)}
-					{@const st = volumeState(v)}
+					{@const st = volumeState(v, d)}
 					<div class="tr" data-testid="case-comp-volume">
 						<span class="b lg aw"
 							>{v.label ? fmt(S.volume_title, { label: v.label }) : S.volume_no_label_g}</span
