@@ -11,3 +11,15 @@ export const showSidebar = writable(true);
 export const chatId = writable('chat-1');
 // «Мои дела»: окно «Создать папку» обновляет то же хранилище папок, что боковая панель чата
 export const folders = writable<any[]>([]);
+// сцена чата (Ф-1, Н-2): StructuredOutputRenderer тянет за собой разметку ответа (код, файлы вывода, упоминания,
+// эмодзи) — её хранилища на стенде пусты (Д-10 живой проверки 23.11)
+export const channels = writable<any[]>([]);
+export const pyodideWorker = writable<any>(null);
+export const selectedTerminalId = writable<any>(null);
+export const shortCodesToEmojis = writable<Record<string, string>>({});
+export const showFileNavPath = writable<any>(null);
+export const showTabs = writable(false);
+export const skills = writable<any[]>([]);
+export const terminalServers = writable<any[]>([]);
+export const terminalSkills = writable<any[]>([]);
+export const visibleControls = writable(false);

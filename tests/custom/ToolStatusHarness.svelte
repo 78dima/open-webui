@@ -21,7 +21,7 @@
 	// ai-dvokat: структурный путь (StructuredOutputRenderer, Ф-1) — две группы вызовов в незаконченном сообщении
 	const fc = (id: string, name: string) => [
 		{ type: 'function_call', id, call_id: id, name, arguments: '{"query":"x"}' },
-		{ type: 'function_call_output', call_id: id, output: result, status: 'completed' }
+		{ type: 'function_call_output', call_id: id, output: [{ type: 'output_text', text: result }], status: 'completed' }
 	];
 	const structuredTwoGroups = [
 		...fc('s1', 'legal-tools_case_search'),
