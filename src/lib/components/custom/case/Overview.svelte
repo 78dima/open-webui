@@ -227,10 +227,12 @@
 						{:else if sum.kind === 'waiting'}
 							<span class="pill" data-testid="case-state-waiting">{S.overview_state_waiting}</span>
 						{:else if pausedHere && paused && paused.self}
-							<span class="pill w"
-								><Icon name="pause" />{fmt(S.overview_state_paused, {
-									time: since(paused.since)
-								})}</span
+							<!-- у паузы шага (Н-4) времени начала нет: «Пауза с» без времени — «Обработка на паузе» (живая проверка
+							     пакета 2, 23.11) -->
+							<span class="pill w" data-testid="case-state-paused"
+								><Icon name="pause" />{paused.since
+									? fmt(S.overview_state_paused, { time: since(paused.since) })
+									: cap(S.my_cases_paused ?? '')}</span
 							>
 						{:else if pausedHere && paused}
 							<span class="pill s"><Icon name="al" />{S.overview_state_stopped}</span>

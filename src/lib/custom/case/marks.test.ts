@@ -340,4 +340,25 @@ describe('«Проверьте листы» и «Ближайшие сроки»
 		const plain = render(Overview, { props: { state: stateOf(ov), S, hrefOf } }).body;
 		expect(ids(plain).filter((x) => MARK_IDS.test(x))).toEqual([]);
 	});
+	it('пауза шага (Н-4): у плашки обзора нет «Пауза с» без времени — «Обработка на паузе»; общая пауза — со временем', () => {
+		const hrefOf = (s: string) => `/case/x/${s}`;
+		const view = { kind: 'paused', reason: 'step', since: null, reasons: [], sweeps: 0 };
+		const work = { busy: true, groups: { cards: 1 }, running: {}, sweeps: 0, stalled: false, paused_groups: ['cards'], view };
+		const pill = (d: unknown) => {
+			const body = render(Overview, { props: { state: stateOf(d), S, hrefOf } }).body;
+			const at = body.indexOf('data-testid="case-state-paused"');
+			return at < 0 ? null : body.slice(at, body.indexOf('</span>', at)).replace(/<[^>]+>/g, '').replace(/^[^>]*>/, '').trim();
+		};
+		const step = pill({ ...structuredClone(ov), work, paused: null });
+		expect(step).toBe(S.my_cases_paused[0].toLocaleUpperCase('ru-RU') + S.my_cases_paused.slice(1));
+		expect(step).not.toContain(S.overview_state_paused.replace(' {time}', ''));
+		const since = '2026-11-23T15:00:00+00:00';
+		const manual = pill({
+			...structuredClone(ov),
+			work: { ...work, paused_groups: ['cards'], view: { ...view, reason: 'daily', since } },
+			paused: { reason: 'daily', since, groups: null }
+		});
+		expect(manual?.startsWith(S.overview_state_paused.replace(' {time}', ''))).toBe(true);
+		expect(manual).not.toBe(S.overview_state_paused.replace(' {time}', ''));
+	});
 });
