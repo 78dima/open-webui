@@ -3,6 +3,7 @@
    поле «Открыть лист». Правила перенесены с прежней страницы сервиса (`case.js`: `Core`, `processing`, `renderCheck`)
    и из макетов K-*; проверяется vitest (`casepage.test.ts`). */
 import { fmt } from './strings';
+import { pairPlaces } from './marks';
 
 export type Boot = {
 	folder_id: string;
@@ -92,6 +93,9 @@ export type CheckRow = {
 		place?: string;
 		main?: string;
 		inventory?: string;
+		/** места пар «прочитано по-разному» (строка `text_disagree`, пакет 23.11) и начало адреса листа */
+		pair_places?: { a: string; b: string; start?: number; end?: number; hl?: string }[];
+		place_base?: string | null;
 	};
 };
 export type Upload = {
@@ -114,7 +118,14 @@ export type Deadline = {
 	end_date: string | null;
 	confirmed_name?: string | null;
 	confirmed_at?: string | null;
-	basis: { page_id: number | null; label: string; url: string | null };
+	basis: {
+		page_id: number | null;
+		label: string;
+		url: string | null;
+		/** отметка расхождения прочтений даты срока (пакет 23.11); прежний сервис полей не отдаёт */
+		own_value?: { a: string; b: string; url?: string | null }[];
+		sheet_checks?: { code?: string; reason: string }[];
+	};
 };
 export type CaseData = {
 	overview: {
@@ -691,6 +702,8 @@ export type CheckItem = {
 	detail: string;
 	note: string;
 	reason: string;
+	/** пары с местом на листе — ссылки «к месту, где выбирается верное прочтение» (только `text_disagree`) */
+	places: { text: string; url: string }[];
 };
 export type CheckChips = {
 	key: string;
@@ -774,7 +787,8 @@ export function checkGroups(
 			sheets,
 			detail,
 			note,
-			reason: r.reason
+			reason: r.reason,
+			places: r.code === 'text_disagree' ? pairPlaces(p) : []
 		});
 		g.count += g.id === 'number_check' ? Math.max(1, sheets.length) : 1;
 		if (g.id === 'number_check') g.countSheets = true;

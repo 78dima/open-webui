@@ -2,9 +2,10 @@
 	// ai-dvokat: строка суммы — одна и та же в списке и в раскрытой группе строк таблиц документа (ревью 22.11 Б-1: у
 	// раскрытых сумм те же действия и пометки). Действия — колбэками раздела.
 	import { amountNumberText, quoteMore } from '$lib/custom/case/mapcore';
-	import { fmt } from '$lib/custom/case/strings';
 	import Icon from './Icon.svelte';
 	import QuoteText from './QuoteText.svelte';
+	import ReadingMark from './ReadingMark.svelte';
+	import { MARKS } from '$lib/custom/case/marks';
 	import SheetRef from './SheetRef.svelte';
 
 	export let a: any;
@@ -32,17 +33,7 @@
 		{#if a.quote_changed}<span class="pill w t" data-testid="case-quote-changed"
 				><Icon name="al" />{S.quote_changed}</span
 			>{/if}
-		{#if a.own_value?.length && S.map_own_value_pill}<a
-				class="pill w t"
-				href={a.own_value[0].url}
-				target="_blank"
-				rel="noopener"
-				data-testid="case-own-value"><Icon name="al" />{S.map_own_value_pill}</a
-			>{/if}
-		{#if a.sheet_checks?.length && S.map_sheet_check_pill}<span
-				class="pill w t"
-				data-testid="case-sheet-check"><Icon name="al" />{S.map_sheet_check_pill}</span
-			>{/if}
+		<ReadingMark m={a} {S} part="pills" icon />
 		{#if a.unit === 'elsewhere'}<span class="pill t">{S.map_amount_unit_elsewhere}</span>{/if}
 		{#if a.unit === 'missing'}<span class="pill t">{S.map_amount_unit_missing}</span>{/if}
 		{#if a.in_table}<span class="pill t" data-testid="case-amount-in-table"
@@ -69,31 +60,17 @@
 		{/if}
 		<button type="button" class="btn t" on:click={() => onHistory(a)}>{S.map_history}</button>
 	</span>
-	<!-- отметка суммы (пакет 23.11, Д-9): расходится её собственное число — оба прочтения; лист помечен целиком -->
-	{#if a.own_value?.length && S.map_own_sum}<p class="sm c-warn why" data-testid="case-own-value-why">
-			{fmt(S.map_own_sum, {
-				values: a.own_value.map((v: { a: string; b: string }) => `«${v.a}» / «${v.b}»`).join('; ')
-			})}
-			{#if S.map_own_value_open}<a
-					class="ref"
-					href={a.own_value[0].url}
-					target="_blank"
-					rel="noopener"
-					data-testid="case-own-value-open">{S.map_own_value_open}</a
-				>{/if}
-		</p>{/if}
-	{#if a.sheet_checks?.length && S.map_sheet_check_amount}<p
-			class="sm c-warn why"
-			data-testid="case-sheet-check-why"
-		>
-			{fmt(S.map_sheet_check_amount, {
-				reasons: a.sheet_checks.map((c: { reason: string }) => c.reason).join('; ')
-			})}
-		</p>{/if}
+	<!-- отметка суммы (пакет 23.11, Д-9; общий компонент — общий приём А): расходится её собственное число — оба
+	     прочтения; лист помечен целиком -->
+	<ReadingMark m={a} {S} keys={MARKS.amount} part="lines" lineClass="why" />
 	{#if a.quote && quoteOpen}
 		<p class="q">
-			<QuoteText quote={a.quote} marks={a.quote_marks} base={a.place_base} {S} />{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut"
-					>{quoteMore(a.quote_rest, S)}</span
+			<QuoteText
+				quote={a.quote}
+				marks={a.quote_marks}
+				base={a.place_base}
+				{S}
+			/>{#if quoteMore(a.quote_rest, S)}{' '}<span class="mut">{quoteMore(a.quote_rest, S)}</span
 				>{/if}
 		</p>
 	{/if}
@@ -104,7 +81,7 @@
 		margin-top: 8px;
 		grid-column: 1 / -1;
 	}
-	.tr > .why {
+	.tr > :global(.why) {
 		grid-column: 1 / -1;
 	}
 </style>

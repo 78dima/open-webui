@@ -6,6 +6,8 @@
 	import { acceptedText as acceptedLine } from '$lib/custom/case/facts';
 	import Icon from './Icon.svelte';
 	import QuoteText from './QuoteText.svelte';
+	import ReadingMark from './ReadingMark.svelte';
+	import { MARKS } from '$lib/custom/case/marks';
 	import SheetRef from './SheetRef.svelte';
 
 	export let f: any;
@@ -45,44 +47,15 @@
 			{#if f.quote_changed}<span class="pill t w" data-testid="case-quote-changed"
 					>{S.quote_changed}</span
 				>{/if}
-			{#if f.own_value?.length && S.map_own_value_pill}<a
-					class="pill t w"
-					href={f.own_value[0].url}
-					target="_blank"
-					rel="noopener"
-					data-testid="case-own-value">{S.map_own_value_pill}</a
-				>{/if}
-			{#if f.sheet_checks?.length && S.map_sheet_check_pill}<span
-					class="pill t w"
-					data-testid="case-sheet-check">{S.map_sheet_check_pill}</span
-				>{/if}
+			<ReadingMark m={f} {S} part="pills" />
 			{#if f.kind || f.persons.length}
 				<span class="sm mut aw">{[f.kind, f.persons.join(', ')].filter(Boolean).join(' · ')}</span>
 			{/if}
 		</div>
 		{#if note}<p class="sm c-warn">{note}</p>{/if}
-		<!-- отметка записи (пакет 23.11, Д-9): расходится её собственная дата — оба прочтения; лист помечен целиком —
-		     причины словами списка; лист — ссылкой ниже -->
-		{#if f.own_value?.length && S.map_own_date}<p class="sm c-warn" data-testid="case-own-value-why">
-				{fmt(S.map_own_date, {
-					values: f.own_value.map((v: { a: string; b: string }) => `«${v.a}» / «${v.b}»`).join('; ')
-				})}
-				{#if S.map_own_value_open}<a
-						class="ref"
-						href={f.own_value[0].url}
-						target="_blank"
-						rel="noopener"
-						data-testid="case-own-value-open">{S.map_own_value_open}</a
-					>{/if}
-			</p>{/if}
-		{#if f.sheet_checks?.length && S.map_sheet_check}<p
-				class="sm c-warn"
-				data-testid="case-sheet-check-why"
-			>
-				{fmt(S.map_sheet_check, {
-					reasons: f.sheet_checks.map((c: { reason: string }) => c.reason).join('; ')
-				})}
-			</p>{/if}
+		<!-- отметка записи (пакет 23.11, Д-9; общий компонент — общий приём А): расходится её собственная дата или имя
+		     лица записи — оба прочтения; лист помечен целиком — причины словами списка; лист — ссылкой ниже -->
+		<ReadingMark m={f} {S} keys={MARKS.fact} part="lines" />
 		<div class="row g8 sm">
 			{#if f.label}<SheetRef label={f.label} href={f.url} />{/if}
 			{#if f.document}<span class="mut aw">· {f.document}</span>{/if}
@@ -98,8 +71,12 @@
 		</div>
 		{#if f.quote && quoteOpen}
 			<p class="q">
-				<QuoteText quote={f.quote} marks={f.quote_marks} base={f.place_base} {S} />{#if quoteMore(f.quote_rest, S)}{' '}<span class="mut"
-						>{quoteMore(f.quote_rest, S)}</span
+				<QuoteText
+					quote={f.quote}
+					marks={f.quote_marks}
+					base={f.place_base}
+					{S}
+				/>{#if quoteMore(f.quote_rest, S)}{' '}<span class="mut">{quoteMore(f.quote_rest, S)}</span
 					>{/if}
 			</p>
 		{/if}
@@ -117,9 +94,16 @@
 			<p class="sm mut">
 				{fmt(S.map_next_sheet, { label: '' })}<SheetRef label={f.more.label} href={f.more.url} />
 			</p>
+			<!-- отметки второго листа записи (`more.*`) — своими строками «на втором листе …» -->
+			<ReadingMark m={f.more} {S} keys={MARKS.factMore} part="lines" testid="case-more" />
 			{#if f.more.quote && quoteOpen}
 				<p class="q">
-					{f.more.quote}{#if quoteMore(f.more.quote_rest, S)}{' '}<span class="mut"
+					<QuoteText
+						quote={f.more.quote}
+						marks={f.more.quote_marks}
+						base={f.more.place_base}
+						{S}
+					/>{#if quoteMore(f.more.quote_rest, S)}{' '}<span class="mut"
 							>{quoteMore(f.more.quote_rest, S)}</span
 						>{/if}
 				</p>

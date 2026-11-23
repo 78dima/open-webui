@@ -176,6 +176,19 @@
 									<span class="col g2 md fg2" class:num={r.code === 'text_disagree'}>
 										<span class="aw">{r.detail}</span>
 										{#if r.note}<span class="sm mut aw">{r.note}</span>{/if}
+										<!-- пары с местом (пакет 23.11): каждая — ссылка к своему месту на листе, где выбирается
+										     верное прочтение; ссылка на лист в начале строки остаётся -->
+										{#if r.places.length && S.map_pair_places}<span
+												class="sm aw"
+												data-testid="case-check-pair-places"
+												>{S.map_pair_places}{#each r.places as pl, i (i)}{i ? '; ' : ' '}<a
+														class="ref"
+														href={pl.url}
+														target="_blank"
+														rel="noopener"
+														data-testid="case-check-pair-place">{pl.text}</a
+													>{/each}</span
+											>{/if}
 									</span>
 								</div>
 							{/each}

@@ -25,7 +25,9 @@
 	import { day } from '$lib/custom/case/mycases';
 	import { count, fmt, plural } from '$lib/custom/case/strings';
 	import Icon, { type IconName } from './Icon.svelte';
+	import ReadingMark from './ReadingMark.svelte';
 	import SheetRef from './SheetRef.svelte';
+	import { MARKS, passportMarks, type MarkFields } from '$lib/custom/case/marks';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
@@ -70,7 +72,7 @@
 		url?: string;
 		handwritten?: number;
 		records?: number;
-	};
+	} & MarkFields;
 	type Party = Place & { roles?: { value: string }[] };
 	let head: { numbers: Place[]; courts: Place[]; parties: Party[] } | null = null;
 	let headAt = 0;
@@ -102,21 +104,27 @@
 			{#if head.numbers.length}
 				{@const it = head.numbers[0]}
 				<dt>{S.map_pf_case_number}</dt>
-				<dd class="row g8">
-					<span class="b aw">{it.value}</span>
-					{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}
-					{#if it.handwritten}
-						<span class="pill w t"
-							><Icon name="pen" />{it.records && it.handwritten < it.records
-								? fmt(S.map_passport_handwritten_some, { n: it.handwritten, m: it.records })
-								: S.map_passport_handwritten}</span
-						>
-					{/if}
-					{#if head.numbers.length > 1}
-						<a class="sm mut" href={hrefOf('passport')}
-							>{count(head.numbers.length - 1, S.overview_head_more_numbers_forms)}</a
-						>
-					{/if}
+				<!-- отметка расхождения прочтений номера дела (пакет 23.11) — та же, что в паспорте: плашка в строке
+				     значения, строка с обоими прочтениями под ней -->
+				<dd class="col g4">
+					<span class="row g8">
+						<span class="b aw">{it.value}</span>
+						{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}
+						{#if it.handwritten}
+							<span class="pill w t"
+								><Icon name="pen" />{it.records && it.handwritten < it.records
+									? fmt(S.map_passport_handwritten_some, { n: it.handwritten, m: it.records })
+									: S.map_passport_handwritten}</span
+							>
+						{/if}
+						<ReadingMark m={it} {S} part="pills" />
+						{#if head.numbers.length > 1}
+							<a class="sm mut" href={hrefOf('passport')}
+								>{count(head.numbers.length - 1, S.overview_head_more_numbers_forms)}</a
+							>
+						{/if}
+					</span>
+					<ReadingMark m={it} {S} keys={passportMarks('case_number')} part="lines" />
 				</dd>
 			{/if}
 			{#if head.courts.length}
@@ -138,8 +146,17 @@
 					{#each head.parties.slice(0, 3) as it, n (n)}
 						<span class="aw"
 							>{it.value}{it.roles?.[0]?.value ? ` — ${it.roles[0].value}` : ''}
-							{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}</span
+							{#if it.label}<SheetRef
+									label={it.label}
+									href={it.url}
+									klass="sm"
+								/>{/if}{#if it.own_person?.length || it.sheet_checks?.length}{' '}<ReadingMark
+									m={it}
+									{S}
+									part="pills"
+								/>{/if}</span
 						>
+						<ReadingMark m={it} {S} keys={MARKS.party} part="lines" />
 					{/each}
 					<a class="sm ref" href={hrefOf('passport')}
 						>{fmt(S.overview_head_all_parties, { n: head.parties.length })}</a
@@ -356,7 +373,13 @@
 									label={dl.basis.label}
 									href={dl.basis.url}
 								/>{basis.after}</span
-							>{/if}</span
+							>{/if}<!-- отметка даты срока (пакет 23.11): та же, что в «Сроках» -->{#if dl.basis}<ReadingMark
+								m={dl.basis}
+								{S}
+								keys={MARKS.deadline}
+								icon
+								pillClass="as"
+							/>{/if}</span
 					>
 					{#if dl.state === 'confirmed'}
 						<span class="pill"

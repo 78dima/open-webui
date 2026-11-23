@@ -13,20 +13,24 @@
 	import { casePath, sheetHref, reasonText } from '$lib/custom/case/sections';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import Icon from './Icon.svelte';
+	import ReadingMark from './ReadingMark.svelte';
+	import { MARKS, type MarkFields } from '$lib/custom/case/marks';
 
 	export let state: CaseState;
 	export let S: Record<string, any> = {};
 
 	type Place = { page_id: number; label?: string; start: number; end: number; text: string };
 	type Diff = { kind: string; confirmed?: boolean | null; shown?: boolean; a: Place; b: Place };
-	type DocSide = {
-		title?: string | null;
-		title_inventory?: string | null;
-		doc_type?: string | null;
-		date?: string | null;
-		label: string;
-		page_id: number;
-	} | null;
+	type DocSide =
+		| ({
+				title?: string | null;
+				title_inventory?: string | null;
+				doc_type?: string | null;
+				date?: string | null;
+				label: string;
+				page_id: number;
+		  } & MarkFields)
+		| null;
 	type Pair = {
 		id: number;
 		similarity: number;
@@ -154,9 +158,19 @@
 											>{d.label}</a
 										>{d.date ? `, ${d.date}` : ''}</span
 									>
+									<ReadingMark m={d} {S} part="pills" icon />
 								{/if}
 							{/each}
 						</div>
+						<!-- отметка расхождения прочтений даты и номера обоих документов пары (пакет 23.11) — как в описи,
+						     с подписью листа документа -->
+						{#each [c.a, c.b] as d}{#if d}<ReadingMark
+									m={d}
+									{S}
+									keys={MARKS.copy}
+									part="lines"
+									vars={{ label: d.label }}
+								/>{/if}{/each}
 						<p class="sm mut">
 							{facts(c)}{#if hidden.length}; {fmt(S.copies_maybe_ocr, { n: hidden.length }).replace(
 									/^./,

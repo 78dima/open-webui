@@ -43,6 +43,9 @@
 	import GotoForm from './GotoForm.svelte';
 	import Icon from './Icon.svelte';
 	import Busy from './Busy.svelte';
+	import QuoteText from './QuoteText.svelte';
+	import ReadingMark from './ReadingMark.svelte';
+	import { MARKS } from '$lib/custom/case/marks';
 	import SheetRef from './SheetRef.svelte';
 
 	export let state: CaseState;
@@ -643,7 +646,13 @@
 											{#each a.also ?? [] as p}<SheetRef
 													label={p.label || S.tables_col_sheet}
 													href={place(p)}
-												/>{/each}
+												/><!-- отметка повтора ответа на другом листе — плашкой у его листа: пары и
+												     причины уже сведены в строки ответа ниже -->{#if p.own_value?.length || p.sheet_checks?.length}<ReadingMark
+														m={p}
+														{S}
+														part="pills"
+														tip
+													/>{/if}{/each}
 											{#if a.quote}
 												<button
 													type="button"
@@ -656,7 +665,17 @@
 												>
 											{/if}
 										</div>
-										{#if a.quote && opened.has(`${key}:${n}`)}<p class="q pw sm">{a.quote}</p>{/if}
+										<!-- отметка ответа (пакет 23.11, М-6): значение в ответе, прочитанное на листе по-разному;
+										     лист помечен целиком -->
+										<ReadingMark m={a} {S} keys={MARKS.cell} icon pillClass="box" />
+										{#if a.quote && opened.has(`${key}:${n}`)}<p class="q pw sm"
+											><QuoteText
+												quote={a.quote}
+												marks={a.quote_marks}
+												base={a.place_base}
+												{S}
+											/></p
+										>{/if}
 										{#if a.numbers_unconfirmed}
 											<span class="pill w t box"
 												><Icon name="al" />{S.tables_numbers_unconfirmed}</span
@@ -746,7 +765,16 @@
 									>· {f.title_inventory} ({S.inventory_title_unverified})</span
 								>{/if}
 						</div>
-						<p class="q pw">{f.quote}</p>
+						<p class="q pw"
+							><QuoteText quote={f.quote} marks={f.quote_marks} base={f.place_base} {S} /></p
+						>
+						<!-- отметка места (пакет 23.11, М-6): лист помечен целиком; места расхождений — подчёркнуты в цитате -->
+						{#if f.own_value?.length || f.sheet_checks?.length}
+							<div class="row g8">
+								<ReadingMark m={f} {S} part="pills" icon pillClass="box" />
+							</div>
+						{/if}
+						<ReadingMark m={f} {S} keys={MARKS.finding} part="lines" />
 						{#if f.other_reading}
 							<div class="row">
 								<span class="pill w t box" data-testid="case-other-reading"
@@ -769,6 +797,14 @@
 										href={place(a)}
 									/>{/each}
 							</p>
+							<!-- у каждого повтора места — свои пометки листа (не сведены в находку): строкой с подписью листа -->
+							{#each f.also as a}<ReadingMark
+									m={a}
+									{S}
+									keys={MARKS.findingAlso}
+									part="lines"
+									vars={{ label: a.label || S.tables_col_sheet }}
+								/>{/each}
 						{/if}
 						{#each f.refs ?? [] as r}
 							{@const parts = refParts(r, S)}

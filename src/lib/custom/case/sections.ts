@@ -262,6 +262,9 @@ export type Doc = {
 	unchecked?: string[];
 	overlap?: ({ label?: string } | null)[];
 	uncovered?: boolean;
+	/** отметка расхождения прочтений даты и номера строки на первом листе документа (пакет 23.11, М-4) */
+	own_value?: { a: string; b: string; field?: string; url?: string | null }[];
+	sheet_checks?: { code?: string; reason: string }[];
 };
 /** Пометки проверки строки описи кодом сервиса: чего не нашли на листах, пересечения, «не размечено». */
 export function docNotes(d: Doc, S: Strings): string[] {

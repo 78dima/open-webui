@@ -29,6 +29,8 @@
 	import Busy from './Busy.svelte';
 	import WorkNote from './WorkNote.svelte';
 	import { SECTION_WORK } from '$lib/custom/case/casepage';
+	import ReadingMark from './ReadingMark.svelte';
+	import { MARKS } from '$lib/custom/case/marks';
 	import SheetRef from './SheetRef.svelte';
 
 	export let state: CaseState;
@@ -394,6 +396,9 @@
 						{#each notes as t}
 							<span class="pill w t" class:box={t.length > 60}><Icon name="al" />{t}</span>
 						{/each}
+						<!-- отметка расхождения прочтений даты и номера строки (пакет 23.11): рядом с номером и пометками
+						     строки; лист — первый лист документа -->
+						<ReadingMark m={d} {S} keys={MARKS.doc} icon />
 					</div>
 					{#if d.doc_type}<span class="md fg2 aw" data-l={S.inventory_col_type}>{d.doc_type}</span
 						>{:else}<span></span>{/if}

@@ -20,6 +20,8 @@
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon from './Icon.svelte';
 	import QuoteText from './QuoteText.svelte';
+	import ReadingMark from './ReadingMark.svelte';
+	import { MARKS } from '$lib/custom/case/marks';
 	import SheetRef from './SheetRef.svelte';
 
 	export let state: CaseState;
@@ -211,38 +213,17 @@
 					{#if x.basis.quote_changed}<span class="pill w t as" data-testid="case-quote-changed"
 							><Icon name="al" />{S.quote_changed}</span
 						>{/if}
-					<!-- отметка срока (пакет 23.11, Д-10): расходится его дата — оба прочтения; лист-основание помечен целиком -->
-					{#if x.basis.own_value?.length && S.map_own_deadline}<a
-							class="pill w t as"
-							href={x.basis.own_value[0].url}
-							target="_blank"
-							rel="noopener"
-							data-testid="case-own-value"><Icon name="al" />{S.map_own_value_pill}</a
-						>
-						<p class="sm c-warn" data-testid="case-own-value-why">
-							{fmt(S.map_own_deadline, {
-								values: x.basis.own_value.map((v) => `«${v.a}» / «${v.b}»`).join('; ')
-							})}
-							{#if S.map_own_value_open}<a
-									class="ref"
-									href={x.basis.own_value[0].url}
-									target="_blank"
-									rel="noopener"
-									data-testid="case-own-value-open">{S.map_own_value_open}</a
-								>{/if}
-						</p>{/if}
-					{#if x.basis.sheet_checks?.length && S.map_sheet_check_deadline}<span
-							class="pill w t as"
-							data-testid="case-sheet-check"><Icon name="al" />{S.map_sheet_check_pill}</span
-						>
-						<p class="sm c-warn" data-testid="case-sheet-check-why">
-							{fmt(S.map_sheet_check_deadline, {
-								reasons: x.basis.sheet_checks.map((c) => c.reason).join('; ')
-							})}
-						</p>{/if}
+					<!-- отметка срока (пакет 23.11, Д-10; общий компонент — общий приём А): расходится его дата — оба прочтения;
+					     лист-основание помечен целиком -->
+					<ReadingMark m={x.basis} {S} keys={MARKS.deadline} icon pillClass="as" />
 					{#if x.basis.quote}
 						<p class="q">
-							<QuoteText quote={x.basis.quote} marks={x.basis.quote_marks} base={x.basis.place_base} {S} />{#if quoteMore(x.basis.quote_rest, S)}{' '}<span class="mut"
+							<QuoteText
+								quote={x.basis.quote}
+								marks={x.basis.quote_marks}
+								base={x.basis.place_base}
+								{S}
+							/>{#if quoteMore(x.basis.quote_rest, S)}{' '}<span class="mut"
 									>{quoteMore(x.basis.quote_rest, S)}</span
 								>{/if}
 						</p>

@@ -3,6 +3,7 @@
    записаны строками — по ним собирается снимок строк для проверок. */
 import { usd } from './casepage';
 import { fmt } from './strings';
+import type { MarkFields } from './marks';
 
 export { usd };
 
@@ -89,7 +90,10 @@ export type Place = {
 	label?: string;
 	read_id?: number | string | null;
 	hl?: [number, number] | null;
-};
+} & MarkFields & {
+		/** места расхождения двух прочтений в цитате (пакет 23.11, М-6): подчёркивание, как у хронологии */
+		quote_marks?: { start: number; end: number; a: string; b: string; hl?: string }[];
+	};
 export type Sweep = {
 	id: string;
 	kind: string;

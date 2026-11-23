@@ -23,7 +23,10 @@
 	import FormDialog from './FormDialog.svelte';
 	import HistoryDialog from './HistoryDialog.svelte';
 	import Icon, { type IconName } from './Icon.svelte';
+	import QuoteText from './QuoteText.svelte';
+	import ReadingMark from './ReadingMark.svelte';
 	import SheetRef from './SheetRef.svelte';
+	import { MARKS, passportMarks, type MarkFields } from '$lib/custom/case/marks';
 	import { caseToast } from '$lib/custom/case/toast';
 
 	export let state: CaseState;
@@ -52,7 +55,9 @@
 		quote_rest?: number | null;
 		more_places?: Place[];
 		roles?: Role[];
-	};
+	} & MarkFields & {
+			quote_marks?: { start: number; end: number; a: string; b: string; hl?: string }[];
+		};
 	type Field = { key: string; items: Item[]; edited?: boolean; lawyer_only?: boolean };
 	type Answer = {
 		fields: Field[];
@@ -255,7 +260,7 @@
 									{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}
 									{#each pills(it) as p}<span class="pill t" class:w={p.warn}
 											>{#if p.warn}<Icon name={p.icon ?? 'al'} />{/if}{p.text}</span
-										>{/each}
+										>{/each}<ReadingMark m={it} {S} part="pills" />
 									{#if it.quote}
 										<button
 											type="button"
@@ -266,9 +271,15 @@
 										>
 									{/if}
 								</div>
+								<ReadingMark m={it} {S} keys={passportMarks(f.key)} part="lines" />
 								{#if it.quote && opened.has(key)}
 									<p class="q">
-										{it.quote}{#if quoteMore(it.quote_rest, S)}{' '}<span class="mut"
+										<QuoteText
+											quote={it.quote}
+											marks={it.quote_marks}
+											base={it.place_base}
+											{S}
+										/>{#if quoteMore(it.quote_rest, S)}{' '}<span class="mut"
 												>{quoteMore(it.quote_rest, S)}</span
 											>{/if}
 									</p>
@@ -360,7 +371,7 @@
 								{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}
 								{#each pills(it) as p}<span class="pill t" class:w={p.warn}
 										>{#if p.warn}<Icon name={p.icon ?? 'al'} />{/if}{p.text}</span
-									>{/each}
+									>{/each}<ReadingMark m={it} {S} part="pills" />
 								{#if it.quote}
 									<button
 										type="button"
@@ -371,9 +382,15 @@
 									>
 								{/if}
 							</div>
+							<ReadingMark m={it} {S} keys={MARKS.party} part="lines" />
 							{#if it.quote && opened.has(key)}
 								<p class="q">
-									{it.quote}{#if quoteMore(it.quote_rest, S)}{' '}<span class="mut"
+									<QuoteText
+										quote={it.quote}
+										marks={it.quote_marks}
+										base={it.place_base}
+										{S}
+									/>{#if quoteMore(it.quote_rest, S)}{' '}<span class="mut"
 											>{quoteMore(it.quote_rest, S)}</span
 										>{/if}
 								</p>
@@ -457,7 +474,7 @@
 							{#if it.label}<SheetRef label={it.label} href={it.url} klass="sm" />{/if}
 							{#each pills(it) as p}<span class="pill t" class:w={p.warn}
 									>{#if p.warn}<Icon name={p.icon ?? 'al'} />{/if}{p.text}</span
-								>{/each}
+								>{/each}<ReadingMark m={it} {S} part="pills" />
 							{#if it.quote}
 								<button
 									type="button"
@@ -468,9 +485,15 @@
 								>
 							{/if}
 						</div>
+						<ReadingMark m={it} {S} keys={passportMarks(f.key)} part="lines" />
 						{#if it.quote && opened.has(key)}
 							<p class="q">
-								{it.quote}{#if quoteMore(it.quote_rest, S)}{' '}<span class="mut"
+								<QuoteText
+									quote={it.quote}
+									marks={it.quote_marks}
+									base={it.place_base}
+									{S}
+								/>{#if quoteMore(it.quote_rest, S)}{' '}<span class="mut"
 										>{quoteMore(it.quote_rest, S)}</span
 									>{/if}
 							</p>
