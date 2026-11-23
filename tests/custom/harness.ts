@@ -46,3 +46,11 @@ if (location.search === '?cases-link')
 	mount(CasesLink, { target: document.querySelector('#app')! });
 if (location.search === '?cases-link=rail')
 	mount(CasesLink, { target: document.querySelector('#app')!, props: { variant: 'rail' } });
+
+// знак «не прочитан» у вложения чата (пакет 23.11, Д-6): `?file-unread` — с ошибкой разбора, `?file-unread=ok` — без
+import FileUnread from '../../src/lib/components/custom/FileUnread.svelte';
+if (location.search.startsWith('?file-unread'))
+	mount(FileUnread, {
+		target: document.querySelector('#app')!,
+		props: { error: location.search === '?file-unread' ? 'Docling: файл не разобран' : '' }
+	});

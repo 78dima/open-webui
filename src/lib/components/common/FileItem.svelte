@@ -10,6 +10,7 @@
 	import Spinner from './Spinner.svelte';
 	import Tooltip from './Tooltip.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
+	import CustomFileUnread from '$lib/components/custom/FileUnread.svelte'; // ai-dvokat: знак «не прочитан»
 
 	const i18n = getContext('i18n');
 	const dispatch = createEventDispatcher();
@@ -165,6 +166,7 @@
 					{#if size}
 						<span class="capitalize">{formatFileSize(size)}</span>
 					{/if}
+					<CustomFileUnread error={item?.error} /><!-- ai-dvokat: разбор файла не удался -->
 				</div>
 			</div>
 		{:else}
@@ -176,6 +178,7 @@
 				<div class="flex min-w-0 flex-1 items-center overflow-hidden">
 					<div class="flex min-w-0 flex-1 items-center justify-between dark:text-gray-100">
 						<div class="min-w-0 flex-1 truncate pr-1 font-normal">{decodeString(name)}</div>
+						<CustomFileUnread error={item?.error} /><!-- ai-dvokat: разбор файла не удался -->
 						{#if size}
 							<div class="max-w-[35%] shrink-0 truncate text-[0.6875rem] capitalize text-gray-500">
 								{formatFileSize(size)}

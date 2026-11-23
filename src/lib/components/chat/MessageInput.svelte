@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { hideFor } from '$lib/custom/visibility'; // ai-dvokat: gated user presentation
+	import customRu from '$lib/custom/locales/ru-RU.json'; // ai-dvokat: текст о непрочитанном вложении
 	import type { TerminalContext } from '$lib/types';
 	import {
 		estimateTokens,
@@ -1180,7 +1181,9 @@
 
 					if (uploadedFile.error) {
 						console.warn('File upload warning:', uploadedFile.error);
-						toast.warning(uploadedFile.error);
+						// ai-dvokat: ошибка разбора остаётся у вложения (знак «не прочитан», FileItem), сообщение — понятной фразой
+						fileItem.error = `${uploadedFile.error}`;
+						toast.warning(customRu.file_unread.toast.replace('{name}', fileItem.name));
 					}
 
 					fileItem.status = 'uploaded';
