@@ -119,6 +119,18 @@ test('вызовы выполнены, сообщение не закончен�
 	await expect(page.getByTestId('group-preparing').locator('[data-ai-dvokat-preparing]')).toHaveCount(0);
 });
 
+test('Ф-1: структурный путь (StructuredOutputRenderer) — признак хода только у последней группы без текста после неё', async ({ page }) => {
+	await open(page, 'user');
+	const two = page.getByTestId('structured-two-groups');
+	await expect(two.locator('[data-ai-dvokat-preparing]')).toHaveCount(1);
+	await expect(two).toContainText('Выполнено:');
+	await expect(two).toContainText('Выполнено, готовлю ответ:');
+	// когда после последней группы уже пишется текст ответа — крутилок нет
+	const tail = page.getByTestId('structured-with-tail');
+	await expect(tail.locator('[data-ai-dvokat-preparing]')).toHaveCount(0);
+	await expect(tail).not.toContainText('готовлю ответ');
+});
+
 const technical = /legal-tools|kplus_|other-server|secret_tool|make_xlsx|View Result|Input|Output|синтетический запрос|Синтетический результат/;
 
 async function open(page: Page, role: string, custom_ui: unknown = on) {

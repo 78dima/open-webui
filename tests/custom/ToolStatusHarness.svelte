@@ -3,6 +3,7 @@
 	import { writable } from 'svelte/store';
 	import ToolCallDisplay from '../../src/lib/components/common/ToolCallDisplay.svelte';
 	import ConsecutiveDetailsGroup from '../../src/lib/components/chat/Messages/Markdown/ConsecutiveDetailsGroup.svelte';
+	import StructuredOutputRenderer from '../../src/lib/components/chat/Messages/StructuredOutputRenderer.svelte';
 	// Minimal i18n with upstream interpolation; translations are not under test.
 	setContext('i18n', writable({ t: (key: string, values: Record<string, unknown> = {}) =>
 		key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? '')) }));
@@ -17,6 +18,22 @@
 		call('g3', 'legal-tools_kplus_outline')
 	];
 	let resolved = '';
+	// ai-dvokat: структурный путь (StructuredOutputRenderer, Ф-1) — две группы вызовов в незаконченном сообщении
+	const fc = (id: string, name: string) => [
+		{ type: 'function_call', id, call_id: id, name, arguments: '{"query":"x"}' },
+		{ type: 'function_call_output', call_id: id, output: result, status: 'completed' }
+	];
+	const structuredTwoGroups = [
+		...fc('s1', 'legal-tools_case_search'),
+		...fc('s2', 'legal-tools_case_read'),
+		{ type: 'message', id: 'm1', role: 'assistant', content: [{ type: 'output_text', text: 'Промежуточный текст.' }] },
+		...fc('s3', 'legal-tools_case_read'),
+		...fc('s4', 'legal-tools_draft_check')
+	];
+	const structuredWithTailText = [
+		...structuredTwoGroups,
+		{ type: 'message', id: 'm2', role: 'assistant', content: [{ type: 'output_text', text: 'Итоговый ответ уже пишется.' }] }
+	];
 </script>
 
 <section data-testid="single">
@@ -61,4 +78,11 @@
 	>
 		<div slot="content"></div>
 	</ConsecutiveDetailsGroup>
+</section>
+<!-- ai-dvokat: структурный путь (Ф-1): две группы вызовов без текста после второй, и с текстом после второй -->
+<section data-testid="structured-two-groups">
+	<StructuredOutputRenderer id="so-two" output={structuredTwoGroups} done={false} renderMarkdown={false} />
+</section>
+<section data-testid="structured-with-tail">
+	<StructuredOutputRenderer id="so-tail" output={structuredWithTailText} done={false} renderMarkdown={false} />
 </section>

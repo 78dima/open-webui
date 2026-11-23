@@ -82,3 +82,18 @@ export function toolGroupText(
 		detail
 	};
 }
+
+/** Индекс последней группы вызовов (`detail_group`), после которой ещё нет непустого текста ответа; -1, если такой нет.
+ *  Общее правило для обоих путей отрисовки чата: Markdown (`MarkdownTokens.svelte`) и структурного (`StructuredOutputRenderer.svelte`). */
+export function lastDetailGroupIndex<T>(
+	items: readonly T[],
+	isGroup: (item: T) => boolean,
+	isEmpty: (item: T) => boolean
+): number {
+	for (let i = items.length - 1; i >= 0; i--) {
+		const item = items[i];
+		if (isEmpty(item)) continue;
+		return isGroup(item) ? i : -1;
+	}
+	return -1;
+}

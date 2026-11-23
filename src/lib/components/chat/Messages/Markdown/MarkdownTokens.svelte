@@ -42,6 +42,7 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Download from '$lib/components/icons/Download.svelte';
 	import ConsecutiveDetailsGroup from './ConsecutiveDetailsGroup.svelte';
+	import { lastDetailGroupIndex } from '$lib/custom/toolStatus'; // ai-dvokat: общее правило последней группы вызовов
 
 	import HtmlToken from './HTMLToken.svelte';
 	import Clipboard from '$lib/components/icons/Clipboard.svelte';
@@ -154,13 +155,11 @@
 
 	$: displayTokens = getDisplayTokens(tokens);
 	// ai-dvokat: индекс последней группы вызовов, после которой ещё нет текста ответа (для «Выполнено, готовлю ответ»)
-	$: lastDetailGroupIdx = (() => {
-		for (let i = displayTokens.length - 1; i >= 0; i--) {
-			if (displayTokens[i]?.type === 'space') continue;
-			return displayTokens[i]?.type === 'detail_group' ? i : -1;
-		}
-		return -1;
-	})();
+	$: lastDetailGroupIdx = lastDetailGroupIndex(
+		displayTokens,
+		(t) => t?.type === 'detail_group',
+		(t) => t?.type === 'space'
+	);
 	$: renderHtml = tokens.some((token) => token.type === 'html') ? markdown?.renderHtml : undefined;
 	$: singlePlainBlock =
 		displayTokens.length === 1 &&

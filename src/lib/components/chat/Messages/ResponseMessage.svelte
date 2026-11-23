@@ -888,7 +888,9 @@
 									{compactPreview}
 									editCodeBlock={!readOnly && editCodeBlock}
 									{topPadding}
-									done={message?.done ?? false}
+									done={Boolean(
+										message?.done || message?.error
+									) /* ai-dvokat: ошибка провайдера без message.done снимает признак хода (Р-6) */}
 									allowEmbeds={!readOnly}
 									{model}
 									onTaskClick={async (e) => {
