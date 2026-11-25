@@ -13,9 +13,9 @@ type Where = { api: CaseApi; folderId: string };
 /** Ручка дела: `api/cases/<папка><хвост>`. */
 export const casePath = (w: Where, rest = ''): string =>
 	`api/cases/${encodeURIComponent(w.folderId)}${rest}`;
-/** Адрес страницы сервиса внутри дела: лист, «открыть лист по номеру», выгрузка. */
+/** Адрес страницы внутри дела в SvelteKit SPA: лист, «открыть лист по номеру». */
 export const caseHref = (w: Where, rest = ''): string =>
-	w.api.url(`case/${encodeURIComponent(w.folderId)}${rest}`);
+	`/case/${encodeURIComponent(w.folderId)}${rest}`;
 export const sheetHref = (w: Where, pageId: number | string, query = ''): string =>
 	caseHref(w, `/p/${encodeURIComponent(String(pageId))}${query}`);
 /** Строка запроса из заполненных полей (пустые не идут). */

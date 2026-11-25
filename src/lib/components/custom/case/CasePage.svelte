@@ -72,7 +72,7 @@
 	// «Файлы папки вне дела»: пока список папки не пришёл, раздел не объявляется закрытым
 	$: label = item ? S[item.key] : '';
 	$: volumes = gotoVolumes($data?.overview.volumes);
-	$: refAction = api.url(`case/${encodeURIComponent(folderId)}/ref`);
+	$: refAction = `/case/${encodeURIComponent(folderId)}/ref`;
 	$: title = !$boot
 		? ''
 		: section && label
@@ -343,7 +343,7 @@
 {/if}
 
 <Dialog bind:open={gotoOpen} title={S.goto_title_g} labelledby="cg-goto-title">
-	<GotoForm action={refAction} {volumes} {S} variant="window" />
+	<GotoForm action={refAction} {volumes} {S} variant="window" onSubmit={() => (gotoOpen = false)} />
 	<div class="row">
 		<button type="button" class="btn" on:click={() => (gotoOpen = false)}>{S.cancel}</button>
 	</div>

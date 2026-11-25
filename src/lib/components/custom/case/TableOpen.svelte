@@ -518,7 +518,7 @@
 							{#if g.sheets.length}
 								<div class="row g6">
 									{#each all ? g.sheets : g.sheets.slice(0, SHEETS) as x, n (x.page_id)}
-										<a class="chipl small" href={place(x)} title={x.label} data-sveltekit-reload
+										<a class="chipl small" href={place(x)} title={x.label}
 											>{n ? within(x.label, g.sheets[0].label) : x.label || S.tables_col_sheet}</a
 										>
 									{/each}
@@ -624,8 +624,7 @@
 									class="aw doc"
 									class:b={!dt.unverified}
 									class:fg2={dt.unverified}
-									href={sheetHref(state, r.first_page_id)}
-									data-sveltekit-reload>{dt.text || r.label || ''}</a
+									href={sheetHref(state, r.first_page_id)}>{dt.text || r.label || ''}</a
 								>
 								{#if dt.unverified}<span class="xs mut" data-testid="case-doc-title-unverified"
 										>{S.inventory_title_unverified}</span
@@ -705,10 +704,8 @@
 									{/each}
 									{#each cell.copies ?? [] as copy}
 										{#if copy.first_page_id != null}
-											<a
-												class="ref sm"
-												href={sheetHref(state, copy.first_page_id)}
-												data-sveltekit-reload>{copyText(copy, S)}</a
+											<a class="ref sm" href={sheetHref(state, copy.first_page_id)}
+												>{copyText(copy, S)}</a
 											>
 										{:else}
 											<span class="sm">{copyText(copy, S)}</span>

@@ -11,6 +11,7 @@
 		SECTION_WORK,
 		type CheckGroup
 	} from '$lib/custom/case/casepage';
+	import { isSpaCaseHref } from '$lib/custom/case/sheet';
 	import { count, fmt } from '$lib/custom/case/strings';
 	import Icon, { type IconName } from './Icon.svelte';
 	import SheetRef from './SheetRef.svelte';
@@ -143,8 +144,11 @@
 								>{/if}
 							{#each shown as s (s.page_id)}
 								{#if s.url}
-									<a class="chipl" href={s.url} data-sveltekit-reload title={s.label}
-										>{inVolume(s.label, bucket.volume)}</a
+									<a
+										class="chipl"
+										href={s.url}
+										data-sveltekit-reload={isSpaCaseHref(s.url) ? undefined : ''}
+										title={s.label}>{inVolume(s.label, bucket.volume)}</a
 									>
 								{:else}
 									<span class="chipl">{inVolume(s.label, bucket.volume)}</span>

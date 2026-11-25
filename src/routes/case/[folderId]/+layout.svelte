@@ -13,8 +13,11 @@
 	let title = '';
 	let casePage: CasePage | undefined;
 	$: folderId = $page.params.folderId ?? '';
+	$: isStandalone =
+		$page.route.id?.endsWith('/p/[pageId]') || $page.route.id?.endsWith('/ref') || false;
 
 	onMount(() => {
+		if (isStandalone) return;
 		const slug = !$page.params.section ? sectionOfHash($page.url.hash) : null;
 		if (slug) void goto(`/case/${encodeURIComponent(folderId)}/${slug}`, { replaceState: true });
 	});
@@ -29,14 +32,18 @@
 	});
 </script>
 
-<svelte:head><title>{title ? `${title} / ` : ''}{$WEBUI_NAME}</title></svelte:head>
-{#key folderId}
-	<CasePage
-		bind:this={casePage}
-		{folderId}
-		section={$page.params.section ?? ''}
-		sub={$page.params.item ?? ''}
-		bind:title
-	/>
-{/key}
-<slot />
+{#if isStandalone}
+	<slot />
+{:else}
+	<svelte:head><title>{title ? `${title} / ` : ''}{$WEBUI_NAME}</title></svelte:head>
+	{#key folderId}
+		<CasePage
+			bind:this={casePage}
+			{folderId}
+			section={$page.params.section ?? ''}
+			sub={$page.params.item ?? ''}
+			bind:title
+		/>
+	{/key}
+	<slot />
+{/if}

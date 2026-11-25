@@ -257,8 +257,7 @@
 						<a
 							class="ref"
 							href={sheetHref(state, src.pageId)}
-							title={fmt(S.label_sheet_link_g, { label: src.sheet })}
-							data-sveltekit-reload>{S.label_sheet_caption}</a
+							title={fmt(S.label_sheet_link_g, { label: src.sheet })}>{S.label_sheet_caption}</a
 						>
 					{/if}
 					{#if src.unchecked}<span class="c-warn"> · {S.label_not_on_sheet_g}</span>{/if}
@@ -297,12 +296,12 @@
 								})}
 							{@const href = dupHref(v, dup.number)}
 							<li>
-								{#if href}<a class="ref" {href} data-sveltekit-reload>{text}</a>{:else}{text}{/if}
+								{#if href}<a class="ref" {href}>{text}</a>{:else}{text}{/if}
 							</li>
 						{/each}
 						{#each v.disagreements ?? [] as dg}
 							<li>
-								<a class="ref" href={sheetHref(state, dg.page_id)} data-sveltekit-reload
+								<a class="ref" href={sheetHref(state, dg.page_id)}
 									>{dg.text ||
 										fmt(S.check_number_disagree, {
 											a: (dg.reads ?? [])[0],
