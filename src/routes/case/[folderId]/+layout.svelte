@@ -12,9 +12,11 @@
 
 	let title = '';
 	let casePage: CasePage | undefined;
+	let visitedFolder = '';
 	$: folderId = $page.params.folderId ?? '';
 	$: isStandalone =
 		$page.route.id?.endsWith('/p/[pageId]') || $page.route.id?.endsWith('/ref') || false;
+	$: if (!isStandalone && folderId) visitedFolder = folderId;
 
 	onMount(() => {
 		if (isStandalone) return;
@@ -32,18 +34,20 @@
 	});
 </script>
 
-{#if isStandalone}
-	<slot />
-{:else}
-	<svelte:head><title>{title ? `${title} / ` : ''}{$WEBUI_NAME}</title></svelte:head>
-	{#key folderId}
-		<CasePage
-			bind:this={casePage}
-			{folderId}
-			section={$page.params.section ?? ''}
-			sub={$page.params.item ?? ''}
-			bind:title
-		/>
-	{/key}
-	<slot />
+{#if visitedFolder && visitedFolder === folderId}
+	<div hidden={isStandalone}>
+		{#if !isStandalone}
+			<svelte:head><title>{title ? `${title} / ` : ''}{$WEBUI_NAME}</title></svelte:head>
+		{/if}
+		{#key visitedFolder}
+			<CasePage
+				bind:this={casePage}
+				folderId={visitedFolder}
+				section={!isStandalone ? ($page.params.section ?? '') : ''}
+				sub={!isStandalone ? ($page.params.item ?? '') : ''}
+				bind:title
+			/>
+		{/key}
+	</div>
 {/if}
+<slot />
