@@ -210,7 +210,7 @@
 	$: checks = (() => {
 		if (!sh) return [] as string[];
 		const list = (sh.flags ?? []).map((f) => f.text);
-		if (sh.reading_note && sh.reading_note_page === S.reading_model_g) {
+		if (sh.reading_note && sh.reading_note_page && sh.reading_note_page === S.reading_model_g) {
 			list.push(sh.reading_note_page);
 		}
 		return list;

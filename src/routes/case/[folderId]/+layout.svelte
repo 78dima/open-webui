@@ -34,11 +34,14 @@
 	});
 </script>
 
+<svelte:head>
+	{#if !isStandalone}
+		<title>{title ? `${title} / ` : ''}{$WEBUI_NAME}</title>
+	{/if}
+</svelte:head>
+
 {#if visitedFolder && visitedFolder === folderId}
 	<div hidden={isStandalone}>
-		{#if !isStandalone}
-			<svelte:head><title>{title ? `${title} / ` : ''}{$WEBUI_NAME}</title></svelte:head>
-		{/if}
 		{#key visitedFolder}
 			<CasePage
 				bind:this={casePage}
