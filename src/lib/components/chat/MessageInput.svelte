@@ -2545,7 +2545,7 @@
 										</button>
 									</InputMenu>
 
-									{#if showWebSearchButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
+									{#if !hideFor($config?.custom_ui, $_user?.role, 'integrations') && (showWebSearchButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0))}
 										<div
 											class="flex self-center w-[0.0625rem] h-4 mx-1 bg-gray-200/50 dark:bg-gray-800/50 shrink-0"
 										/>
@@ -2596,7 +2596,7 @@
 										</IntegrationsMenu>
 									{/if}
 
-									{#if hasChatVariables}
+									{#if hasChatVariables && !hideFor($config?.custom_ui, $_user?.role, 'tech_ui')}
 										<Tooltip content={$i18n.t('Chat Variables')} placement="top">
 											<button
 												type="button"

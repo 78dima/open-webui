@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { canUseApiKeys } from '$lib/utils/settings-access';
+	import { hideFor } from '$lib/custom/visibility'; // ai-dvokat: hide technical fields for user role
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext } from 'svelte';
 
@@ -37,6 +38,7 @@
 	const i18n = getContext('i18n');
 
 	export let saveHandler: () => void | Promise<void>;
+	$: hideTechUi = hideFor($config?.custom_ui, $user?.role, 'tech_ui');
 
 	let profileImageUrl = '';
 	let name = '';
@@ -275,109 +277,113 @@
 				/>
 			</UserSettingField>
 
-			<UserSettingField
-				label={$i18n.t('settings.personal.account.bio.label')}
-				description={$i18n.t('settings.personal.account.bio.description')}
-			>
-				<Textarea
-					className={textareaClass}
-					minSize={60}
-					bind:value={bio}
-					ariaLabel={$i18n.t('settings.personal.account.bio.label')}
-					placeholder={$i18n.t('Share your background and interests')}
-				/>
-			</UserSettingField>
-
-			<UserSettingField
-				label={$i18n.t('settings.personal.account.gender.label')}
-				description={$i18n.t('settings.personal.account.gender.description')}
-			>
-				<SettingsSelect
-					bind:value={_gender}
-					className="w-full"
-					ariaLabel={$i18n.t('settings.personal.account.gender.label')}
-					on:change={() => {
-						console.log(_gender);
-
-						if (_gender === 'custom') {
-							// Handle custom gender input
-							gender = '';
-						} else {
-							gender = _gender;
-						}
-					}}
+			{#if !hideTechUi}
+				<UserSettingField
+					label={$i18n.t('settings.personal.account.bio.label')}
+					description={$i18n.t('settings.personal.account.bio.description')}
 				>
-					<option value="" selected>{$i18n.t('Prefer not to say')}</option>
-					<option value="male">{$i18n.t('Male')}</option>
-					<option value="female">{$i18n.t('Female')}</option>
-					<option value="custom">{$i18n.t('Custom')}</option>
-				</SettingsSelect>
-
-				{#if _gender === 'custom'}
-					<input
-						class="mt-1 {inputClass}"
-						type="text"
-						required
-						aria-label={$i18n.t('Custom Gender')}
-						placeholder={$i18n.t('Enter your gender')}
-						bind:value={gender}
+					<Textarea
+						className={textareaClass}
+						minSize={60}
+						bind:value={bio}
+						ariaLabel={$i18n.t('settings.personal.account.bio.label')}
+						placeholder={$i18n.t('Share your background and interests')}
 					/>
-				{/if}
-			</UserSettingField>
+				</UserSettingField>
 
-			<UserSettingField
-				label={$i18n.t('settings.personal.account.birthDate.label')}
-				description={$i18n.t('settings.personal.account.birthDate.description')}
-			>
-				<input
-					class="{inputClass} dark:scheme-dark"
-					type="date"
-					aria-label={$i18n.t('settings.personal.account.birthDate.label')}
-					bind:value={dateOfBirth}
-				/>
-			</UserSettingField>
+				<UserSettingField
+					label={$i18n.t('settings.personal.account.gender.label')}
+					description={$i18n.t('settings.personal.account.gender.description')}
+				>
+					<SettingsSelect
+						bind:value={_gender}
+						className="w-full"
+						ariaLabel={$i18n.t('settings.personal.account.gender.label')}
+						on:change={() => {
+							console.log(_gender);
+
+							if (_gender === 'custom') {
+								// Handle custom gender input
+								gender = '';
+							} else {
+								gender = _gender;
+							}
+						}}
+					>
+						<option value="" selected>{$i18n.t('Prefer not to say')}</option>
+						<option value="male">{$i18n.t('Male')}</option>
+						<option value="female">{$i18n.t('Female')}</option>
+						<option value="custom">{$i18n.t('Custom')}</option>
+					</SettingsSelect>
+
+					{#if _gender === 'custom'}
+						<input
+							class="mt-1 {inputClass}"
+							type="text"
+							required
+							aria-label={$i18n.t('Custom Gender')}
+							placeholder={$i18n.t('Enter your gender')}
+							bind:value={gender}
+						/>
+					{/if}
+				</UserSettingField>
+
+				<UserSettingField
+					label={$i18n.t('settings.personal.account.birthDate.label')}
+					description={$i18n.t('settings.personal.account.birthDate.description')}
+				>
+					<input
+						class="{inputClass} dark:scheme-dark"
+						type="date"
+						aria-label={$i18n.t('settings.personal.account.birthDate.label')}
+						bind:value={dateOfBirth}
+					/>
+				</UserSettingField>
+			{/if}
 		</UserSettingSection>
 
-		<section class="mt-4 w-full">
-			<div
-				class="mb-0.5 flex items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-400"
-			>
-				<div class="flex min-w-0 items-center gap-1.5">
-					{$i18n.t('User Variables')}
-					<span class="text-gray-400 dark:text-gray-600">{variableRows.length}</span>
+		{#if !hideTechUi}
+			<section class="mt-4 w-full">
+				<div
+					class="mb-0.5 flex items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-400"
+				>
+					<div class="flex min-w-0 items-center gap-1.5">
+						{$i18n.t('User Variables')}
+						<span class="text-gray-400 dark:text-gray-600">{variableRows.length}</span>
+					</div>
+					<button class={actionButtonClass} type="button" on:click={() => openVariableModal()}>
+						{$i18n.t('Add')}
+					</button>
 				</div>
-				<button class={actionButtonClass} type="button" on:click={() => openVariableModal()}>
-					{$i18n.t('Add')}
-				</button>
-			</div>
-			<div class="flex flex-col gap-1 py-1">
-				{#each variableRows as row, idx}
-					<div class={variableRowClass}>
-						<div class="min-w-0 truncate font-mono text-xs text-gray-700 dark:text-gray-300">
-							{row.key || $i18n.t('key_name')}
+				<div class="flex flex-col gap-1 py-1">
+					{#each variableRows as row, idx}
+						<div class={variableRowClass}>
+							<div class="min-w-0 truncate font-mono text-xs text-gray-700 dark:text-gray-300">
+								{row.key || $i18n.t('key_name')}
+							</div>
+							<div class="min-w-0 flex-1 truncate text-xs text-gray-500 dark:text-gray-500">
+								{row.value || $i18n.t('Empty')}
+							</div>
+							<button class={actionButtonClass} type="button" on:click={() => openVariableModal(idx)}>
+								{$i18n.t('Edit')}
+							</button>
 						</div>
-						<div class="min-w-0 flex-1 truncate text-xs text-gray-500 dark:text-gray-500">
-							{row.value || $i18n.t('Empty')}
+					{/each}
+
+					{#if variableRows.length === 0}
+						<div class="text-xs text-gray-400 dark:text-gray-600">
+							{$i18n.t('No user variables configured.')}
 						</div>
-						<button class={actionButtonClass} type="button" on:click={() => openVariableModal(idx)}>
-							{$i18n.t('Edit')}
-						</button>
-					</div>
-				{/each}
+					{/if}
+				</div>
 
-				{#if variableRows.length === 0}
-					<div class="text-xs text-gray-400 dark:text-gray-600">
-						{$i18n.t('No user variables configured.')}
-					</div>
-				{/if}
-			</div>
-
-			<div class="text-[0.6875rem] text-gray-400 dark:text-gray-600">
-				{$i18n.t('Use these in model system prompts as {{example}}.', {
-					example: '{{user.variables.key_name}}'
-				})}
-			</div>
-		</section>
+				<div class="text-[0.6875rem] text-gray-400 dark:text-gray-600">
+					{$i18n.t('Use these in model system prompts as {{example}}.', {
+						example: '{{user.variables.key_name}}'
+					})}
+				</div>
+			</section>
+		{/if}
 
 		{#if $config?.features.enable_login_form && $config?.features.enable_password_change_form}
 			<UserSettingSection title={$i18n.t('settings.personal.account.sections.password.title')}>

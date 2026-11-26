@@ -21,6 +21,14 @@ test('visibility is user-only, strict and per-feature; Arena independent of the 
 	expect(
 		hideSetting('settings.personal.interface.temporaryChatByDefault.label', { hide }, 'admin')
 	).toBe(false);
+	expect(hideSetting('settings.personal.about.title', { hide }, 'user')).toBe(true);
+	expect(hideSetting('settings.personal.about.title', { hide }, 'admin')).toBe(false);
+	expect(hideSetting('settings.personal.dataControls.sharedChats.label', { hide }, 'user')).toBe(
+		true
+	);
+	expect(hideSetting('settings.personal.dataControls.sharedChats.label', { hide }, 'admin')).toBe(
+		false
+	);
 });
 test('audio visibility also covers voice preferences in the interface tab and search', () => {
 	for (const part of [
@@ -55,13 +63,29 @@ test('user sees seven legal models and relevant workspace only; admin and disabl
 		await expect(page.getByRole('link', { name, exact: true })).toBeHidden();
 	for (const name of ['Knowledge', 'Skills'])
 		await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
-	for (const name of ['Temporary chat', 'Audio settings', 'Images', 'Interpreter'])
+	for (const name of [
+		'Temporary chat',
+		'Audio settings',
+		'About',
+		'Images',
+		'Interpreter',
+		'Integrations',
+		'Tech UI'
+	])
 		await expect(page.getByRole('button', { name, exact: true })).toBeHidden();
 	await expect(page.getByRole('listitem')).toHaveText([...LEGAL_MODELS]);
 	await page.evaluate(() => (window as any).setUser({ role: 'admin' }));
 	for (const name of ['Tools', 'Functions', 'Prompts'])
 		await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
-	for (const name of ['Temporary chat', 'Audio settings', 'Images', 'Interpreter'])
+	for (const name of [
+		'Temporary chat',
+		'Audio settings',
+		'About',
+		'Images',
+		'Interpreter',
+		'Integrations',
+		'Tech UI'
+	])
 		await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
 	await expect(page.getByRole('listitem')).toHaveCount(9);
 	await page.evaluate(() => {

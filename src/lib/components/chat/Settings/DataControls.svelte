@@ -3,7 +3,8 @@
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
 
-	import { user, visibleControls } from '$lib/stores';
+	import { config, user, visibleControls } from '$lib/stores';
+	import { hideFor } from '$lib/custom/visibility'; // ai-dvokat: hide Shared Chats when disabled for user role
 	import { refreshSidebar } from '$lib/stores/chatList';
 
 	import { archiveAllChats, deleteAllChats, getAllChats, importChats } from '$lib/apis/chats';
@@ -198,22 +199,24 @@
 				</UserSettingRow>
 			{/if}
 
-			<UserSettingRow
-				let:labelId
-				label={$i18n.t('settings.personal.dataControls.sharedChats.label')}
-				description={$i18n.t('settings.personal.dataControls.sharedChats.description')}
-			>
-				<button
-					id={`${labelId}-control`}
-					class={actionButtonClass}
-					on:click={() => {
-						showSharedChatsModal = true;
-					}}
-					type="button"
+			{#if $user?.role === 'admin' || (!hideFor($config?.custom_ui, $user?.role, 'tech_ui') && ($user?.permissions?.chat?.share ?? true))}
+				<UserSettingRow
+					let:labelId
+					label={$i18n.t('settings.personal.dataControls.sharedChats.label')}
+					description={$i18n.t('settings.personal.dataControls.sharedChats.description')}
 				>
-					{$i18n.t('Manage')}
-				</button>
-			</UserSettingRow>
+					<button
+						id={`${labelId}-control`}
+						class={actionButtonClass}
+						on:click={() => {
+							showSharedChatsModal = true;
+						}}
+						type="button"
+					>
+						{$i18n.t('Manage')}
+					</button>
+				</UserSettingRow>
+			{/if}
 
 			{#if $visibleControls['chat.archive']}
 				<UserSettingRow

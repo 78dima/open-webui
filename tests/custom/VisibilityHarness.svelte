@@ -11,10 +11,13 @@
 <a href="/workspace/knowledge">Knowledge</a><a href="/workspace/skills">Skills</a>
 <button id="temporary-chat-button">Temporary chat</button>
 {#if !hideSettingsTab('audio', $config?.custom_ui, $user?.role)}<button>Audio settings</button>{/if}
+{#if !hideSettingsTab('about', $config?.custom_ui, $user?.role)}<button>About</button>{/if}
 {#if !hideFor($config?.custom_ui, $user?.role, 'settings_images')}<button>Images</button>{/if}
 {#if !hideFor($config?.custom_ui, $user?.role, 'settings_code_interpreter')}<button
 		>Interpreter</button
 	>{/if}
+{#if !hideFor($config?.custom_ui, $user?.role, 'integrations')}<button>Integrations</button>{/if}
+{#if !hideFor($config?.custom_ui, $user?.role, 'tech_ui')}<button>Tech UI</button>{/if}
 <ul aria-label="Models">
 	{#each $models.filter((m) => modelVisible(m, $config?.custom_ui, $user?.role)) as model}<li>
 			{model.id}

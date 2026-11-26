@@ -7,10 +7,13 @@ export const HIDE_KEYS: HideKey[] = [
 	'settings_audio',
 	'settings_images',
 	'settings_code_interpreter',
+	'settings_about',
 	'temporary_chat',
 	'arena',
 	'models',
-	'tool_details'
+	'tool_details',
+	'integrations',
+	'tech_ui'
 ];
 export const LEGAL_MODELS = [
 	'jurist-rf',
@@ -38,7 +41,8 @@ export function hideSettingsTab(id: string, raw: unknown, role?: string): boolea
 	const flags: Record<string, HideKey> = {
 		audio: 'settings_audio',
 		images: 'settings_images',
-		code: 'settings_code_interpreter'
+		code: 'settings_code_interpreter',
+		about: 'settings_about'
 	};
 	return !!flags[id] && hideFor(raw, role, flags[id]);
 }
@@ -46,6 +50,9 @@ export function hideSetting(key: string, raw: unknown, role?: string): boolean {
 	return (
 		(hideFor(raw, role, 'temporary_chat') &&
 			/\.(temporaryChatByDefault|newTemporaryChat)\./.test(key)) ||
+		(hideFor(raw, role, 'settings_about') && key.startsWith('settings.personal.about.')) ||
+		(hideFor(raw, role, 'tech_ui') &&
+			key.startsWith('settings.personal.dataControls.sharedChats.')) ||
 		(hideFor(raw, role, 'settings_audio') &&
 			(key.startsWith('settings.personal.audio.') ||
 				(key.startsWith('settings.personal.interface.') &&

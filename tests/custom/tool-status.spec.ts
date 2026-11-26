@@ -21,7 +21,11 @@ const LEGAL_TOOLS = [
 	'case_overview', 'case_search', 'case_read', 'case_facts', 'case_sweep', 'case_look',
 	'case_inventory_edit', 'case_deadline',
 	// служебные вызовы (методички Open WebUI и сверка черновика стража) — свои слова вместо «обращение к инструменту»
-	'view_skill', 'read_skill_file', 'draft_check'
+	'view_skill', 'read_skill_file', 'draft_check',
+	// встроенные инструменты Open WebUI
+	'delegate_task', 'get_current_timestamp', 'calculate_timestamp', 'list_chat_files', 'grep_chat_files',
+	'view_file', 'search_notes', 'view_note', 'write_note', 'replace_note_content',
+	'list_knowledge_bases', 'search_knowledge_bases', 'search_knowledge_files', 'ask_user'
 ];
 const on = { hide: { tool_details: true } };
 const STATES = ['active', 'done', 'error', 'rejected', 'approval'] as const;
@@ -206,4 +210,19 @@ test('admin and disabled flag keep the upstream tool block with names and result
 		await expect(page.locator('#done')).toContainText('Синтетический результат');
 		await expect(page.getByTestId('group')).toContainText('2 legal-tools_kplus_search, legal-tools_kplus_outline');
 	}
+});
+
+test('reasoning blocks hide raw thoughts for user and stay expandable for admin', async ({ page }) => {
+	await open(page, 'user');
+	const active = page.getByTestId('reasoning-active');
+	await expect(active).toContainText('Анализирую…');
+	await active.getByRole('button').click({ force: true });
+	await expect(active).not.toContainText('secret thought');
+	await expect(page.getByTestId('reasoning-done').locator('> *')).toHaveCount(0);
+
+	await open(page, 'admin');
+	await page.getByTestId('reasoning-active').getByRole('button').click();
+	await expect(page.getByTestId('reasoning-active')).toContainText('secret thought');
+	await page.getByTestId('reasoning-done').getByRole('button').click();
+	await expect(page.getByTestId('reasoning-done')).toContainText('secret thought done');
 });

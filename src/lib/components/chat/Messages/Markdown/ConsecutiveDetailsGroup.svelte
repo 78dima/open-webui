@@ -17,6 +17,7 @@
 
 	import { settings, config, user } from '$lib/stores';
 	import { plainToolStatus, toolGroupText, toolStatusLabel } from '$lib/custom/toolStatus'; // ai-dvokat: plain status for legal users
+	import ru from '$lib/custom/locales/ru-RU.json';
 
 	const i18n = getContext<Writable<i18nType>>('i18n');
 
@@ -184,27 +185,29 @@
 	$: prefixText = hasActiveDetails ? $i18n.t('Exploring') : $i18n.t('Explored');
 	// ai-dvokat: Russian summary without tool names
 	$: plain = plainToolStatus($config?.custom_ui, $user?.role);
+	$: plainReasoningOnly = plain && toolCallCount === 0 && codeInterpreterCount === 0 && reasoningCount > 0;
 	// ai-dvokat: вызовы последней группы выполнены, а сообщение ещё не закончено (модель работает над ответом) — не
 	// итоговая зелёная галка «Выполнено», а признак хода и «Выполнено, готовлю ответ».
 	$: plainPreparing = plain && isLast && toolCallCount > 0 && !hasActiveDetails && !hasError && !hasRejected && !messageDone;
 	$: plainGroup = plain && toolCallCount > 0 ? toolGroupText(tokens.filter((t) => t?.attributes?.type === 'tool_calls').map((t) => t?.attributes?.name), hasActiveDetails, hasError || hasRejected, plainPreparing) : null;
 </script>
 
+{#if !(plainReasoningOnly && !hasActiveDetails)}
 <div {id} class="w-full min-w-0">
 	<div class="flex w-full min-w-0 items-center gap-2">
 		<div
-			role="button"
-			tabindex="0"
+			role={plainReasoningOnly ? undefined : 'button'}
+			tabindex={plainReasoningOnly ? undefined : 0}
 			class="flex-1 min-w-0 py-0.5 text-left {compactPreview
 				? 'text-xs'
-				: 'text-[0.9375rem]'} text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition cursor-pointer"
-			aria-label={$i18n.t('Toggle details')}
-			aria-expanded={open}
+				: 'text-[0.9375rem]'} text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition {plainReasoningOnly ? 'cursor-default' : 'cursor-pointer'}"
+			aria-label={plainReasoningOnly ? undefined : $i18n.t('Toggle details')}
+			aria-expanded={plainReasoningOnly ? undefined : open}
 			on:click={() => {
-				open = !open;
+				if (!plainReasoningOnly) open = !open;
 			}}
 			on:keydown={(event) => {
-				if (event.key === 'Enter' || event.key === ' ') {
+				if (!plainReasoningOnly && (event.key === 'Enter' || event.key === ' ')) {
 					event.preventDefault();
 					open = !open;
 				}
@@ -236,11 +239,15 @@
 
 				<!-- Summary text -->
 				<div class="flex-1 line-clamp-1">
-					<span class="text-gray-600 dark:text-gray-300 {hasActiveDetails || plainPreparing ? 'shimmer' : ''}"
-						>{plainGroup?.prefix ?? prefixText}</span
-					>
-					{#if plainGroup?.detail ?? summaryText}
-						<span class="text-gray-400 dark:text-gray-500">{plainGroup?.detail ?? summaryText}</span>
+					{#if plainReasoningOnly}
+						<span class="text-gray-600 dark:text-gray-300 shimmer">{ru.tool_status.reasoning_active}</span>
+					{:else}
+						<span class="text-gray-600 dark:text-gray-300 {hasActiveDetails || plainPreparing ? 'shimmer' : ''}"
+							>{plainGroup?.prefix ?? prefixText}</span
+						>
+						{#if plainGroup?.detail ?? summaryText}
+							<span class="text-gray-400 dark:text-gray-500">{plainGroup?.detail ?? summaryText}</span>
+						{/if}
 					{/if}
 				</div>
 
@@ -264,7 +271,7 @@
 							{$i18n.t('Deny')}
 						</button>
 					</span>
-				{:else}
+				{:else if !plainReasoningOnly}
 					<!-- Chevron -->
 					<div class="flex shrink-0 self-center text-gray-400 dark:text-gray-500">
 						{#if open}
@@ -311,7 +318,7 @@
 		</div>
 	{/if}
 
-	{#if open}
+	{#if open && !plainReasoningOnly}
 		<div transition:slide={{ duration: 300, easing: quintOut, axis: 'y' }}>
 			<div class="mb-1">
 				<slot name="content" />
@@ -338,3 +345,4 @@
 		{/each}
 	{/if}
 </div>
+{/if}

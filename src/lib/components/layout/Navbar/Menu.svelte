@@ -17,12 +17,14 @@
 		temporaryChatEnabled,
 		theme,
 		user,
+		config,
 		settings,
 		folders,
 		showEmbeds,
 		artifactContents,
 		visibleControls
 	} from '$lib/stores';
+	import { hideFor } from '$lib/custom/visibility'; // ai-dvokat: hide technical menu items for user role
 
 	import { getChatById } from '$lib/apis/chats';
 
@@ -395,7 +397,7 @@
 				</button>
 			{/if}
 
-			{#if Object.keys(chat?.chat?.history?.messages ?? {}).length > 0}
+			{#if Object.keys(chat?.chat?.history?.messages ?? {}).length > 0 && !hideFor($config?.custom_ui, $user?.role, 'tech_ui')}
 				<button
 					draggable="false"
 					class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
@@ -465,15 +467,17 @@
 						<div class="flex items-center">{$i18n.t('Download')}</div>
 					</button>
 
-					<button
-						draggable="false"
-						class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
-						on:click={() => {
-							downloadJSONExport();
-						}}
-					>
-						<div class="flex items-center line-clamp-1">{$i18n.t('Export chat (.json)')}</div>
-					</button>
+					{#if !hideFor($config?.custom_ui, $user?.role, 'tech_ui')}
+						<button
+							draggable="false"
+							class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
+							on:click={() => {
+								downloadJSONExport();
+							}}
+						>
+							<div class="flex items-center line-clamp-1">{$i18n.t('Export chat (.json)')}</div>
+						</button>
+					{/if}
 
 					<button
 						draggable="false"

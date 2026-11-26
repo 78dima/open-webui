@@ -46,6 +46,7 @@
 	import { getOutputText } from './Messages/structuredOutput';
 	import { refreshChatList, refreshFolderChatLists } from '$lib/stores/chatList';
 	import ChatParticipants from '$lib/components/common/ChatParticipants.svelte';
+	import { hideFor } from '$lib/custom/visibility'; // ai-dvokat: hide technical tabs button for user role
 
 	const i18n: any = getContext('i18n');
 
@@ -381,7 +382,7 @@
 
 					{#if !tabbed}{@render renderChatActions()}{/if}
 
-					{#if history.currentId || $selectedTerminalId}
+					{#if (history.currentId || $selectedTerminalId) && !hideFor($config?.custom_ui, $user?.role, 'tech_ui')}
 						<Tooltip content={$i18n.t('Tabs')}>
 							<button
 								class="flex size-6 cursor-pointer items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-50/40 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800/40 dark:hover:text-gray-200"

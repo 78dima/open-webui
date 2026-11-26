@@ -15,6 +15,10 @@
 	import { slide } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 
+	import { config, user } from '$lib/stores'; // ai-dvokat: hide raw reasoning for legal users
+	import { plainToolStatus } from '$lib/custom/toolStatus';
+	import ru from '$lib/custom/locales/ru-RU.json';
+
 	import ChevronUp from '../icons/ChevronUp.svelte';
 	import ChevronDown from '../icons/ChevronDown.svelte';
 	import Spinner from './Spinner.svelte';
@@ -40,8 +44,12 @@
 
 	export let onChange: Function = () => {};
 
+	$: hideReasoning =
+		attributes?.type === 'reasoning' && plainToolStatus($config?.custom_ui, $user?.role);
+	$: reasoningDone = attributes?.done === 'true' || messageDone;
+
 	const toggleOpen = () => {
-		if (disabled) {
+		if (disabled || hideReasoning) {
 			return;
 		}
 
@@ -52,31 +60,34 @@
 	const collapsibleId = uuidv4();
 </script>
 
+{#if !(hideReasoning && reasoningDone)}
 <div {id} class={className}>
 	{#if title !== null}
 		<button
 			type="button"
 			class="{buttonClassName} block text-start disabled:cursor-default"
 			aria-expanded={open}
-			{disabled}
+			disabled={disabled || hideReasoning}
 			on:click={toggleOpen}
 		>
 			<div
-				class=" w-full flex items-center justify-between gap-2 {attributes?.done &&
+				class=" w-full flex items-center justify-between gap-2 {(attributes?.done &&
 				attributes?.done !== 'true' &&
-				!messageDone
+				!messageDone) || (hideReasoning && !reasoningDone)
 					? 'shimmer'
 					: ''}
 			"
 			>
-				{#if attributes?.done && attributes?.done !== 'true' && !messageDone}
+				{#if (attributes?.done && attributes?.done !== 'true' && !messageDone) || (hideReasoning && !reasoningDone)}
 					<div>
 						<Spinner className="size-4" />
 					</div>
 				{/if}
 
 				<div class="">
-					{#if attributes?.type === 'reasoning'}
+					{#if hideReasoning}
+						{ru.tool_status.reasoning_active}
+					{:else if attributes?.type === 'reasoning'}
 						{#if (attributes?.done === 'true' || messageDone) && attributes?.duration}
 							{#if attributes.duration < 1}
 								{$i18n.t('Thought for less than a second')}
@@ -108,7 +119,7 @@
 					{/if}
 				</div>
 
-				{#if !disabled}
+				{#if !disabled && !hideReasoning}
 					<div class="flex self-center translate-y-[1px]">
 						{#if open}
 							<ChevronUp strokeWidth={chevronStrokeWidth} className={chevronClassName} />
@@ -145,7 +156,7 @@
 				</div>
 
 				{#if grow}
-					{#if open && !hide}
+					{#if open && !hide && !hideReasoning}
 						<div
 							transition:slide={{ duration: 300, easing: quintOut, axis: 'y' }}
 							on:click={(e) => {
@@ -161,10 +172,11 @@
 	{/if}
 
 	{#if !grow}
-		{#if open && !hide}
+		{#if open && !hide && !hideReasoning}
 			<div transition:slide={{ duration: 300, easing: quintOut, axis: 'y' }}>
 				<slot name="content" />
 			</div>
 		{/if}
 	{/if}
 </div>
+{/if}

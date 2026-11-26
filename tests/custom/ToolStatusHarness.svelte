@@ -2,6 +2,7 @@
 	import { setContext } from 'svelte';
 	import { writable } from 'svelte/store';
 	import ToolCallDisplay from '../../src/lib/components/common/ToolCallDisplay.svelte';
+	import Collapsible from '../../src/lib/components/common/Collapsible.svelte';
 	import ConsecutiveDetailsGroup from '../../src/lib/components/chat/Messages/Markdown/ConsecutiveDetailsGroup.svelte';
 	import StructuredOutputRenderer from '../../src/lib/components/chat/Messages/StructuredOutputRenderer.svelte';
 	// Minimal i18n with upstream interpolation; translations are not under test.
@@ -104,4 +105,14 @@
 </section>
 <section data-testid="structured-single-tail">
 	<StructuredOutputRenderer id="so-single-tail" output={structuredSingleTail} done={false} renderMarkdown={false} />
+</section>
+<section data-testid="reasoning-active">
+	<Collapsible id="reasoning-active" title="Thinking..." attributes={{ type: 'reasoning', done: 'false' }} messageDone={false}>
+		<div slot="content">secret thought</div>
+	</Collapsible>
+</section>
+<section data-testid="reasoning-done">
+	<Collapsible id="reasoning-done" title="Thought for 5 seconds" attributes={{ type: 'reasoning', duration: '5', done: 'true' }} messageDone={true}>
+		<div slot="content">secret thought done</div>
+	</Collapsible>
 </section>
