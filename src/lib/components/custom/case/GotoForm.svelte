@@ -13,6 +13,14 @@
 	export let initialBack = false;
 	export let onSubmit: (() => void) | undefined = undefined;
 
+	const normVol = (s: string) => s.replace(/\s+/g, '');
+	const matchVolume = (v: string, list: string[]): string | null => {
+		if (!v) return null;
+		if (list.includes(v)) return v;
+		const nv = normVol(v);
+		return list.find((item) => normVol(item) === nv) ?? null;
+	};
+
 	let volume = initialVolume;
 	let sheet = initialSheet;
 	let back = initialBack;
@@ -28,9 +36,14 @@
 			picked = !!initialVolume;
 		}
 	}
-	$: if (volumes.length && (!picked || !volumes.includes(volume))) {
-		if (!volumes.includes(volume)) picked = false;
-		if (!picked) volume = volumes[0];
+	$: if (volumes.length) {
+		const matched = picked ? matchVolume(volume, volumes) : null;
+		if (matched !== null) {
+			if (volume !== matched) volume = matched;
+		} else {
+			picked = false;
+			volume = volumes[0];
+		}
 	}
 	const option = (label: string) => String(S.goto_volume_option ?? '').replace('{label}', label);
 

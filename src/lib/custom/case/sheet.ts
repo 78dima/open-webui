@@ -164,18 +164,37 @@ export function copyLine(
 	return `${label} ${pageUrl}`;
 }
 
-/** Безопасная разбивка текста листа на сегменты для `<mark id="hl">` и `<mark class="ed">` без `{@html}`. */
+/** Нормализация переводов строк текста листа (`\r\n` / `\r` → `\n`), как на сервере (`sheettext.py`). */
+export const normalizeSheetText = (s: string | null | undefined): string =>
+	(s ?? '').replace(/\r\n?/g, '\n');
+
+/** Безопасная разбивка текста листа на сегменты для `<mark id="hl">` и `<mark class="ed">` без сырой HTML-вставки. */
 export function buildTextSegments(
-	text: string,
+	rawText: string,
 	hl: [number, number] | null | undefined,
 	editedSpans: [number, number][] | null | undefined
 ): TextSegment[] {
+	const text = normalizeSheetText(rawText);
 	if (!text) return [];
+	const cpToU16: number[] = [0];
+	for (let u = 0; u < text.length; ) {
+		const cp = text.codePointAt(u)!;
+		u += cp > 0xffff ? 2 : 1;
+		cpToU16.push(u);
+	}
+	const cpLen = cpToU16.length - 1;
+	const toU16Range = (s: [number, number] | null | undefined): [number, number] | null => {
+		if (!Array.isArray(s) || s.length !== 2) return null;
+		const [a, b] = s;
+		if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || a >= b || b > cpLen) return null;
+		return [cpToU16[a], cpToU16[b]];
+	};
+
 	const n = text.length;
-	const validHl: [number, number] | null =
-		hl && hl.length === 2 && hl[0] >= 0 && hl[0] < hl[1] && hl[1] <= n ? [hl[0], hl[1]] : null;
+	const validHl = toU16Range(hl);
 	const eds = (editedSpans ?? [])
-		.filter((s) => Array.isArray(s) && s.length === 2 && s[0] >= 0 && s[0] < s[1] && s[1] <= n)
+		.map(toU16Range)
+		.filter((s): s is [number, number] => s !== null)
 		.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
 
 	const cuts = new Set<number>([0, n]);
@@ -208,6 +227,8 @@ export const utf16ToCodePoints = (whole: string, u16Offset: number): number =>
 export const codePointsToUtf16 = (whole: string, cpOffset: number): number =>
 	Array.from(whole).slice(0, Math.max(0, cpOffset)).join('').length;
 
-/** Является ли чекбокс «оборот» отмеченным по значению query-параметра `side`. */
+/** Является ли чекбокс «оборот» отмеченным по значению query-параметра `side` (`back`, `об`, `об.`, `оборот`). */
 export const isBackSide = (side: string | null | undefined): boolean =>
-	['back', 'об', 'об.', 'оборот'].includes((side ?? '').trim().toLowerCase());
+	['back', '\u043e\u0431', '\u043e\u0431.', '\u043e\u0431\u043e\u0440\u043e\u0442'].includes(
+		(side ?? '').trim().toLowerCase()
+	);

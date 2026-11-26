@@ -29,7 +29,11 @@ if (location.search === '?tool-status')
 
 import CaseHarness from './CaseHarness.svelte';
 import CasePageHarness from './CasePageHarness.svelte';
-if (location.search.startsWith('?casepage='))
+if (
+	location.search.startsWith('?casepage=') ||
+	location.search.startsWith('?casesheet=') ||
+	location.search.startsWith('?caseref=')
+)
 	mount(CasePageHarness, { target: document.querySelector('#app')! });
 else if (location.search.startsWith('?case') && !location.search.startsWith('?cases-link'))
 	mount(CaseHarness, { target: document.querySelector('#app')! });

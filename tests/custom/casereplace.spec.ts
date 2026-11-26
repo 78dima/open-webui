@@ -19,7 +19,7 @@ test.describe('«Замена тома», 1280', () => {
 			[src.same, src.added.length, src.removed.length, src.changed.length, src.unsure.length + src.blind.length].map(String)
 		);
 		await expect(d.getByTestId('case-delta-added').getByRole('heading')).toHaveText(`Добавлены: ${src.added.length}`);
-		await expect(d.getByTestId('case-delta-added').getByRole('link').first()).toHaveAttribute('href', `/legal-tools/case/${F}/p/${src.added[0].page_id}`);
+		await expect(d.getByTestId('case-delta-added').getByRole('link').first()).toHaveAttribute('href', `/case/${F}/p/${src.added[0].page_id}`);
 		await expect(d.getByTestId('case-delta-removed')).toContainText(S.replace_removed_note);
 		const changed = d.getByTestId('case-delta-changed');
 		await expect(changed).toContainText(S.replace_changed_note);

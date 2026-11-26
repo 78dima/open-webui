@@ -7,6 +7,7 @@ import {
 	currentSheetHref,
 	isBackSide,
 	isSpaCaseHref,
+	normalizeSheetText,
 	sheetPageHref,
 	utf16ToCodePoints
 } from './sheet';
@@ -73,6 +74,40 @@ describe('утилиты просмотрщика листа и /ref', () => {
 		// 'А' (1 u16, 1 cp), '😀' (2 u16, 1 cp), 'Б' (1 u16, 1 cp)
 		expect(utf16ToCodePoints(whole, 3)).toBe(2);
 		expect(codePointsToUtf16(whole, 2)).toBe(3);
+	});
+
+	it('normalizeSheetText и buildTextSegments нормализуют \\r\\n и одиночный \\r в \\n в кодовых точках сервера', () => {
+		const raw = 'Строка 1\r\nСтрока 2\rДоговор';
+		const norm = normalizeSheetText(raw);
+		expect(norm).toBe('Строка 1\nСтрока 2\nДоговор');
+		// 'Строка 1\n' (9) + 'Строка 2\n' (9) = 18; 'Договор' = [18, 25]
+		const start = utf16ToCodePoints(norm, norm.indexOf('Договор'));
+		const end = utf16ToCodePoints(norm, norm.indexOf('Договор') + 'Договор'.length);
+		expect([start, end]).toEqual([18, 25]);
+		expect(buildTextSegments(raw, [start, end], [[9, 17]])).toEqual([
+			{ text: 'Строка 1\n', hl: false, edited: false },
+			{ text: 'Строка 2', hl: false, edited: true },
+			{ text: '\n', hl: false, edited: false },
+			{ text: 'Договор', hl: true, edited: false }
+		]);
+		expect(normalizeSheetText(null)).toBe('');
+		expect(normalizeSheetText(undefined)).toBe('');
+	});
+
+	it('buildTextSegments переводит hl и edited_spans из кодовых точек при суррогатных парах (эмодзи) до среза', () => {
+		// '📄 ' — 2 cp (3 u16), 'Договор ' — 8 cp, '😀 ' — 2 cp (3 u16), '№ 817' — 5 cp
+		const text = '📄 Договор 😀 № 817';
+		// кодовые точки: 'Договор' = [2, 9], '№ 817' = [12, 17]
+		expect(buildTextSegments(text, [12, 17], [[2, 9]])).toEqual([
+			{ text: '📄 ', hl: false, edited: false },
+			{ text: 'Договор', hl: false, edited: true },
+			{ text: ' 😀 ', hl: false, edited: false },
+			{ text: '№ 817', hl: true, edited: false }
+		]);
+		// выход за пределы числа кодовых точек (даже если <= text.length в UTF-16) игнорируется
+		expect(buildTextSegments('📄А', [0, 3], [[1, 3]])).toEqual([
+			{ text: '📄А', hl: false, edited: false }
+		]);
 	});
 
 	it('isBackSide распознаёт back и русские варианты оборота', () => {

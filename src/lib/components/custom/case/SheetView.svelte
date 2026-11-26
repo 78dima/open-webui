@@ -16,6 +16,7 @@
 		currentSheetHref,
 		DEFAULT_IMAGE_WIDTH,
 		IMAGE_WIDTHS,
+		normalizeSheetText,
 		sheetPageHref,
 		utf16ToCodePoints,
 		type SheetData,
@@ -80,6 +81,7 @@
 	let workState: { kind: string; text: string } | null = null;
 	let workTimer: ReturnType<typeof setTimeout> | null = null;
 	let workDelay = 5000;
+	let destroyed = false;
 
 	let textBox: HTMLDivElement | undefined;
 	let textAreaEl: HTMLTextAreaElement | undefined;
@@ -105,6 +107,7 @@
 		hl: string | null,
 		pick: boolean
 	) {
+		if (destroyed) return;
 		const seq = ++reqSeq;
 		stopWork();
 		loading = true;
@@ -121,7 +124,8 @@
 			const data = await api.get<SheetData>(
 				`api/cases/${encodeURIComponent(fid)}/pages/${encodeURIComponent(pid)}${qs}`
 			);
-			if (seq !== reqSeq) return;
+			if (seq !== reqSeq || destroyed) return;
+			data.text = normalizeSheetText(data.text);
 			sh = data;
 			numberInput = data.number_as_written ?? '';
 			sideInput = data.side || 'face';
@@ -139,7 +143,7 @@
 			}
 			loading = false;
 			await tick();
-			if (seq !== reqSeq) return;
+			if (seq !== reqSeq || destroyed) return;
 			if (typeof window !== 'undefined' && window.location.hash !== '#image') {
 				const target =
 					(pick ? document.getElementById('sheet-text-pick') : null) ??
@@ -147,7 +151,7 @@
 				target?.scrollIntoView?.({ block: 'center' });
 			}
 		} catch (e) {
-			if (seq !== reqSeq) return;
+			if (seq !== reqSeq || destroyed) return;
 			error = e as CaseApiError;
 			sh = null;
 			loading = false;
@@ -155,6 +159,7 @@
 	}
 
 	function scheduleWork(ms: number) {
+		if (destroyed) return;
 		workDelay = ms;
 		stopWork();
 		workTimer = setTimeout(pollWork, ms);
@@ -162,6 +167,7 @@
 
 	async function pollWork() {
 		workTimer = null;
+		if (destroyed) return;
 		if (typeof document !== 'undefined' && document.hidden) {
 			scheduleWork(workDelay);
 			return;
@@ -171,6 +177,7 @@
 				sheet_note?: [string, string] | null;
 				cards_failed?: number;
 			}>(`api/cases/${encodeURIComponent(folderId)}/work`, { timeoutMs: 15000 });
+			if (destroyed) return;
 			if (!d || !('sheet_note' in d)) {
 				stopWork();
 				return;
@@ -191,6 +198,7 @@
 			workState = { kind: note[0], text: note[1] };
 			scheduleWork(note[0] === 'waiting' ? 30000 : 5000);
 		} catch (e) {
+			if (destroyed) return;
 			const err = e as CaseApiError;
 			if (err?.status === 404 || err?.status === 403) {
 				stopWork();
@@ -381,8 +389,8 @@
 	}
 
 	// ---- сохранение номера / текста / пересчёт карточки ----
-	async function reloadCurrent(message: string) {
-		caseToast(message);
+	async function reloadCurrent(message?: string) {
+		if (message) caseToast(message);
 		const cur = currentSheetHref($page.url);
 		if (cur !== $page.url.pathname + $page.url.search + $page.url.hash) {
 			await goto(cur, { replaceState: true });
@@ -496,6 +504,7 @@
 		document.addEventListener('keydown', onKeyDown);
 	});
 	onDestroy(() => {
+		destroyed = true;
 		stopWork();
 		if (typeof document !== 'undefined') {
 			document.removeEventListener('selectionchange', onSelectionChange);
@@ -951,7 +960,7 @@
 													class="in"
 													name="text"
 													rows="2"
-													maxlength="5000"
+													maxlength="2000"
 													autocomplete="off"
 													bind:this={textAreaEl}
 													bind:value={textInput}
@@ -1126,7 +1135,7 @@
 	{S}
 	entity="page"
 	id={pageId}
-	onReverted={() => void reloadCurrent(S.revert_done)}
+	onReverted={() => void reloadCurrent()}
 />
 
 <!-- Подтверждение пересчёта карточки документа -->

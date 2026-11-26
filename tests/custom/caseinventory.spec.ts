@@ -32,7 +32,7 @@ test.describe('«Опись», 1280', () => {
 		await expect(page.locator('.head .cnt')).toHaveText('22 документа');
 		const rows = page.getByTestId('case-doc');
 		await expect(rows).toHaveCount(8);
-		await expect(rows.nth(0).getByRole('link')).toHaveAttribute('href', `/legal-tools/case/${F}/p/629`);
+		await expect(rows.nth(0).getByRole('link')).toHaveAttribute('href', `/case/${F}/p/629`);
 		await expect(rows.nth(0).locator('.fn')).toHaveText('tom-2-chast-1.pdf'); // лист без номера: имя файла мелко
 		await expect(rows.nth(1)).toContainText('№ 3935 · Представитель истца по доверенности Тихонов А. И.');
 		await expect(rows.nth(2).locator('.pill')).toHaveText(S.inventory_unchecked);

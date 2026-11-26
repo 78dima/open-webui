@@ -13,10 +13,16 @@
 	let title = '';
 	let casePage: CasePage | undefined;
 	let visitedFolder = '';
+	let activeSection = '';
+	let activeSub = '';
 	$: folderId = $page.params.folderId ?? '';
 	$: isStandalone =
 		$page.route.id?.endsWith('/p/[pageId]') || $page.route.id?.endsWith('/ref') || false;
-	$: if (!isStandalone && folderId) visitedFolder = folderId;
+	$: if (!isStandalone && folderId) {
+		visitedFolder = folderId;
+		activeSection = $page.params.section ?? '';
+		activeSub = $page.params.item ?? '';
+	}
 
 	onMount(() => {
 		if (isStandalone) return;
@@ -46,8 +52,8 @@
 			<CasePage
 				bind:this={casePage}
 				folderId={visitedFolder}
-				section={!isStandalone ? ($page.params.section ?? '') : ''}
-				sub={!isStandalone ? ($page.params.item ?? '') : ''}
+				section={activeSection}
+				sub={activeSub}
 				bind:title
 			/>
 		{/key}

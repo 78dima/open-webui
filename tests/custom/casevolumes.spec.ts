@@ -25,7 +25,7 @@ test.describe('«Тома», 1280', () => {
 		await expect(v4).toContainText('209 страниц · л.д. 1–210');
 		await expect(v4.locator('.pill').first()).toHaveText(S.volume_state_ready);
 		await expect(v4.getByTestId('case-volume-source')).toContainText(S.label_source_lawyer_g);
-		await expect(v4.getByTestId('case-volume-source').getByRole('link')).toHaveAttribute('href', `/legal-tools/case/${fixture('case-boot').folder_id}/p/629`);
+		await expect(v4.getByTestId('case-volume-source').getByRole('link')).toHaveAttribute('href', `/case/${fixture('case-boot').folder_id}/p/629`);
 		// ссылка в «Проверьте листы»: число и состав — из тех же замечаний, что в разделе проверки
 		const link = v4.getByTestId('case-volume-checks');
 		await expect(link).toHaveAttribute('href', /check$/);

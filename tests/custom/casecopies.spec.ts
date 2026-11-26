@@ -31,7 +31,7 @@ test.describe('«Копии и расхождения», 1280', () => {
 		const first = pairs.first();
 		await expect(first).toContainText('Счёт на оплату — т. 4, л.д. 145, 07.04.2025');
 		await expect(first).toContainText('сходство текста 94 %; расхождений:');
-		await expect(first.getByRole('link').first()).toHaveAttribute('href', `/legal-tools/case/${F}/p/772`);
+		await expect(first.getByRole('link').first()).toHaveAttribute('href', `/case/${F}/p/772`);
 		await expect(first.getByTestId('case-copy-diffs')).toHaveCount(0); // свёрнута
 		await first.getByRole('button', { name: S.expand }).click();
 		const diffs = first.getByTestId('case-copy-diffs').first();

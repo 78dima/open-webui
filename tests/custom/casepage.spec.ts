@@ -84,7 +84,7 @@ test.describe('каркас, 1280', () => {
 		await expect(page.getByRole('link', { name: S.chat_of_case })).toHaveAttribute('href', `/folders/${F}`);
 
 		const form = page.getByTestId('case-goto').filter({ visible: true });
-		await expect(form).toHaveAttribute('action', `/legal-tools/case/${F}/ref`);
+		await expect(form).toHaveAttribute('action', `/case/${F}/ref`);
 		await expect(form).toHaveAttribute('method', 'get');
 		await expect(form.locator('select[name="t"] option')).toHaveText(['т. 4', 'т. 5/1']);
 		await expect(form.locator('select[name="t"] option').first()).toHaveAttribute('value', '4');
@@ -663,7 +663,7 @@ test.describe('телефон, 360', () => {
 			await page.getByTestId('case-goto-open').click();
 			const dialog = page.getByRole('dialog');
 			await expect(dialog.getByRole('heading')).toHaveText(S.goto_title_g);
-			await expect(dialog.getByTestId('case-goto')).toHaveAttribute('action', `/legal-tools/case/${F}/ref`);
+			await expect(dialog.getByTestId('case-goto')).toHaveAttribute('action', `/case/${F}/ref`);
 			await expect(dialog.locator('label')).toHaveText(S.goto_back_long);
 			expect(await dialog.locator('input[name="l"]').evaluate((e) => parseFloat(getComputedStyle(e).fontSize))).toBeGreaterThanOrEqual(16);
 			await page.keyboard.press('Escape');

@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: { alias: [
     { find: '$lib/stores', replacement: fileURLToPath(new URL('./stores.ts', import.meta.url)) },
     { find: '$app/navigation', replacement: fileURLToPath(new URL('./app-navigation.ts', import.meta.url)) },
+    { find: '$app/stores', replacement: fileURLToPath(new URL('./app-stores.ts', import.meta.url)) },
     { find: '$app/environment', replacement: fileURLToPath(new URL('./app-environment.ts', import.meta.url)) },
     { find: '$lib', replacement: fileURLToPath(new URL('../../src/lib', import.meta.url)) }
   ] },
