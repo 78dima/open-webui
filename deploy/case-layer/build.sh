@@ -16,7 +16,7 @@
 #
 # Проверки (любая не прошла — образ не собирается или скрипт выходит с ошибкой):
 # 1) с историей: файлы слоя закоммичены; изменения после базового тега — только backend/open_webui/**.py (кроме них
-#    разрешены только свои файлы без влияния на образ: CUSTOM.md, tests/custom/**, deploy/case-layer/**); манифест HEAD —
+#    разрешены только свои файлы без влияния на образ: AGENTS.md, CLAUDE.md, CUSTOM.md, tests/custom/**, deploy/**); манифест HEAD —
 #    как git. В обоих режимах файлы дерева — побайтно как HEAD манифеста;
 # 2) в базовом образе эти файлы — побайтно как в базовом теге (базовый образ действительно собран из него; на VPS — свой
 #    ai8, собранный по §3, и он должен совпасть с тегом по этим файлам);
@@ -40,7 +40,7 @@ git_layer() {
   for f in "${changed[@]}"; do
     case "$f" in
       backend/open_webui/*.py) ;;
-      CUSTOM.md|tests/custom/*|deploy/case-layer/*) continue ;;
+      AGENTS.md|CLAUDE.md|CUSTOM.md|tests/custom/*|deploy/*) continue ;;
       *) die "изменён $f: слоем не доставить, нужна полная сборка образа из тега" ;;
     esac
     if git cat-file -e "$base_ref:$f" 2>/dev/null; then base=$(git show "$base_ref:$f" | sum); else base=-; fi

@@ -1,32 +1,27 @@
-# ai-dvokat UI
+# ai-dvokat UI (форк Open WebUI)
 
-## Источники решений
+Публичный форк `78dima/open-webui` (upstream `open-webui/open-webui`), рабочая ветка `ai-dvokat-0.13` (база `v0.13.0`, образы `0.13.0-ai9-*`). Не писать в `main`/`dev`; префикс каждого коммита — строго `custom:`. В публичный репозиторий никогда не попадают секреты, клиентские документы, cookie и логи живых проверок.
 
-- [План форка, 02.11.2026](/home/arimi/ai-dvokat/docs/fork-plan-2026-11-02.md) — правила §2 действуют.
-- [Бриф этапа 2: ребрендинг и первый пакет интерфейса](/home/arimi/ai-dvokat/docs/ui-customization-brief-2026-11-02.md) — общий объём этапа.
-- [Следующий шаг без макетов](/home/arimi/ai-dvokat/docs/ui-handover-2026-11-02.md) — выполнено 02.11, стенд `0.12.5-ai6`.
-- [Решения по Open WebUI](/home/arimi/ai-dvokat/docs/decisions/open-webui-fable-decisions-2026-11-01.md) — §16.
-- [Статус и точки подключения](CUSTOM.md).
+## Источники правды
+- [ARCHITECTURE.md](../ai-dvokat/ARCHITECTURE.md) — единая архитектура системы, контракты API и схема контейнеров.
+- [AGENTS.md](../ai-dvokat/AGENTS.md) — общие инженерные правила и правила работы в изолированном dev-контуре VPS (`ai-dvokat-dev`).
+- [CUSTOM.md](CUSTOM.md) — реестр всех точек подключения к штатным файлам Open WebUI и история слоёв.
 
-## Границы работы
+## Где живёт наш код
+- `backend/open_webui/custom/` — серверные расширения (`ui.py` для `CUSTOM_UI`, `case.py` для проверенного `folder_id` в `metadata`, `builtin_tools_off` и `custom_features`).
+- `src/routes/case/` — единый SvelteKit SPA «Дел» (`/case`, `/case/[folderId]`, `/case/[folderId]/[section]`, просмотрщик листа `/case/[folderId]/p/[pageId]` и переход по ссылке `/case/[folderId]/ref`).
+- `src/lib/custom/` и `src/lib/components/custom/` — API-клиент и компоненты «Дел» (`src/lib/custom/case/`), бренд/видимость/статусы вызовов инструментов (`toolStatus.ts`), русская локализация `src/lib/custom/locales/ru-RU.json`, стили `src/custom.css` (Tailwind — только через `theme.extend`).
 
-Работать в `/home/arimi/ai-dvokat-ui`. В `/home/arimi/ai-dvokat` разрешена только замена строки образа сервиса `openwebui` в `deploy/compose.yaml`. Не изменять `tools/`, `owui/` и другие файлы продукта; не создавать там коммитов. Перезапускать только `openwebui`, без зависимостей. Не менять образ до успешной сборки.
-
-Состояние 05.11.2026: форк на `d1330de0f` (образ `0.12.5-ai6`). Работа ADU-1 (R4, B5, данные в B3/B4, откат флагов, образ ai8) откатана по указанию владельца 05.11. Решения владельца 05.11: стиль — текущий Open WebUI, макетов и редизайна нет, бренд «Ai - dvokat» остаётся; штатные средства Open WebUI вместо кода форка, где они есть. Новые задачи ставит советник через Herdr; без задания ничего не менять. Каждый пакет — отдельный коммит `custom:`, Playwright-тест, запись в `CUSTOM.md`, новый тег образа, перезапуск только `openwebui`. Контрольная точка для отката — тег `checkpoint-2026-11-05`.
-
-## Правила форка
-
-- Владелец явно разрешил публичный fork `78dima/open-webui` 02.11.2026. Не публиковать секреты, тестовые документы и результаты живых проверок. README содержит пометку о неаффилированности.
-- Ветка `ai-dvokat` начинается строго от `v0.12.5`. Не писать в `main`/`dev`. Один коммит на возможность, префикс `custom:`.
-- Свой код: `src/lib/components/custom/`, `src/lib/custom/`, при необходимости `src/routes/(app)/custom/…`; тексты в собственной локализации `ru-RU`.
-- В upstream только точки подключения по 1–2 строки, с маркером `ai-dvokat:` в комментарии соответствующего языка. Перечислять их в `CUSTOM.md`. Не удалять upstream-код.
-- Единственное расширение бэкенда: JSON из `CUSTOM_UI` в `backend/open_webui/config.py`, поле `custom_ui` ответа `/api/config`. Все свои возможности включать только флагами этой конфигурации.
-- Пример дня 1: компонент на стартовом экране за `custom_ui.hello`. Собственные CSS-переменные в `src/custom.css`, импорт из `src/app.css`; Tailwind только через `theme.extend`.
-- Локальный фронтенд на 5173 подключать к существующему бэкенду на 8080. Не запускать второй бэкенд без необходимости.
-- Собирать неизменённым upstream Dockerfile. Образ: `ghcr.io/78dima/open-webui-legal:0.12.5-ai1`, без `latest`. GitHub Actions: push в `ai-dvokat`, теги `*-ai*`, Playwright в `tests/custom/` на каждый push. Upstream workflows не должны отправлять данные во внешние сервисы.
-- Перед сборкой не менее 15 ГБ свободного места. Хранить не более двух тегов нашего образа; очищать build cache после публикации согласно §2 плана.
-- Обновлять upstream не реже раза в месяц и при security-релизах; переносить свою серию через rebase, повторять приёмку и регрессию по плану.
-
-## Приёмка
-
-Образ из форка работает на стенде; вход; чат «Юрист РФ» с К+; загрузка файла; workflow-модель; скачивание DOCX из сообщения; пример виден при включённом флаге и отсутствует при выключенном; `git log v0.12.5..ai-dvokat` содержит только наши коммиты. Секреты, cookie, полные документы и тексты К+ не записывать в отчёт и логи.
+## Жёсткие инженерные правила форка
+1. **Сервис считает — фронт только рисует:** запрещено дублировать бизнес-логику, вычисление статусов хода или текстовый разбор на TypeScript — фронт отображает готовые поля JSON API `legal-tools`. Тексты страниц «Дел» приходят из сервиса (`PAGE_STRINGS.json`); снимок для тестов обновляется командой `node tests/custom/case-strings-sync.mjs ../ai-dvokat/tools/src/legal_tools/case/texts/PAGE_STRINGS.json`.
+2. **Минимальное вторжение в штатные файлы Open WebUI:** без крайней необходимости не затрагивать новые файлы upstream вне `custom/` и `src/routes/case/`. Каждую точку подключения делать в 1–2 строки с комментарием `ai-dvokat:` и регистрировать в `CUSTOM.md`. Штатный код не удалять — скрытие элементов для роли `user` делать через флаги `CUSTOM_UI`.
+3. **Лицензия Open WebUI:** кастомный бренд («Ai - dvokat») без enterprise-лицензии разрешён только при **≤ 50 активных пользователей за 30 дней** (`LICENSE`).
+4. **Гигиена тестов:**
+   - Python-тесты точек подключения: `python3 -m unittest discover -s tests/custom -p 'test_*.py'`;
+   - модульные проверки: `npm run test:frontend`;
+   - браузерные тесты Playwright: `cd tests/custom && CASE_PAGE_STRINGS=../../../ai-dvokat/tools/src/legal_tools/case/texts/PAGE_STRINGS.json npm test`.
+   Запрещено рисовать выдуманные JSON-ответы без сверки с реальными Pydantic-схемами `legal-tools` и плодить файлы тестов под разовые багфиксы.
+5. **Быстрая сборка образов слоями (без 25-минутной полной сборки):**
+   - при правках только фронтенда (`src/`, `static/`): `deploy/ui-layer/build.sh --build <базовый образ> <итоговый тег>` (собирает Vite на машине и накладывает поверх `/app/build`, сохраняя `pyodide`);
+   - при правках `backend/open_webui/**/*.py`: обновить манифест `deploy/case-layer/build.sh --manifest` и собрать слой `deploy/case-layer/build.sh`;
+   - при правках `package*.json`, `pyproject.toml`, `uv.lock` или `Dockerfile` — полная сборка образа. На общей машине сборку запускать под `flock /tmp/ai-dvokat-docker-build.lock`.

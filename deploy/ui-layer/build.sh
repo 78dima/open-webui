@@ -57,7 +57,7 @@ n=0
 while IFS= read -r f; do
   case "$f" in
     src/*|static/*) n=$((n + 1)) ;;
-    CUSTOM.md|tests/custom/*|deploy/*) ;;
+    AGENTS.md|CLAUDE.md|CUSTOM.md|tests/custom/*|deploy/*) ;;
     backend/*) die "изменён $f: бэкенд слоем фронтенда не доставить (deploy/case-layer/build.sh)" ;;
     *) die "изменён $f: слоем фронтенда не доставить, нужна полная сборка образа" ;;
   esac
